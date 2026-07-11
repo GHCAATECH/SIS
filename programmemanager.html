@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manage Programmes - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-book-open"></i></span>
+      <div><h2>Add / Manage Programmes</h2><p>Create academic programmes used when classes are created.</p></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
+      <div class="card">
+        <div class="card__head"><i class="fas fa-plus"></i> Add Programme</div>
+        <div class="card__body">
+          <form id="programmeForm" class="grid" style="gap:14px">
+            <div class="field"><label>Programme name <span class="req">*</span></label><input class="input" id="pName" required placeholder="e.g. General Science"></div>
+            <div class="field"><label>Programme code</label><input class="input" id="pCode" placeholder="e.g. SCI"></div>
+            <div class="field"><label>Department <span class="req">*</span></label><select class="select" id="pDept" required><option value="">Select department...</option></select></div>
+            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Add Programme</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card card--pad-0">
+        <div class="card__head"><i class="fas fa-table-list"></i> Existing Programmes</div>
+        <div class="table-wrap">
+          <table class="tbl" id="programmeTbl">
+            <thead><tr><th>Programme</th><th>Code</th><th>Department</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'programmemanager' });
+
+var STORAGE_KEY = 'axiom_programmes';
+var DEPARTMENT_KEY = 'axiom_departments';
+var defaultDepartments = [];
+var defaultProgrammes = [
+  { name: 'General Science', code: 'SCI', department: 'Science Department' },
+  { name: 'General Arts', code: 'ART', department: 'Arts Department' },
+  { name: 'Business', code: 'BUS', department: 'Business Department' },
+  { name: 'Visual Arts', code: 'VA', department: 'Visual Arts Department' },
+  { name: 'Home Economics', code: 'HE', department: 'Home Economics Department' },
+  { name: 'Agricultural Science', code: 'AGR', department: 'Agriculture Department' }
+];
+
+function loadProgrammes() {
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : defaultProgrammes.slice();
+  } catch (e) {
+    return defaultProgrammes.slice();
+  }
+}
+
+function saveProgrammes() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(programmes)); } catch (e) {}
+}
+
+function mapDbProgramme(p) {
+  return { id: p.id, name: p.name, code: p.code || '', department_id: p.department_id || '', department: (p.departments && p.departments.name) || p.department || '' };
+}
+
+var programmes = loadProgrammes();
+var departments = (function() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(DEPARTMENT_KEY) || 'null');
+    var legacy = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
+    return Array.isArray(saved) ? saved.filter(function(department) { return legacy.indexOf(department.name) === -1; }) : [];
+  } catch (err) { return []; }
+})();
+try { localStorage.setItem(DEPARTMENT_KEY, JSON.stringify(departments)); } catch (err) {}
+
+function populateDepartments() {
+  var select = document.getElementById('pDept');
+  select.innerHTML = '<option value="">Select department...</option>' + departments.map(function(department) {
+    return '<option value="'+String(department.name).replace(/"/g, '&quot;')+'">'+department.name+'</option>';
+  }).join('');
+}
+
+function render() {
+  document.querySelector('#programmeTbl tbody').innerHTML = programmes.map(function(p, idx) {
+    return '<tr><td style="font-weight:600">'+p.name+'</td><td>'+(p.code || '-')+'</td><td>'+(p.department || '-')+'</td>'+
+      '<td><div class="row-actions">'+
+        '<button class="btn btn--danger" data-act="Drop" data-i="'+idx+'" title="Drop"><i class="fas fa-trash"></i></button>'+
+      '</div></td></tr>';
+  }).join('');
+}
+render();
+populateDepartments();
+
+async function refreshProgrammesFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var results = await Promise.all([AxiomDB.listDepartments ? AxiomDB.listDepartments() : [], AxiomDB.listProgrammes()]);
+    var legacyDepartments = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
+    var dbDepartments = (results[0] || []).filter(function(department) { return legacyDepartments.indexOf(department.name) === -1; });
+    var rows = results[1];
+    if (dbDepartments.length) {
+      departments = dbDepartments;
+      try { localStorage.setItem(DEPARTMENT_KEY, JSON.stringify(departments)); } catch (err) {}
+      populateDepartments();
+    }
+    if (rows && rows.length) {
+      programmes = rows.map(mapDbProgramme);
+      saveProgrammes();
+      render();
+    }
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load programmes from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+refreshProgrammesFromSupabase();
+
+document.getElementById('programmeForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form = this;
+  async function saveProgramme() {
+    var name = document.getElementById('pName').value.trim();
+    if (programmes.some(function(p) { return p.name.toLowerCase() === name.toLowerCase(); })) {
+      Portal.toast('Programme already exists.', true);
+      return;
+    }
+    var programme = {
+      name: name,
+      code: document.getElementById('pCode').value.trim(),
+      department: document.getElementById('pDept').value.trim()
+    };
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createProgramme) {
+      programme = mapDbProgramme(await AxiomDB.createProgramme(programme));
+    }
+    programmes.push(programme);
+    saveProgrammes();
+    render();
+    form.reset();
+    Portal.toast('Programme added.');
+  }
+  saveProgramme().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not add programme: ' + (err.message || 'Unknown error'), true);
+  });
+});
+
+document.getElementById('programmeTbl').addEventListener('click', function(e) {
+  var b = e.target.closest('button[data-act]');
+  if (!b) return;
+  var i = +b.dataset.i;
+  if (!confirm('Drop '+programmes[i].name+'?')) return;
+  async function dropProgramme() {
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteProgramme && programmes[i].id) {
+      await AxiomDB.deleteProgramme(programmes[i].id);
+    }
+    programmes.splice(i, 1);
+    saveProgrammes();
+    render();
+    Portal.toast('Programme dropped.');
+  }
+  dropProgramme().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not drop programme: remove linked classes/subjects first. ' + (err.message || ''), true);
+  });
+});
+</script>
+</body>
+</html>

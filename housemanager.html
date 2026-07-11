@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manage Houses - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-house-user"></i></span>
+      <div><h2>Add / Manage Houses</h2><p>Create houses according to residential status.</p></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
+      <div class="card">
+        <div class="card__head"><i class="fas fa-plus"></i> Add House</div>
+        <div class="card__body">
+          <form id="houseForm" class="grid" style="gap:14px">
+            <div class="field"><label>House name <span class="req">*</span></label><input class="input" id="hName" required placeholder="e.g. Unity House"></div>
+            <div class="field"><label>Residential Status <span class="req">*</span></label>
+              <select class="select" id="hResidentialStatus" required>
+                <option value="">Select residential status...</option>
+                <option>Boarding</option>
+                <option>Day</option>
+              </select></div>
+            <div class="field"><label>House parent / patron</label><input class="input" id="hPatron" placeholder="e.g. Mr. K. Boateng"></div>
+            <div class="field"><label>Capacity</label><input class="input" id="hCapacity" type="number" min="1" placeholder="e.g. 120"></div>
+            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Add House</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card card--pad-0">
+        <div class="card__head"><i class="fas fa-table-list"></i> Existing Houses</div>
+        <div class="table-wrap">
+          <table class="tbl" id="houseTbl">
+            <thead><tr><th>House</th><th>Residential Status</th><th>Patron</th><th>Capacity</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'housemanager' });
+
+var STORAGE_KEY = 'axiom_houses';
+var defaultHouses = [
+  { name: 'Unity House', residentialStatus: 'Boarding', patron: 'Mr. K. Boateng', capacity: 120 },
+  { name: 'Liberty House', residentialStatus: 'Boarding', patron: 'Mr. S. Adjei', capacity: 110 },
+  { name: 'Day Students', residentialStatus: 'Day', patron: 'Mrs. A. Owusu', capacity: 300 }
+];
+
+function loadHouses() {
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : defaultHouses.slice();
+  } catch (e) {
+    return defaultHouses.slice();
+  }
+}
+
+function saveHouses() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(houses)); } catch (e) {}
+}
+
+var houses = loadHouses();
+
+function houseStatus(house) {
+  return house.residentialStatus || house.residential_status || house.status || (house.gender ? 'Boarding' : '');
+}
+
+function mapDbHouse(house) {
+  return {
+    id: house.id,
+    name: house.name,
+    residentialStatus: house.residential_status || house.residentialStatus,
+    patron: house.patron || '',
+    capacity: house.capacity || ''
+  };
+}
+
+function render() {
+  document.querySelector('#houseTbl tbody').innerHTML = houses.map(function(h, idx) {
+    return '<tr><td style="font-weight:600">'+h.name+'</td><td>'+houseStatus(h)+'</td><td>'+(h.patron || '-')+'</td><td>'+(h.capacity || '-')+'</td>'+
+      '<td><div class="row-actions">'+
+        '<button class="btn btn--danger" data-act="Drop" data-i="'+idx+'" title="Drop"><i class="fas fa-trash"></i></button>'+
+      '</div></td></tr>';
+  }).join('');
+}
+render();
+
+async function refreshHousesFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var rows = await AxiomDB.listHouses();
+    if (rows && rows.length) {
+      houses = rows.map(mapDbHouse);
+      saveHouses();
+      render();
+    }
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load houses from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+refreshHousesFromSupabase();
+
+document.getElementById('houseForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form = this;
+  async function saveHouse() {
+    var house = {
+      name: document.getElementById('hName').value.trim(),
+      residentialStatus: document.getElementById('hResidentialStatus').value,
+      patron: document.getElementById('hPatron').value.trim(),
+      capacity: document.getElementById('hCapacity').value
+    };
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createHouse) {
+      house = mapDbHouse(await AxiomDB.createHouse(house));
+    }
+    houses.push(house);
+    saveHouses();
+    render();
+    form.reset();
+    Portal.toast('House added.');
+  }
+  saveHouse().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not add house: ' + (err.message || 'Unknown error'), true);
+  });
+});
+
+document.getElementById('houseTbl').addEventListener('click', function(e) {
+  var b = e.target.closest('button[data-act]');
+  if (!b) return;
+  var i = +b.dataset.i;
+  if (confirm('Drop '+houses[i].name+'?')) {
+    async function dropHouse() {
+      if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteHouse && houses[i].id) {
+        await AxiomDB.deleteHouse(houses[i].id);
+      }
+    houses.splice(i, 1);
+    saveHouses();
+    render();
+    Portal.toast('House dropped.');
+    }
+    dropHouse().catch(function(err) {
+      console.error(err);
+      Portal.toast('Could not drop house: ' + (err.message || 'Unknown error'), true);
+    });
+  }
+});
+</script>
+</body>
+</html>

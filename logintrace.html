@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login Trace — AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-shoe-prints"></i></span>
+      <div><h2>Login Trace</h2><p>Audit trail of sign-in activity across the portal.</p></div>
+    </div>
+
+    <div class="grid cols-4">
+      <div class="card stat"><i class="fas fa-right-to-bracket" style="color:var(--brand)"></i><div class="num">312</div><div class="cap">Logins (30d)</div></div>
+      <div class="card stat"><i class="fas fa-user-check" style="color:var(--green)"></i><div class="num">5</div><div class="cap">Active Users</div></div>
+      <div class="card stat"><i class="fas fa-triangle-exclamation" style="color:var(--amber)"></i><div class="num">7</div><div class="cap">Failed Attempts</div></div>
+      <div class="card stat"><i class="fas fa-clock" style="color:var(--purple)"></i><div class="num">Today</div><div class="cap">Last Activity</div></div>
+    </div>
+
+    <div class="card card--pad-0" style="margin-top:18px">
+      <div class="toolbar" style="padding:14px 16px 0; margin:0">
+        <div class="search grow"><i class="fas fa-magnifying-glass"></i><input id="search" placeholder="Search by user or IP…"></div>
+        <select class="select" style="max-width:160px"><option>All Results</option><option>Success</option><option>Failed</option></select>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl" id="tbl">
+          <thead><tr><th>User</th><th>Date &amp; Time</th><th>IP Address</th><th>Device / Browser</th><th>Result</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'logintrace' });
+
+var logs = [
+  ['Admin','2026-06-21 08:42','154.160.22.11','Windows · Chrome','Success'],
+  ['Grace Asante','2026-06-21 08:15','154.160.22.40','Windows · Edge','Success'],
+  ['Kojo Boateng','2026-06-21 07:58','197.251.140.7','Android · Chrome','Success'],
+  ['unknown','2026-06-20 23:11','41.66.200.3','Linux · Firefox','Failed'],
+  ['Mary Owusu','2026-06-20 16:30','154.160.22.18','Windows · Chrome','Success'],
+  ['Samuel Adjei','2026-06-20 14:02','197.251.140.21','iOS · Safari','Success'],
+  ['unknown','2026-06-20 02:47','102.176.5.9','Unknown','Failed'],
+  ['Grace Asante','2026-06-19 09:21','154.160.22.40','Windows · Edge','Success']
+];
+
+document.querySelector('#tbl tbody').innerHTML = logs.map(function(l){
+  var ok = l[4]==='Success';
+  return '<tr>'+
+    '<td><div class="cell-user"><span class="avatar"'+(l[0]==='unknown'?' style="background:var(--text-faint)"':'')+'>'+l[0].charAt(0).toUpperCase()+'</span>'+l[0]+'</div></td>'+
+    '<td class="t-id">'+l[1]+'</td><td class="t-id">'+l[2]+'</td><td>'+l[3]+'</td>'+
+    '<td><span class="badge badge--'+(ok?'green':'red')+'"><i class="fas fa-'+(ok?'check':'xmark')+'"></i> '+l[4]+'</span></td>'+
+  '</tr>';
+}).join('');
+
+Portal.filterTable('#search', '#tbl');
+</script>
+</body>
+</html>

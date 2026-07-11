@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manage Users - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .users-card {
+    border-radius: 8px;
+    overflow: visible;
+    background: #fff;
+    width: 100%;
+    min-width: 0;
+  }
+  .users-tools {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 14px 14px 12px;
+    background: #fff;
+    gap: 18px;
+  }
+  .user-type-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: auto;
+  }
+  .user-type-tabs button {
+    border: 0;
+    border-radius: 4px;
+    min-height: 30px;
+    padding: 8px 14px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    background: #111827;
+  }
+  .user-type-tabs button.active { background: #08aeea; }
+  .entries-control {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .entries-control .select {
+    width: 52px;
+    min-height: 23px;
+    padding: 2px 4px;
+    border-radius: 2px;
+    color: #000;
+  }
+  .search-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #000;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .search-control .input {
+    width: 137px;
+    min-height: 25px;
+    padding: 3px 6px;
+    border-radius: 2px;
+  }
+  .users-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    max-height: none;
+    overflow-x: scroll;
+    overflow-y: visible;
+    overscroll-behavior: contain;
+    background: #fff;
+    border: 1px solid rgba(100, 116, 139, .30);
+    border-radius: 8px;
+    scrollbar-color: #0f766e #e8f3f2;
+    scrollbar-width: thin;
+  }
+  .users-table-wrap::-webkit-scrollbar { height: 11px; }
+  .users-table-wrap::-webkit-scrollbar-track {
+    background: #e8f3f2;
+    border-radius: 999px;
+  }
+  .users-table-wrap::-webkit-scrollbar-thumb {
+    background: #0f766e;
+    border: 2px solid #e8f3f2;
+    border-radius: 999px;
+  }
+  .users-top-scroll {
+    width: 100%;
+    height: 15px;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    background: #e8f3f2;
+    border: 1px solid rgba(100, 116, 139, .30);
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    scrollbar-color: #0f766e #e8f3f2;
+    scrollbar-width: thin;
+  }
+  .users-top-scroll > div { height: 1px; min-width: 1820px; }
+  .users-top-scroll::-webkit-scrollbar { height: 14px; }
+  .users-top-scroll::-webkit-scrollbar-track { background: #e8f3f2; }
+  .users-top-scroll::-webkit-scrollbar-thumb {
+    background: #0f766e;
+    border: 2px solid #e8f3f2;
+    border-radius: 999px;
+  }
+  table.users-table {
+    width: 100%;
+    min-width: 1820px;
+    table-layout: auto;
+    border-collapse: collapse;
+    color: #000;
+    font-size: 12px;
+  }
+  table.users-table.non-teaching-table { min-width: 1470px; }
+  .users-table thead {
+    display: table-header-group;
+    position: static;
+    z-index: auto;
+    visibility: visible;
+  }
+  .users-table th {
+    position: relative;
+    top: auto;
+    z-index: auto;
+    height: 46px;
+    padding: 10px 12px;
+    border: 1px solid rgba(100, 116, 139, .30);
+    background: #f8fafc;
+    text-align: left;
+    font-weight: 800;
+    font-size: 11px;
+    line-height: 1.15;
+    letter-spacing: 0;
+    color: #0f172a !important;
+    opacity: 1 !important;
+    white-space: nowrap;
+    vertical-align: middle;
+    overflow: hidden;
+  }
+  .users-table th .sort {
+    display: none;
+  }
+  .users-table td {
+    height: 58px;
+    padding: 9px 10px;
+    border: 1px solid rgba(100, 116, 139, .30);
+    vertical-align: middle;
+    background: #fff;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .users-table tbody tr:nth-child(odd) td { background: #f8fbfb; }
+  .users-table tbody tr:hover td { background: #ecfdf5; }
+  .users-table .action-cell { text-align: center; overflow: visible; }
+  .users-table .col-profile { width: 145px; min-width: 145px; }
+  .users-table .col-subclass { width: 160px; min-width: 160px; }
+  .users-table .col-name { width: 210px; min-width: 210px; }
+  .users-table .col-email { width: 255px; min-width: 255px; }
+  .users-table .col-phone { width: 120px; min-width: 120px; }
+  .users-table .col-school { width: 205px; min-width: 205px; }
+  .users-table .col-designation { width: 125px; min-width: 125px; }
+  .users-table .col-privilege { width: 130px; min-width: 130px; }
+  .users-table .col-assignment { width: 190px; min-width: 190px; }
+  .users-table .col-deactivate { width: 130px; min-width: 130px; }
+  .users-table .col-reset { width: 145px; min-width: 145px; }
+  .legacy-action {
+    border: 0;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    width: max-content;
+    max-width: 100%;
+    min-height: 34px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .users-table .legacy-action {
+    min-width: max-content !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+  }
+  .users-table :is(.col-privilege, .col-assignment, .col-deactivate, .col-reset) .legacy-action {
+    width: max-content !important;
+    min-width: 0 !important;
+    min-height: 30px !important;
+    padding: 5px 7px !important;
+    margin: 0 !important;
+    gap: 4px !important;
+    font-size: 10px !important;
+  }
+  .users-table td:is(.col-privilege, .col-assignment, .col-deactivate, .col-reset) {
+    text-align: left;
+  }
+  .legacy-action.blue { background: #08aeea; }
+  .legacy-action.orange { background: #df5b00; }
+  .legacy-action.red { background: #d7192a; }
+  .legacy-action.link {
+    background: transparent;
+    color: #0094ff;
+    padding-left: 0;
+  }
+  .legacy-action:hover { filter: brightness(.95); }
+  .wrap { white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+  .privilege-modal {
+    width: 780px;
+    max-width: 780px;
+  }
+  .subject-class-modal,
+  .view-subject-modal { max-height:90vh; }
+  .subject-class-modal .modal__body,
+  .view-subject-modal .modal__body { max-height:calc(90vh - 64px); overflow-y:auto; }
+  .subject-assignment-scroll { max-height:360px; overflow:auto; border:1px solid #e2e8f0; border-radius:6px; }
+  .subject-assignment-scroll .tbl { margin:0; }
+  .multi-dropdown { position:relative; width:100%; }
+  .multi-dropdown__trigger { width:100%; min-height:38px; padding:8px 36px 8px 11px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--text); text-align:left; cursor:pointer; position:relative; }
+  .multi-dropdown__trigger::after { content:'\25BC'; position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:10px; }
+  .multi-dropdown.open .multi-dropdown__trigger::after { transform:translateY(-50%) rotate(180deg); }
+  .multi-dropdown__panel { display:none; position:absolute; z-index:80; left:0; right:0; top:calc(100% + 4px); max-height:220px; overflow-y:auto; padding:6px; border:1px solid var(--border); border-radius:7px; background:#fff; box-shadow:0 12px 28px rgba(15,23,42,.16); }
+  .multi-dropdown.open .multi-dropdown__panel { display:block; }
+  .multi-dropdown__option { display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:5px; cursor:pointer; font-size:12px; }
+  .multi-dropdown__option:hover { background:#f0fdfa; }
+  .multi-dropdown__option input { width:16px; height:16px; accent-color:var(--brand); }
+  .privilege-user {
+    background: #f8fafc;
+    border: 1px solid #d8dee8;
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    color: #111827;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .privilege-title {
+    margin: 0 0 10px;
+    color: #111827;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .privilege-groups {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .privilege-group {
+    border: 1px solid #d8dee8;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .privilege-group h5 {
+    margin: 0;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, #4caf50, #9be582);
+    color: #fff;
+    font-size: 13px;
+    text-transform: uppercase;
+  }
+  .privilege-list {
+    padding: 9px 12px 12px;
+    display: grid;
+    gap: 8px;
+  }
+  .privilege-check {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .privilege-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: #4caf50;
+  }
+  .privilege-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 16px;
+  }
+  .privilege-selectbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .edit-modal {
+    width: 1040px;
+    max-width: 1040px;
+    max-height: 90vh;
+  }
+  .edit-modal .modal__body {
+    max-height: calc(90vh - 70px);
+    overflow-y: auto;
+  }
+  .edit-section {
+    border: 1px solid #d8dee8;
+    border-radius: 4px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .edit-section h5 {
+    margin: 0;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #d8dee8;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .edit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 16px;
+    padding: 14px;
+  }
+  .edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+  }
+  .profile-mode-note {
+    background: #f8fafc;
+    border: 1px solid #d8dee8;
+    border-radius: 4px;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+  }
+  .staff-profile-hero {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+  .staff-profile-photo-view {
+    position: relative;
+    width: 160px;
+    height: 200px;
+    flex: 0 0 160px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    color: #94a3b8;
+    background: #fff;
+    font-size: 48px;
+  }
+  .staff-profile-photo-view img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #fff;
+  }
+  .staff-profile-identity { min-width: 0; }
+  .staff-profile-identity strong {
+    display: block;
+    color: #0f172a;
+    font-size: 18px;
+    margin-bottom: 5px;
+  }
+  .staff-profile-identity span {
+    display: block;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .staff-profile-photo-upload {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    color: #0f766e;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .staff-profile-photo-upload input {
+    max-width: 280px;
+    min-height: 34px !important;
+  }
+
+  @media (max-width: 760px) {
+    .users-tools { align-items: stretch; gap: 10px; }
+    .user-type-tabs { width: 100%; overflow-x: auto; }
+    .user-type-tabs button { flex: 1 0 max-content; }
+    .search-control { margin-left: auto; }
+    .users-table-wrap { max-height: none; }
+  }
+
+  /* ===============================
+     CLEAN COMPACT ADMIN TABLE
+  ================================== */
+  .users-top-scroll { display: none !important; }
+  .users-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 225px);
+    overflow: auto;
+    scrollbar-gutter: stable;
+    scrollbar-color: #64748b #e2e8f0;
+    scrollbar-width: auto;
+    border: 0;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .users-bottom-scroll {
+    position: sticky;
+    bottom: 0;
+    z-index: 12;
+    display: block;
+    width: 100%;
+    height: 18px;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    background: #e2e8f0;
+    border-top: 1px solid #cbd5e1;
+    border-radius: 0 0 10px 10px;
+    scrollbar-color: #475569 #e2e8f0;
+    scrollbar-width: auto;
+  }
+  .users-bottom-scroll > div { height: 1px; min-width: 1700px; }
+  .users-bottom-scroll::-webkit-scrollbar { height: 17px; }
+  .users-bottom-scroll::-webkit-scrollbar-track { background: #e2e8f0; }
+  .users-bottom-scroll::-webkit-scrollbar-thumb {
+    background: #475569;
+    border: 2px solid #e2e8f0;
+    border-radius: 999px;
+  }
+  .users-table-wrap::-webkit-scrollbar { height: 12px; }
+  .users-table-wrap::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 999px;
+  }
+  .users-table-wrap::-webkit-scrollbar-thumb {
+    background: #64748b;
+    border: 2px solid #e2e8f0;
+    border-radius: 999px;
+  }
+  table.users-table,
+  table.users-table.non-teaching-table {
+    width: 100%;
+    min-width: 1700px;
+    border-collapse: collapse;
+    table-layout: auto;
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+  table.users-table.non-teaching-table { min-width: 1450px; }
+  .users-table thead th {
+    position: relative;
+    top: auto;
+    z-index: auto;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    padding: 8px 25px 8px 10px;
+    background: #f8fafc !important;
+    color: #1e293b !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: left;
+    white-space: nowrap;
+    border: 0;
+    border-bottom: 2px solid #e5e7eb;
+    border-right: 1px solid #edf2f7;
+  }
+  .users-table thead th:last-child { border-right: 0; }
+  .users-table tbody td {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    padding: 8px 10px;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 13px;
+    color: #374151;
+    background: #fff;
+    border: 0;
+    border-bottom: 1px solid #edf2f7;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .users-table tbody tr:nth-child(odd) td { background: #fff; }
+  .users-table tbody tr:hover td { background: #f9fafb; }
+  .users-table th.action-column,
+  .users-table td.action-cell,
+  .users-table :is(.col-profile, .col-subclass, .col-privilege, .col-assignment, .col-deactivate, .col-reset) {
+    width: 130px;
+    min-width: 130px;
+    text-align: center !important;
+  }
+
+  /* ===============================
+     COMPACT TABLE BUTTONS
+  ================================== */
+  .users-table .legacy-action {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 32px !important;
+    padding: 6px 12px !important;
+    gap: 5px !important;
+    border: 0 !important;
+    border-radius: 7px !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    cursor: pointer;
+    transition: .25s ease !important;
+  }
+  .users-table .legacy-action:hover {
+    transform: translateY(-1px) !important;
+    opacity: .95;
+  }
+  .users-table .legacy-action.blue {
+    color: #fff !important;
+    background: #2563eb !important;
+  }
+  .users-table .legacy-action.link {
+    color: #fff !important;
+    background: #14b8a6 !important;
+  }
+  .users-table .legacy-action.orange {
+    color: #fff !important;
+    background: #f59e0b !important;
+  }
+  .users-table .legacy-action.red {
+    color: #fff !important;
+    background: #ef4444 !important;
+  }
+
+  @media (max-width: 992px) {
+    table.users-table,
+    table.users-table.non-teaching-table { min-width: 1200px; }
+    .users-table thead th,
+    .users-table tbody td {
+      padding-top: 7px;
+      padding-bottom: 7px;
+      font-size: 12px;
+    }
+    .users-table .legacy-action {
+      min-height: 30px !important;
+      padding: 6px 10px !important;
+      font-size: 11px !important;
+    }
+  }
+
+  /* Ultra Compact Widths: Phone Number onward */
+  .users-table :is(th, td).col-phone {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+  }
+  .users-table :is(th, td).col-school {
+    width: 220px !important;
+    min-width: 220px !important;
+    max-width: 220px !important;
+  }
+  .users-table :is(th, td).col-designation {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
+  .users-table :is(th, td).col-privilege {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+    text-align: center !important;
+  }
+  .users-table :is(th, td).col-assignment {
+    width: 135px !important;
+    min-width: 135px !important;
+    max-width: 135px !important;
+    text-align: center !important;
+  }
+  .users-table :is(th, td).col-deactivate,
+  .users-table :is(th, td).col-reset {
+    width: 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
+    text-align: center !important;
+  }
+  .users-table th:is(.col-privilege, .col-assignment, .col-deactivate, .col-reset) {
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 9.5px;
+  }
+  .users-table th:is(.col-privilege, .col-assignment, .col-deactivate, .col-reset) .sort {
+    display: none;
+  }
+  .users-table td:is(.col-privilege, .col-assignment, .col-deactivate, .col-reset) {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  .users-table td:is(.col-privilege, .col-assignment, .col-deactivate, .col-reset) .legacy-action {
+    max-width: 100% !important;
+    min-height: 28px !important;
+    padding: 5px 6px !important;
+    gap: 3px !important;
+    font-size: 10px !important;
+  }
+  .users-table .legacy-action,
+  .users-table .legacy-action.blue,
+  .users-table .legacy-action.link,
+  .users-table .legacy-action.orange,
+  .users-table .legacy-action.red {
+    color: #fff !important;
+    background: linear-gradient(135deg, #0f766e, #14b8a6) !important;
+    border: 1px solid #0f766e !important;
+  }
+  .users-table .legacy-action.deactivated-state,
+  .users-table .legacy-action.deactivated-state:disabled {
+    color: #fff !important;
+    background: #ef4444 !important;
+    border-color: #dc2626 !important;
+    opacity: 1 !important;
+    cursor: pointer !important;
+  }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="card card--pad-0 users-card">
+      <div class="users-tools">
+        <div class="entries-control">
+          <select class="select" id="entriesCount">
+            <option>100</option>
+            <option>50</option>
+            <option>25</option>
+            <option>10</option>
+          </select>
+          <span>entries per page</span>
+        </div>
+        <div class="user-type-tabs" id="userTypeTabs">
+          <button type="button" class="active" data-category="Teaching Staff"><i class="fas fa-chalkboard-user"></i> Teaching Staff</button>
+          <button type="button" data-category="Non-Teaching Staff"><i class="fas fa-user-tie"></i> Non-Teaching Staff</button>
+        </div>
+        <label class="search-control">Search:
+          <input class="input" id="search" />
+        </label>
+      </div>
+
+      <div class="users-table-wrap" id="usersTableWrap">
+        <table class="users-table" id="usersTable">
+          <thead>
+            <tr>
+              <th class="col-profile">Profile <span class="sort">▲<br>▼</span></th>
+              <th class="col-subclass">Subject/Class <span class="sort">▲<br>▼</span></th>
+              <th class="col-name">Staff Name <span class="sort">▲<br>▼</span></th>
+              <th class="col-email">Email ID <span class="sort">▲<br>▼</span></th>
+              <th class="col-phone">Phone No. <span class="sort">▲<br>▼</span></th>
+              <th class="col-school">School Name <span class="sort">▲<br>▼</span></th>
+              <th class="col-designation">Designation <span class="sort">▲<br>▼</span></th>
+              <th class="col-privilege">Privilege <span class="sort">▲<br>▼</span></th>
+              <th class="col-assignment">Subject/Class Assignment <span class="sort">▲<br>▼</span></th>
+              <th class="col-deactivate">Account Status <span class="sort">▲<br>▼</span></th>
+              <th class="col-reset">Password Reset <span class="sort">▲<br>▼</span></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="users-bottom-scroll" id="usersTopScroll" aria-label="Scroll staff table horizontally"><div id="usersTopScrollInner"></div></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="privilegeModal">
+  <div class="modal privilege-modal">
+    <div class="modal__head">
+      <h4>Assign privilege To User:</h4>
+      <button class="icon-btn" id="closePrivilege" type="button" aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal__body">
+      <div class="privilege-user" id="privilegeUser">Select a user to assign privileges.</div>
+      <div class="privilege-selectbar">
+        <button class="btn btn--sm btn--primary" type="button" id="selectAllPrivileges"><i class="fas fa-check-double"></i> Select All</button>
+        <button class="btn btn--sm" type="button" id="clearPrivileges"><i class="fas fa-eraser"></i> Clear</button>
+      </div>
+      <div id="privilegeTree"></div>
+      <div class="privilege-actions">
+        <button class="btn" type="button" id="cancelPrivilege">Cancel</button>
+        <button class="btn btn--primary" type="button" id="savePrivilege"><i class="fas fa-floppy-disk"></i> Save Privileges</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="editUserModal">
+  <div class="modal edit-modal">
+    <div class="modal__head">
+      <h4>View Staff Profile</h4>
+      <button class="icon-btn" id="closeEditUser" type="button" aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal__body">
+      <form id="editUserForm"></form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="subjectClassModal">
+  <div class="modal privilege-modal subject-class-modal">
+    <div class="modal__head">
+      <h4>Assign Class</h4>
+      <button class="icon-btn" id="closeSubjectClass" type="button" aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal__body">
+      <div class="privilege-user" id="subjectClassUser">Select a teaching staff member.</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:14px">
+        <div class="field"><label>Class</label><select class="select" id="assignClassSelect"></select></div>
+        <div class="field"><label>Subject</label><select class="select" id="assignSubjectSelect"></select></div>
+        <button class="btn btn--primary" type="button" id="addSubjectClass"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      <div class="table-wrap subject-assignment-scroll">
+        <table class="tbl" id="subjectClassTable">
+          <thead><tr><th>Class</th><th>Subject</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="subjectClassEmpty" style="display:none"><i class="fas fa-layer-group"></i>No class/subject assigned yet.</div>
+      <div class="privilege-actions">
+        <button class="btn" type="button" id="cancelSubjectClass">Cancel</button>
+        <button class="btn btn--primary" type="button" id="saveSubjectClass"><i class="fas fa-floppy-disk"></i> Save Assignment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="viewSubjectModal">
+  <div class="modal privilege-modal view-subject-modal">
+    <div class="modal__head">
+      <h4>Assigned Subjects</h4>
+      <button class="icon-btn" id="closeViewSubject" type="button" aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal__body">
+      <div class="privilege-user" id="viewSubjectUser">Select a teaching staff member.</div>
+      <div class="table-wrap subject-assignment-scroll">
+        <table class="tbl" id="viewSubjectTable">
+          <thead><tr><th>#</th><th>Class</th><th>Subject</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="viewSubjectEmpty" style="display:none"><i class="fas fa-layer-group"></i>No class or subject assigned to this teacher.</div>
+      <div class="privilege-actions"><button class="btn" type="button" id="closeViewSubjectFooter">Close</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script src="assets/staff-ranks.js"></script>
+<script>
+Portal.init({ active: 'AssignPrivilege' });
+
+var users = [];
+var demoUsers = [
+  ['ABEL SENYO AVUDZEGA', 'AABELSENYO@GMAIL.COM', '0248716574', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'AABELSENYO@GMAIL.COM', { full_name: 'ABEL SENYO AVUDZEGA', email: 'AABELSENYO@GMAIL.COM', phone: '0248716574', role: 'USR', status: 'Active' }],
+  ['DORCAS AKYERE BADER', 'abaakyeredorcas@gmail.com', '0558663906', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'abaakyeredorcas@gmail.com', { full_name: 'DORCAS AKYERE BADER', email: 'abaakyeredorcas@gmail.com', phone: '0558663906', role: 'USR', status: 'Active' }],
+  ['MARY ABRA ADAWUSO', 'ADAWUSOMARY@GMAIL.COM', '0546210167', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'ADAWUSOMARY@GMAIL.COM', { full_name: 'MARY ABRA ADAWUSO', email: 'ADAWUSOMARY@GMAIL.COM', phone: '0546210167', role: 'USR', status: 'Active' }],
+  ['PHILIP ADDO', 'ADDOPHILIP199@GMAIL.COM', '0541725956', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'ADDOPHILIP199@GMAIL.COM', { full_name: 'PHILIP ADDO', email: 'ADDOPHILIP199@GMAIL.COM', phone: '0541725956', role: 'USR', status: 'Active' }],
+  ['PAUL AFFUL', 'AFFULPAUL33@GMAIL.COM', '0543332467', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'AFFULPAUL33@GMAIL.COM', { full_name: 'PAUL AFFUL', email: 'AFFULPAUL33@GMAIL.COM', phone: '0543332467', role: 'USR', status: 'Active' }],
+  ['AGYEN GLEEN', 'AGYEN283@GMAIL.COM', '0548282629', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'AGYEN283@GMAIL.COM', { full_name: 'AGYEN GLEEN', email: 'AGYEN283@GMAIL.COM', phone: '0548282629', role: 'USR', status: 'Active' }]
+];
+
+var privilegeGroups = [
+  {
+    title: 'Web Pages',
+    items: [
+      ['student-transcript-portal', 'AXIOMBYTE SMS'],
+      ['registerstudent', 'Register Student'],
+      ['cass', 'Capture Assessment'],
+      ['studentperprogram', 'Manage Students'],
+      ['downloadresult', 'Assessment Records'],
+      ['qualitativeaccessment', 'Qualitative Assessment'],
+      ['transcript', 'Transcript'],
+      ['assessmentmonitor', 'School Monitor'],
+      ['mydocuments', 'My Documents']
+    ]
+  },
+  {
+    title: 'Settings',
+    items: [
+      ['settings', 'SETTINGS'],
+      ['schoolupdate', 'Update School Info'],
+      ['registeruser', 'Add User'],
+      ['AssignPrivilege', 'Manage Users'],
+      ['logintrace', 'Login Trace'],
+      ['departmentmanager', 'Add / Manage Departments'],
+      ['programmemanager', 'Add / Manage Programmes'],
+      ['classmanager', 'Add / Manage Classes']
+    ]
+  }
+];
+
+var activePrivilegeUser = null;
+var activeEditUser = null;
+var activeSubjectClassUser = null;
+var displayedUsers = users;
+var activeUserCategory = 'Teaching Staff';
+var assignmentClasses = [];
+
+var roleOptionsByCategory = {
+  'School Administrator': ['School Administrator'],
+  'Teaching Staff': ['Management Staff', 'House Staff', 'Teaching Staff'],
+  'Non-Teaching Staff': ['Non-Teaching Staff']
+};
+
+var managedDepartmentOptions = (function() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('axiom_departments') || '[]');
+    var legacy = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
+    if (Array.isArray(saved)) return saved.filter(function(item) { return legacy.indexOf(item.name || item) === -1; }).map(function(item) { return item.name || item; });
+  } catch (err) {}
+  return [];
+})();
+
+async function loadManagedDepartments() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listDepartments) return;
+  try {
+    var legacy = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
+    var rows = (await AxiomDB.listDepartments() || []).filter(function(item) { return legacy.indexOf(item.name) === -1; });
+    if (rows && rows.length) {
+      managedDepartmentOptions = rows.map(function(item) { return item.name; });
+      localStorage.setItem('axiom_departments', JSON.stringify(rows));
+    }
+  } catch (err) { console.error(err); }
+}
+
+var editSections = [
+  ['Personal Information', [
+    ['staff_name', 'Staff Name', 'text', true],
+    ['staff_id', 'Staff ID', 'text', true],
+    ['gender', 'Gender', 'select', false, ['', 'Male', 'Female']],
+    ['date_of_birth', 'Date of Birth', 'date'],
+    ['nationality', 'Nationality'],
+    ['marital_status', 'Marital Status', 'select', false, ['', 'Single', 'Married', 'Divorced', 'Widowed']],
+    ['profile_photo', 'Profile Photo'],
+    ['ghana_card_number', 'Ghana Card Number'],
+    ['social_security_number', 'Social Security Number (SSNIT)'],
+    ['ntc_number', 'NTC Number']
+  ]],
+  ['Employment Information', [
+    ['category', 'Category of User', 'select', true, ['', 'School Administrator', 'Teaching Staff', 'Non-Teaching Staff']],
+    ['role', 'Role', 'select', true, ['']],
+    ['first_appointment_date', 'First Appointment Date', 'date'],
+    ['date_posted_to_station', 'Date Posted To Station', 'date'],
+    ['rank', 'Rank', 'select', false, ['']],
+    ['date_placed_on_rank', 'Date Placed On Rank', 'date'],
+    ['employment_status', 'Employment Status', 'select', false, ['', 'Permanent', 'Contract', 'National Service', 'Temporary']],
+    ['trained_status', 'Trained Status (Teaching staff)', 'select', false, ['', 'Professional', 'Non-Professional']],
+    ['position_responsibility', 'Position / Responsibility', 'multiselect'],
+    ['department', 'Department (Teaching staff)', 'department-select'],
+    ['house_assigned', 'House Assigned']
+  ]],
+  ['Qualifications', [
+    ['professional_qualification', 'Professional Qualification'],
+    ['academic_qualification', 'Academic Qualification']
+  ]],
+  ['Contact Information', [
+    ['phone', 'Phone'],
+    ['alternate_phone', 'Alternate Phone'],
+    ['email', 'Email', 'email', true],
+    ['residential_address', 'Residential Address'],
+    ['digital_address', 'Digital Address'],
+    ['emergency_contact_name', 'Emergency Contact Name'],
+    ['emergency_contact_phone', 'Emergency Contact Phone'],
+    ['emergency_contact_relationship', 'Emergency Contact Relationship']
+  ]],
+  ['Bank & Payroll Information', [
+    ['bank_name', 'Bank Name'],
+    ['branch_name', 'Branch Name'],
+    ['account_number', 'Account Number'],
+    ['account_name', 'Account Name']
+  ]],
+  ['Account Access', [
+    ['username', 'Username', 'text', true],
+    ['account_password', 'Temporary Password'],
+    ['status', 'Status', 'select', false, ['Active', 'Suspended']]
+  ]]
+];
+
+function userRecord(user) {
+  var row = user && user[6] ? user[6] : {};
+  return {
+    id: user && user[5],
+    staff_name: row.staff_name || row.full_name || (user && user[0]) || '',
+    full_name: row.full_name || row.staff_name || (user && user[0]) || '',
+    staff_id: row.staff_id || '',
+    gender: row.gender || '',
+    date_of_birth: row.date_of_birth || '',
+    nationality: row.nationality || '',
+    marital_status: row.marital_status || '',
+    profile_photo: row.profile_photo || '',
+    ghana_card_number: row.ghana_card_number || '',
+    social_security_number: row.social_security_number || '',
+    ntc_number: row.ntc_number || '',
+    category: row.category || '',
+    role: row.role || (user && user[4]) || '',
+    first_appointment_date: row.first_appointment_date || '',
+    date_posted_to_station: row.date_posted_to_station || '',
+    rank: row.rank || '',
+    date_placed_on_rank: row.date_placed_on_rank || '',
+    employment_status: row.employment_status || '',
+    trained_status: row.trained_status || '',
+    position_responsibility: row.position_responsibility || '',
+    department: row.department || '',
+    house_assigned: row.house_assigned || '',
+    professional_qualification: row.professional_qualification || '',
+    academic_qualification: row.academic_qualification || '',
+    phone: row.phone || (user && user[2]) || '',
+    alternate_phone: row.alternate_phone || '',
+    email: row.email || (user && user[1]) || '',
+    residential_address: row.residential_address || '',
+    digital_address: row.digital_address || '',
+    emergency_contact_name: row.emergency_contact_name || '',
+    emergency_contact_phone: row.emergency_contact_phone || '',
+    emergency_contact_relationship: row.emergency_contact_relationship || '',
+    bank_name: row.bank_name || '',
+    branch_name: row.branch_name || '',
+    account_number: row.account_number || '',
+    account_name: row.account_name || '',
+    username: row.username || '',
+    account_password: row.account_password || '',
+    status: row.status || 'Active'
+  };
+}
+
+function editInput(field, record) {
+  var name = field[0], label = field[1], type = field[2] || 'text', required = field[3] ? ' required' : '';
+  var value = record[name] || '';
+  if (type === 'multiselect') {
+    return '<div class="field"><label>'+label+'</label><div class="multi-dropdown" id="edit_'+name+'_dropdown">'+
+      '<button class="multi-dropdown__trigger" id="edit_'+name+'_trigger" type="button" aria-expanded="false">Select positions...</button>'+
+      '<div class="multi-dropdown__panel" id="edit_'+name+'_panel"></div>'+
+      '<select class="edit-field" id="edit_'+name+'" data-name="'+name+'" multiple hidden aria-hidden="true"></select>'+
+    '</div></div>';
+  }
+  if (type === 'select') {
+    var options = (field[4] || ['']).map(function(option) {
+      var selected = String(option) === String(value) ? ' selected' : '';
+      var text = option || 'Select...';
+      return '<option value="'+option+'"'+selected+'>'+text+'</option>';
+    }).join('');
+    return '<div class="field"><label>'+label+(field[3] ? ' <span class="req">*</span>' : '')+'</label><select class="select edit-field" id="edit_'+name+'" data-name="'+name+'"'+required+'>'+options+'</select></div>';
+  }
+  if (type === 'department-select') {
+    var departmentOptions = managedDepartmentOptions.slice();
+    if (value && departmentOptions.indexOf(value) === -1) departmentOptions.unshift(value);
+    var departmentHtml = '<option value="">Select department...</option>' + departmentOptions.map(function(option) {
+      return '<option value="'+String(option).replace(/"/g, '&quot;')+'"'+(String(option) === String(value) ? ' selected' : '')+'>'+option+'</option>';
+    }).join('');
+    return '<div class="field"><label>'+label+'</label><select class="select edit-field" id="edit_'+name+'" data-name="'+name+'">'+departmentHtml+'</select></div>';
+  }
+  return '<div class="field"><label>'+label+(field[3] ? ' <span class="req">*</span>' : '')+'</label><input class="input edit-field" id="edit_'+name+'" data-name="'+name+'" type="'+type+'" value="'+String(value).replace(/"/g, '&quot;')+'"'+required+'></div>';
+}
+
+function syncEditRoleOptions() {
+  var category = document.getElementById('edit_category').value;
+  var roleSelect = document.getElementById('edit_role');
+  var currentRole = roleSelect.value;
+  var roles = roleOptionsByCategory[category] || [];
+  roleSelect.innerHTML = '<option value="">Select role...</option>' + roles.map(function(role) {
+    return '<option value="'+role+'">'+role+'</option>';
+  }).join('');
+  roleSelect.value = roles.indexOf(currentRole) > -1 ? currentRole : '';
+  var isTeaching = category === 'Teaching Staff';
+  document.getElementById('edit_trained_status').disabled = !isTeaching;
+  document.getElementById('edit_department').disabled = !isTeaching;
+  document.getElementById('edit_trained_status').required = isTeaching;
+  document.getElementById('edit_department').required = isTeaching;
+  if (!isTeaching) {
+    document.getElementById('edit_trained_status').value = '';
+    document.getElementById('edit_department').value = '';
+  }
+}
+
+function syncEditRankOptions(preferredRank) {
+  var category = document.getElementById('edit_category').value;
+  var rankSelect = document.getElementById('edit_rank');
+  var currentRank = preferredRank === undefined ? rankSelect.value : preferredRank;
+  var ranks = window.AxiomStaffRanks ? window.AxiomStaffRanks.forCategory(category) : [];
+  if (currentRank && ranks.indexOf(currentRank) === -1) ranks.unshift(currentRank);
+  rankSelect.innerHTML = '<option value="">'+(ranks.length ? 'Select rank...' : 'Select category first...')+'</option>' + ranks.map(function(rank) {
+    return '<option value="'+String(rank).replace(/"/g, '&quot;')+'">'+rank+'</option>';
+  }).join('');
+  rankSelect.value = currentRank && ranks.indexOf(currentRank) > -1 ? currentRank : '';
+}
+
+function syncEditPositionOptions(preferredPositions) {
+  var positionSelect = document.getElementById('edit_position_responsibility');
+  var selected = Array.isArray(preferredPositions)
+    ? preferredPositions
+    : String(preferredPositions || '').split(/\s*[;,]\s*/).filter(Boolean);
+  var positions = window.AxiomStaffRanks ? window.AxiomStaffRanks.positions.slice() : [];
+  selected.forEach(function(position) {
+    if (positions.indexOf(position) === -1) positions.unshift(position);
+  });
+  positionSelect.innerHTML = positions.map(function(position) {
+    return '<option value="'+String(position).replace(/"/g, '&quot;')+'"'+(selected.indexOf(position) > -1 ? ' selected' : '')+'>'+position+'</option>';
+  }).join('');
+  document.getElementById('edit_position_responsibility_panel').innerHTML = positions.map(function(position, index) {
+    return '<label class="multi-dropdown__option"><input type="checkbox" data-edit-position-index="'+index+'"'+(selected.indexOf(position) > -1 ? ' checked' : '')+'><span>'+position+'</span></label>';
+  }).join('');
+  updateEditPositionDropdownLabel();
+}
+
+function updateEditPositionDropdownLabel() {
+  var select = document.getElementById('edit_position_responsibility');
+  var selected = Array.from(select.selectedOptions).map(function(option) { return option.value; });
+  document.getElementById('edit_position_responsibility_trigger').textContent = !selected.length
+    ? 'Select positions...'
+    : (selected.length <= 2 ? selected.join(', ') : selected.length+' positions selected');
+}
+
+function bindEditPositionDropdown() {
+  var dropdown = document.getElementById('edit_position_responsibility_dropdown');
+  var trigger = document.getElementById('edit_position_responsibility_trigger');
+  var panel = document.getElementById('edit_position_responsibility_panel');
+  var select = document.getElementById('edit_position_responsibility');
+  trigger.addEventListener('click', function() {
+    if (this.disabled) return;
+    var open = dropdown.classList.toggle('open');
+    this.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  panel.addEventListener('change', function(e) {
+    if (!e.target.matches('input[data-edit-position-index]')) return;
+    var option = select.options[Number(e.target.dataset.editPositionIndex)];
+    if (option) option.selected = e.target.checked;
+    updateEditPositionDropdownLabel();
+  });
+}
+
+function syncEditHouseField() {
+  var role = document.getElementById('edit_role').value;
+  var house = document.getElementById('edit_house_assigned');
+  var isHouseStaff = role === 'House Staff';
+  house.disabled = !isHouseStaff;
+  house.required = isHouseStaff;
+  if (!isHouseStaff) house.value = '';
+}
+
+function staffProfilePhotoMarkup(record) {
+  var photo = String(record.profile_photo || '').trim();
+  var usablePhoto = /^(https?:\/\/|data:image\/|blob:)/i.test(photo);
+  var safePhoto = photo.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  var name = String(record.staff_name || record.full_name || 'Staff User');
+  var staffId = String(record.staff_id || 'No Staff ID');
+  var role = String(record.role || record.category || 'Staff');
+  return '<div class="staff-profile-hero">' +
+    '<div class="staff-profile-photo-view"><i class="fas fa-user"></i>' +
+      (usablePhoto ? '<img src="'+safePhoto+'" alt="'+name.replace(/"/g, '&quot;')+' profile photo" onerror="this.remove()">' : '') +
+    '</div>' +
+    '<div class="staff-profile-identity"><strong>'+name+'</strong><span>Staff ID: '+staffId+'</span><span>'+role+'</span>' +
+      '<label class="staff-profile-photo-upload" id="staffProfilePhotoUpload"><i class="fas fa-camera"></i> Change Photo <input class="input" id="editProfilePhotoFile" type="file" accept=".jpg,.jpeg,.png"></label>' +
+    '</div>' +
+  '</div>';
+}
+
+function openEditUserModal(user) {
+  activeEditUser = user;
+  var record = userRecord(user);
+  document.getElementById('editUserForm').innerHTML =
+  staffProfilePhotoMarkup(record) +
+  '<div class="profile-mode-note" id="profileModeNote"><i class="fas fa-lock"></i> Profile is read only. Click Edit Profile to make changes.</div>' +
+  editSections.map(function(section) {
+    return '<section class="edit-section"><h5>'+section[0]+'</h5><div class="edit-grid">' +
+      section[1].map(function(field) { return editInput(field, record); }).join('') +
+      '</div></section>';
+  }).join('') +
+  '<div class="edit-actions"><button class="btn" type="button" id="cancelEditUser">Close</button><button class="btn btn--primary" type="button" id="enableProfileEdit"><i class="fas fa-pen-to-square"></i> Edit Profile</button><button class="btn btn--success" type="submit" id="saveProfileEdit" style="display:none"><i class="fas fa-floppy-disk"></i> Save Changes</button></div>';
+  bindEditPositionDropdown();
+  document.getElementById('edit_category').addEventListener('change', function() { syncEditRoleOptions(); syncEditRankOptions(''); syncEditHouseField(); });
+  document.getElementById('edit_role').addEventListener('change', syncEditHouseField);
+  document.getElementById('cancelEditUser').addEventListener('click', closeEditUserModal);
+  document.getElementById('enableProfileEdit').addEventListener('click', function() { setProfileReadOnly(false); });
+  document.getElementById('editProfilePhotoFile').addEventListener('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+    var frame = document.querySelector('.staff-profile-photo-view');
+    var image = frame.querySelector('img');
+    if (!image) {
+      image = document.createElement('img');
+      image.alt = 'Staff profile photo preview';
+      frame.appendChild(image);
+    }
+    image.src = URL.createObjectURL(file);
+  });
+  syncEditRoleOptions();
+  syncEditRankOptions(record.rank);
+  syncEditPositionOptions(record.position_responsibility);
+  document.getElementById('edit_role').value = record.role || document.getElementById('edit_role').value;
+  syncEditHouseField();
+  setProfileReadOnly(true);
+  document.getElementById('editUserModal').classList.add('show');
+}
+
+function setProfileReadOnly(isReadOnly) {
+  document.querySelectorAll('#editUserForm .edit-field').forEach(function(input) {
+    input.disabled = isReadOnly;
+  });
+  document.querySelectorAll('#editUserForm .multi-dropdown__trigger, #editUserForm .multi-dropdown__option input').forEach(function(input) {
+    input.disabled = isReadOnly;
+  });
+  if (isReadOnly) {
+    var positionDropdown = document.getElementById('edit_position_responsibility_dropdown');
+    if (positionDropdown) positionDropdown.classList.remove('open');
+  }
+  var editBtn = document.getElementById('enableProfileEdit');
+  var saveBtn = document.getElementById('saveProfileEdit');
+  var note = document.getElementById('profileModeNote');
+  var photoUpload = document.getElementById('staffProfilePhotoUpload');
+  var photoInput = document.getElementById('editProfilePhotoFile');
+  if (editBtn) editBtn.style.display = isReadOnly ? '' : 'none';
+  if (saveBtn) saveBtn.style.display = isReadOnly ? 'none' : '';
+  if (photoUpload) photoUpload.style.display = isReadOnly ? 'none' : 'flex';
+  if (photoInput) photoInput.disabled = isReadOnly;
+  if (note) note.innerHTML = isReadOnly
+    ? '<i class="fas fa-lock"></i> Profile is read only. Click Edit Profile to make changes.'
+    : '<i class="fas fa-unlock"></i> Editing is enabled. Save Changes will update this staff profile.';
+  if (!isReadOnly) {
+    syncEditRoleOptions();
+    syncEditHouseField();
+  }
+}
+
+function closeEditUserModal() {
+  document.getElementById('editUserModal').classList.remove('show');
+  activeEditUser = null;
+}
+
+function editPayload() {
+  var payload = {};
+  document.querySelectorAll('#editUserForm .edit-field').forEach(function(input) {
+    payload[input.dataset.name] = input.multiple
+      ? Array.from(input.selectedOptions).map(function(option) { return option.value; }).join('; ')
+      : input.value.trim();
+  });
+  payload.full_name = payload.staff_name;
+  payload.trained_status = payload.category === 'Teaching Staff' ? payload.trained_status : '';
+  payload.department = payload.category === 'Teaching Staff' ? payload.department : '';
+  payload.house_assigned = payload.role === 'House Staff' ? payload.house_assigned : '';
+  ['date_of_birth', 'first_appointment_date', 'date_posted_to_station', 'date_placed_on_rank'].forEach(function(key) {
+    if (!payload[key]) payload[key] = null;
+  });
+  return payload;
+}
+
+function storageKey(userId) {
+  return 'axiom_privileges_' + userId;
+}
+
+function localPrivileges(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey(userId)) || '[]');
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveLocalPrivileges(userId, keys) {
+  localStorage.setItem(storageKey(userId), JSON.stringify(keys));
+}
+
+function assignmentKey(userId) {
+  return 'axiom_subject_classes_' + userId;
+}
+
+function localAssignments(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(assignmentKey(userId)) || '[]');
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveLocalAssignments(userId, assignments) {
+  localStorage.setItem(assignmentKey(userId), JSON.stringify(assignments));
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
+}
+
+function renderPrivilegeTree(selectedKeys) {
+  selectedKeys = selectedKeys || [];
+  document.getElementById('privilegeTree').innerHTML =
+    '<div class="privilege-groups">' +
+    privilegeGroups.map(function(group) {
+      return '<section class="privilege-group">' +
+        '<h5>'+group.title+'</h5>' +
+        '<div class="privilege-list">' +
+        group.items.map(function(item) {
+          var checked = selectedKeys.indexOf(item[0]) > -1 ? ' checked' : '';
+          return '<label class="privilege-check">' +
+            '<input type="checkbox" value="'+item[0]+'"'+checked+' />' +
+            '<span>'+item[1]+'</span>' +
+          '</label>';
+        }).join('') +
+        '</div>' +
+      '</section>';
+    }).join('') +
+    '</div>';
+}
+
+async function openPrivilegeModal(user) {
+  activePrivilegeUser = user;
+  document.getElementById('privilegeUser').innerHTML =
+    '<strong>'+user[0]+'</strong><br>Email ID: '+user[1]+'<br>Designation: '+user[4];
+
+  var selected = localPrivileges(user[5]);
+  if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(user[5]) && AxiomDB.listUserPrivileges) {
+    try {
+      var saved = await AxiomDB.listUserPrivileges(user[5]);
+      if (saved) selected = saved;
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load Supabase privileges. Showing saved local privileges.', true);
+    }
+  }
+  renderPrivilegeTree(selected);
+  document.getElementById('privilegeModal').classList.add('show');
+}
+
+function closePrivilegeModal() {
+  document.getElementById('privilegeModal').classList.remove('show');
+  activePrivilegeUser = null;
+}
+
+async function loadAssignmentClasses() {
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listClasses) {
+    try {
+      var dbClasses = await AxiomDB.listClasses();
+      if (dbClasses && dbClasses.length) {
+        assignmentClasses = dbClasses;
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load classes from Supabase. Showing local class setup.', true);
+    }
+  }
+  try { assignmentClasses = JSON.parse(localStorage.getItem('axiom_classes') || '[]'); } catch (e) { assignmentClasses = []; }
+}
+
+function assignmentId(item) {
+  return item.classId + '|' + item.subjectId;
+}
+
+var activeAssignments = [];
+
+function subjectLinksForClass(cls) {
+  return cls.subjectLinks || (cls.subjects || []).map(function(name) {
+    return { id: (cls.id || cls.name) + ':' + name, name: name };
+  });
+}
+
+function populateAssignClassSelect() {
+  var select = document.getElementById('assignClassSelect');
+  select.innerHTML = '<option value="">Select class...</option>';
+  assignmentClasses.forEach(function(cls) {
+    var option = document.createElement('option');
+    option.value = cls.id || cls.name;
+    option.textContent = cls.name + (cls.programme ? ' (' + cls.programme + ')' : '');
+    select.appendChild(option);
+  });
+  populateAssignSubjectSelect();
+}
+
+function populateAssignSubjectSelect() {
+  var classId = document.getElementById('assignClassSelect').value;
+  var cls = assignmentClasses.find(function(item) { return String(item.id || item.name) === String(classId); });
+  var select = document.getElementById('assignSubjectSelect');
+  select.innerHTML = '<option value="">Select subject...</option>';
+  if (!cls) return;
+  subjectLinksForClass(cls).forEach(function(subject) {
+    var option = document.createElement('option');
+    option.value = subject.id || subject.name;
+    option.textContent = subject.name;
+    option.dataset.name = subject.name;
+    select.appendChild(option);
+  });
+}
+
+function renderSubjectClassAssignments() {
+  var body = document.querySelector('#subjectClassTable tbody');
+  body.innerHTML = activeAssignments.map(function(item, index) {
+    return '<tr><td style="font-weight:700">'+item.className+'</td><td>'+item.subjectName+'</td><td><button class="btn btn--danger btn--sm" type="button" data-remove-assignment="'+index+'"><i class="fas fa-trash"></i></button></td></tr>';
+  }).join('');
+  document.getElementById('subjectClassEmpty').style.display = activeAssignments.length ? 'none' : 'block';
+}
+
+async function subjectAssignmentsForUser(user) {
+  var assignments = localAssignments(user[5]);
+  if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(user[5]) && AxiomDB.listStaffSubjectClasses) {
+    var saved = await AxiomDB.listStaffSubjectClasses(user[5]);
+    if (saved) assignments = saved;
+  }
+  return assignments;
+}
+
+async function openSubjectClassModal(user) {
+  activeSubjectClassUser = user;
+  document.getElementById('subjectClassUser').innerHTML =
+    '<strong>'+user[0]+'</strong><br>Email ID: '+user[1]+'<br>Designation: '+user[4];
+  await loadAssignmentClasses();
+  try {
+    activeAssignments = await subjectAssignmentsForUser(user);
+  } catch (err) {
+    console.error(err);
+    activeAssignments = localAssignments(user[5]);
+    Portal.toast('Could not load saved assignments. Showing local assignments.', true);
+  }
+  populateAssignClassSelect();
+  renderSubjectClassAssignments();
+  document.getElementById('subjectClassModal').classList.add('show');
+}
+
+async function openViewSubjectModal(user) {
+  var modal = document.getElementById('viewSubjectModal');
+  var body = document.querySelector('#viewSubjectTable tbody');
+  document.getElementById('viewSubjectUser').innerHTML =
+    '<strong>'+user[0]+'</strong><br>Email ID: '+user[1]+'<br>Designation: '+user[4];
+  body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:22px">Loading assigned subjects...</td></tr>';
+  document.getElementById('viewSubjectEmpty').style.display = 'none';
+  modal.classList.add('show');
+  var assignments;
+  try {
+    assignments = await subjectAssignmentsForUser(user);
+  } catch (err) {
+    console.error(err);
+    assignments = localAssignments(user[5]);
+    Portal.toast('Could not load online assignments. Showing local assignments.', true);
+  }
+  assignments.sort(function(a, b) {
+    return String(a.className).localeCompare(String(b.className)) || String(a.subjectName).localeCompare(String(b.subjectName));
+  });
+  body.innerHTML = assignments.map(function(item, index) {
+    return '<tr><td>'+(index + 1)+'</td><td style="font-weight:700">'+item.className+'</td><td>'+item.subjectName+'</td></tr>';
+  }).join('');
+  document.getElementById('viewSubjectEmpty').style.display = assignments.length ? 'none' : 'block';
+}
+
+function closeViewSubjectModal() {
+  document.getElementById('viewSubjectModal').classList.remove('show');
+}
+
+function closeSubjectClassModal() {
+  document.getElementById('subjectClassModal').classList.remove('show');
+  activeSubjectClassUser = null;
+}
+
+function selectedSubjectClassAssignments() {
+  return activeAssignments.slice();
+}
+
+async function saveActiveSubjectClasses() {
+  if (!activeSubjectClassUser) return;
+  var assignments = selectedSubjectClassAssignments();
+  saveLocalAssignments(activeSubjectClassUser[5], assignments);
+  if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(activeSubjectClassUser[5]) && AxiomDB.saveStaffSubjectClasses) {
+    try {
+      await AxiomDB.saveStaffSubjectClasses(activeSubjectClassUser[5], assignments);
+      Portal.toast('Class/subject assignment saved for ' + activeSubjectClassUser[0] + '.');
+      closeSubjectClassModal();
+      return;
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Assignment saved locally. Run the staff_subject_classes SQL to save online.', true);
+      return;
+    }
+  }
+  Portal.toast('Class/subject assignment saved locally for ' + activeSubjectClassUser[0] + '.');
+  closeSubjectClassModal();
+}
+
+function selectedPrivilegeKeys() {
+  return Array.from(document.querySelectorAll('#privilegeTree input[type="checkbox"]:checked')).map(function(input) {
+    return input.value;
+  });
+}
+
+async function saveActivePrivileges() {
+  if (!activePrivilegeUser) return;
+  var keys = selectedPrivilegeKeys();
+  saveLocalPrivileges(activePrivilegeUser[5], keys);
+
+  if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(activePrivilegeUser[5]) && AxiomDB.saveUserPrivileges) {
+    try {
+      await AxiomDB.saveUserPrivileges(activePrivilegeUser[5], keys);
+      Portal.toast('Privileges saved for ' + activePrivilegeUser[0] + '.');
+      closePrivilegeModal();
+      return;
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Saved locally. Run the user_privileges SQL to save to Supabase.', true);
+      return;
+    }
+  }
+
+  Portal.toast('Privileges saved locally for ' + activePrivilegeUser[0] + '.');
+  closePrivilegeModal();
+}
+
+function userCategory(user) {
+  return (user && user[6] && user[6].category) || 'Teaching Staff';
+}
+
+function actionHeader(columnClass, label) {
+  return '<th class="'+columnClass+'">'+label+' <span class="sort">&#9650;<br>&#9660;</span></th>';
+}
+
+function syncUsersTableScrollWidth() {
+  var table = document.getElementById('usersTable');
+  var inner = document.getElementById('usersTopScrollInner');
+  if (table && inner) inner.style.width = table.scrollWidth + 'px';
+}
+
+function renderUsersHeader() {
+  var isTeaching = activeUserCategory === 'Teaching Staff';
+  var table = document.getElementById('usersTable');
+  table.classList.toggle('teaching-table', isTeaching);
+  table.classList.toggle('non-teaching-table', !isTeaching);
+  document.querySelector('#usersTable thead tr').innerHTML = [
+    actionHeader('col-profile', 'Profile'),
+    isTeaching ? actionHeader('col-subclass', 'View Subject') : '',
+    '<th class="col-name">Staff Name <span class="sort">&#9650;<br>&#9660;</span></th>',
+    '<th class="col-email">Email ID <span class="sort">&#9650;<br>&#9660;</span></th>',
+    '<th class="col-phone">Phone No. <span class="sort">&#9650;<br>&#9660;</span></th>',
+    '<th class="col-school">School Name <span class="sort">&#9650;<br>&#9660;</span></th>',
+    '<th class="col-designation">Designation <span class="sort">&#9650;<br>&#9660;</span></th>',
+    actionHeader('col-privilege', 'Privilege'),
+    isTeaching ? actionHeader('col-assignment', 'Subject/Class Assignment') : '',
+    actionHeader('col-deactivate', 'Account Status'),
+    actionHeader('col-reset', 'Password Reset')
+  ].filter(Boolean).join('');
+}
+
+function renderUsers(data, message) {
+  renderUsersHeader();
+  displayedUsers = data;
+  if (!data.length) {
+    document.querySelector('#usersTable tbody').innerHTML = '<tr><td colspan="'+(activeUserCategory === 'Teaching Staff' ? 11 : 9)+'" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No users found.')+'</td></tr>';
+    requestAnimationFrame(syncUsersTableScrollWidth);
+    return;
+  }
+  document.querySelector('#usersTable tbody').innerHTML = data.map(function(user, idx) {
+    var isTeaching = userCategory(user) === 'Teaching Staff';
+    var isSuspended = String((user[6] && user[6].status) || '').toLowerCase() === 'suspended';
+    return '<tr>'+
+      '<td class="action-cell col-profile"><button class="legacy-action blue" data-act="ViewProfile" data-i="'+idx+'"><i class="fas fa-id-card"></i>View Profile</button></td>'+
+      (isTeaching ? '<td class="action-cell col-subclass"><button class="legacy-action link" data-act="ViewSubClass" data-i="'+idx+'"><i class="fas fa-eye"></i>View Subject</button></td>' : '')+
+      '<td class="col-name">'+user[0]+'</td>'+
+      '<td class="col-email">'+user[1]+'</td>'+
+      '<td class="col-phone">'+user[2]+'</td>'+
+      '<td class="col-school">'+user[3]+'</td>'+
+      '<td class="col-designation">'+user[4]+'</td>'+
+      '<td class="action-cell col-privilege"><button class="legacy-action blue" data-act="AssignPrivilege" data-i="'+idx+'"><i class="fas fa-check"></i>Assign Privilege</button></td>'+
+      (isTeaching ? '<td class="action-cell col-assignment"><button class="legacy-action orange" data-act="AssignSubjtClass" data-i="'+idx+'"><i class="fas fa-pen-to-square"></i>Assign Class/Subject</button></td>' : '')+
+      '<td class="action-cell col-deactivate"><button class="legacy-action '+(isSuspended ? 'deactivated-state' : 'red')+'" data-act="Deactivate" data-i="'+idx+'"><i class="fas '+(isSuspended ? 'fa-rotate-left' : 'fa-xmark')+'"></i>'+(isSuspended ? 'Reactivate' : 'Deactivate')+'</button></td>'+
+      '<td class="action-cell col-reset"><button class="legacy-action red" data-act="Reset" data-i="'+idx+'"><i class="fas fa-key"></i>Reset Password</button></td>'+
+    '</tr>';
+  }).join('');
+  requestAnimationFrame(syncUsersTableScrollWidth);
+}
+
+function mapStaffUser(row) {
+  return [row.full_name || row.staff_name || '', row.email || '', row.phone || '', 'ASUOM SENIOR HIGH SCHOOL', row.role || 'USR', row.id || row.email || row.staff_id || '', row];
+}
+
+function loadLocalUsers() {
+  try {
+    return JSON.parse(localStorage.getItem('axiom_local_staff_users') || '[]').map(mapStaffUser);
+  } catch (e) {
+    return [];
+  }
+}
+
+function persistLocalUserStatus(user, status) {
+  try {
+    var rows = JSON.parse(localStorage.getItem('axiom_local_staff_users') || '[]');
+    var userId = String((user && user[5]) || '').trim().toLowerCase();
+    var email = String((user && user[1]) || '').trim().toLowerCase();
+    var changed = false;
+    rows.forEach(function(row) {
+      var rowId = String(row.id || row.staff_id || row.email || '').trim().toLowerCase();
+      var rowEmail = String(row.email || '').trim().toLowerCase();
+      if ((userId && rowId === userId) || (email && rowEmail === email)) {
+        row.status = status;
+        changed = true;
+      }
+    });
+    if (changed) localStorage.setItem('axiom_local_staff_users', JSON.stringify(rows));
+  } catch (e) {
+    console.warn('Could not save local staff status.', e);
+  }
+}
+
+async function saveEditUser(e) {
+  e.preventDefault();
+  if (!activeEditUser) return;
+  var payload = editPayload();
+  var photoInput = document.getElementById('editProfilePhotoFile');
+  var photoFile = photoInput && photoInput.files ? photoInput.files[0] : null;
+  try {
+    if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(activeEditUser[5]) && AxiomDB.updateStaffUser) {
+      var saved = await AxiomDB.updateStaffUser(activeEditUser[5], payload);
+      if (photoFile && AxiomDB.uploadStaffProfilePhoto) {
+        saved.profile_photo = await AxiomDB.uploadStaffProfilePhoto(activeEditUser[5], photoFile);
+      }
+      activeEditUser[0] = saved.full_name || saved.staff_name;
+      activeEditUser[1] = saved.email || '';
+      activeEditUser[2] = saved.phone || '';
+      activeEditUser[4] = saved.role || '';
+      activeEditUser[6] = saved;
+    } else {
+      if (photoFile) payload.profile_photo = await new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = function() { reject(new Error('Could not read the selected profile photo.')); };
+        reader.readAsDataURL(photoFile);
+      });
+      activeEditUser[0] = payload.full_name;
+      activeEditUser[1] = payload.email;
+      activeEditUser[2] = payload.phone;
+      activeEditUser[4] = payload.role;
+      activeEditUser[6] = Object.assign(activeEditUser[6] || {}, payload);
+      var localUsers = JSON.parse(localStorage.getItem('axiom_local_staff_users') || '[]');
+      var i = localUsers.findIndex(function(row) { return row.id === activeEditUser[5] || row.email === activeEditUser[1]; });
+      if (i > -1) {
+        localUsers[i] = Object.assign(localUsers[i], payload);
+        localStorage.setItem('axiom_local_staff_users', JSON.stringify(localUsers));
+      }
+    }
+    filterUsers();
+    closeEditUserModal();
+    Portal.toast('Staff information updated.');
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not update staff: ' + (err.message || 'Unknown error'), true);
+  }
+}
+
+async function loadUsersFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) {
+    users = loadLocalUsers();
+    if (!users.length) users = demoUsers.slice();
+    filterUsers();
+    return;
+  }
+  try {
+    var staff = await AxiomDB.listStaff();
+    if (staff && staff.length) {
+      users = staff.map(mapStaffUser);
+    } else {
+      users = [];
+    }
+    filterUsers();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load users from Supabase: ' + (err.message || 'Unknown error'), true);
+    users = loadLocalUsers();
+    filterUsers();
+  }
+}
+
+function filterUsers() {
+  var q = document.getElementById('search').value.toLowerCase();
+  var filtered = users.filter(function(user) {
+    var matchesCategory = userCategory(user) === activeUserCategory;
+    var matchesSearch = !q || user.join(' ').toLowerCase().indexOf(q) > -1;
+    return matchesCategory && matchesSearch;
+  });
+  renderUsers(filtered);
+}
+
+function setUserCategory(category) {
+  activeUserCategory = category;
+  document.querySelectorAll('#userTypeTabs button').forEach(function(button) {
+    button.classList.toggle('active', button.dataset.category === category);
+  });
+  filterUsers();
+}
+
+renderUsers([], 'Loading users...');
+loadManagedDepartments();
+loadUsersFromSupabase();
+
+document.getElementById('search').addEventListener('input', filterUsers);
+document.getElementById('usersTopScroll').addEventListener('scroll', function() {
+  document.getElementById('usersTableWrap').scrollLeft = this.scrollLeft;
+});
+document.getElementById('usersTableWrap').addEventListener('scroll', function() {
+  document.getElementById('usersTopScroll').scrollLeft = this.scrollLeft;
+});
+window.addEventListener('resize', syncUsersTableScrollWidth);
+document.getElementById('userTypeTabs').addEventListener('click', function(e) {
+  var button = e.target.closest('button[data-category]');
+  if (!button) return;
+  setUserCategory(button.dataset.category);
+});
+document.getElementById('usersTable').addEventListener('click', function(e) {
+  var b = e.target.closest('button[data-act]');
+  if (!b) return;
+  var user = displayedUsers[Number(b.dataset.i)];
+  var name = user ? user[0] : b.closest('tr').children[2].textContent.trim();
+  if (b.dataset.act === 'ViewProfile' && user) {
+    openEditUserModal(user);
+    return;
+  }
+  if (b.dataset.act === 'AssignPrivilege' && user) {
+    openPrivilegeModal(user);
+    return;
+  }
+  if (b.dataset.act === 'AssignSubjtClass' && user) {
+    openSubjectClassModal(user);
+    return;
+  }
+  if (b.dataset.act === 'ViewSubClass' && user) {
+    openViewSubjectModal(user);
+    return;
+  }
+  if (b.dataset.act === 'Deactivate') {
+    var isSuspended = String((user[6] && user[6].status) || '').toLowerCase() === 'suspended';
+    var nextStatus = isSuspended ? 'Active' : 'Suspended';
+    var actionLabel = isSuspended ? 'Reactivate' : 'Deactivate';
+    if (!confirm(actionLabel+' '+name+'?')) return;
+    async function updateAccountStatus() {
+      if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(user[5]) && AxiomDB.updateStaffUser) {
+        var saved = await AxiomDB.updateStaffUser(user[5], { status: nextStatus });
+        user[6] = saved;
+      } else {
+        user[6] = Object.assign(user[6] || {}, { status: nextStatus });
+      }
+      persistLocalUserStatus(user, nextStatus);
+      filterUsers();
+      Portal.toast(name + (nextStatus === 'Active' ? ' reactivated.' : ' deactivated.'));
+    }
+    updateAccountStatus().catch(function(err) {
+      console.error(err);
+      Portal.toast('Could not update account status: ' + (err.message || 'Unknown error'), true);
+    });
+    return;
+  }
+  if (b.dataset.act === 'Reset') {
+    var newPassword = prompt('Enter new temporary password for '+name+':');
+    if (!newPassword) return;
+    async function resetPassword() {
+      if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(user[5]) && AxiomDB.updateStaffUser) {
+        var saved = await AxiomDB.updateStaffUser(user[5], { account_password: newPassword, must_change_password: true });
+        user[6] = saved;
+      } else {
+        user[6] = Object.assign(user[6] || {}, { account_password: newPassword, must_change_password: true });
+      }
+      Portal.toast('Temporary password reset for ' + name + '.');
+    }
+    resetPassword().catch(function(err) {
+      console.error(err);
+      Portal.toast('Could not reset password: ' + (err.message || 'Unknown error'), true);
+    });
+    return;
+  }
+  Portal.toast(b.dataset.act + ' - ' + name);
+});
+
+document.getElementById('closePrivilege').addEventListener('click', closePrivilegeModal);
+document.getElementById('cancelPrivilege').addEventListener('click', closePrivilegeModal);
+document.getElementById('privilegeModal').addEventListener('click', function(e) {
+  if (e.target.id === 'privilegeModal') closePrivilegeModal();
+});
+document.getElementById('selectAllPrivileges').addEventListener('click', function() {
+  document.querySelectorAll('#privilegeTree input[type="checkbox"]').forEach(function(input) { input.checked = true; });
+});
+document.getElementById('clearPrivileges').addEventListener('click', function() {
+  document.querySelectorAll('#privilegeTree input[type="checkbox"]').forEach(function(input) { input.checked = false; });
+});
+document.getElementById('savePrivilege').addEventListener('click', saveActivePrivileges);
+document.getElementById('closeEditUser').addEventListener('click', closeEditUserModal);
+document.getElementById('closeSubjectClass').addEventListener('click', closeSubjectClassModal);
+document.getElementById('cancelSubjectClass').addEventListener('click', closeSubjectClassModal);
+document.getElementById('closeViewSubject').addEventListener('click', closeViewSubjectModal);
+document.getElementById('closeViewSubjectFooter').addEventListener('click', closeViewSubjectModal);
+document.getElementById('viewSubjectModal').addEventListener('click', function(e) {
+  if (e.target.id === 'viewSubjectModal') closeViewSubjectModal();
+});
+document.getElementById('subjectClassModal').addEventListener('click', function(e) {
+  if (e.target.id === 'subjectClassModal') closeSubjectClassModal();
+  var remove = e.target.closest('button[data-remove-assignment]');
+  if (remove) {
+    activeAssignments.splice(Number(remove.dataset.removeAssignment), 1);
+    renderSubjectClassAssignments();
+  }
+});
+document.getElementById('assignClassSelect').addEventListener('change', populateAssignSubjectSelect);
+document.getElementById('addSubjectClass').addEventListener('click', function() {
+  var classSelect = document.getElementById('assignClassSelect');
+  var subjectSelect = document.getElementById('assignSubjectSelect');
+  if (!classSelect.value || !subjectSelect.value) {
+    Portal.toast('Select class and subject first.', true);
+    return;
+  }
+  var cls = assignmentClasses.find(function(item) { return String(item.id || item.name) === String(classSelect.value); });
+  var subjectName = subjectSelect.options[subjectSelect.selectedIndex].dataset.name || subjectSelect.options[subjectSelect.selectedIndex].textContent;
+  var assignment = {
+    classId: classSelect.value,
+    className: cls ? cls.name : classSelect.options[classSelect.selectedIndex].textContent,
+    subjectId: subjectSelect.value,
+    subjectName: subjectName
+  };
+  if (activeAssignments.some(function(item) { return assignmentId(item) === assignmentId(assignment); })) {
+    Portal.toast('This class and subject is already assigned.', true);
+    return;
+  }
+  activeAssignments.push(assignment);
+  renderSubjectClassAssignments();
+});
+document.getElementById('saveSubjectClass').addEventListener('click', saveActiveSubjectClasses);
+document.getElementById('editUserModal').addEventListener('click', function(e) {
+  if (e.target.id === 'editUserModal') closeEditUserModal();
+  var dropdown = document.getElementById('edit_position_responsibility_dropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    dropdown.classList.remove('open');
+    var trigger = document.getElementById('edit_position_responsibility_trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  }
+});
+document.getElementById('editUserForm').addEventListener('submit', saveEditUser);
+</script>
+</body>
+</html>
+

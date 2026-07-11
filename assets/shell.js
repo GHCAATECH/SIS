@@ -1,0 +1,350 @@
+/* =========================================================
+   AXIOMBYTE SMS — shared shell + helpers
+   Usage on each page:
+     <script src="assets/shell.js"></script>
+     <script>Portal.init({ active: 'cass' });</script>
+   ========================================================= */
+(function (w) {
+  'use strict';
+
+  var SCHOOL = { code: '0021101', name: 'ASUOM SENIOR HIGH SCHOOL', user: 'Admin' };
+
+  // Single source of truth for navigation (key = filename without .html)
+  var NAV = [
+    {
+      title: 'AXIOMBYTE SMS',
+      items: [
+        { key: 'dashboard',             label: 'Dashboard',              icon: 'fa-gauge-high' },
+        { key: 'registerstudent',       label: 'Register Student',       icon: 'fa-user-plus' },
+        { key: 'cass',                   label: 'Capture Assessment',     icon: 'fa-clipboard-check' },
+        { key: 'schemeofwork',           label: 'Scheme of Work',         icon: 'fa-book-open-reader' },
+        { key: 'clearance',              label: 'Clearance',              icon: 'fa-clipboard-list' },
+        { key: 'studentperprogram',      label: 'Manage Students',        icon: 'fa-users' },
+        { key: 'downloadresult',         label: 'Assessment Records',     icon: 'fa-folder-open' },
+        { key: 'qualitativeaccessment',  label: 'Qualitative Assessment', icon: 'fa-star-half-stroke' },
+        { key: 'transcript',             label: 'Transcript',             icon: 'fa-file-lines' },
+        { key: 'assessmentmonitor',      label: 'School Monitor',         icon: 'fa-chart-line' },
+        { key: 'mydocuments',            label: 'My Documents',           icon: 'fa-file-shield' }
+      ]
+    },
+    {
+      title: 'Settings',
+      items: [
+        { key: 'schoolupdate',    label: 'Update School Info',   icon: 'fa-school' },
+        { key: 'registeruser',    label: 'Add User',             icon: 'fa-user-gear' },
+        { key: 'AssignPrivilege', label: 'Manage Users',         icon: 'fa-users-gear' },
+        { key: 'logintrace',      label: 'Login Trace',          icon: 'fa-shoe-prints' },
+        { key: 'documentmanager', label: 'Document Uploads',     icon: 'fa-file-arrow-up' },
+        { key: 'departmentmanager', label: 'Add / Manage Departments', icon: 'fa-building' },
+        { key: 'programmemanager', label: 'Add / Manage Programmes', icon: 'fa-book-open' },
+        { key: 'subjectmanager',  label: 'Add / Manage Subjects', icon: 'fa-book' },
+        { key: 'classmanager',    label: 'Add / Manage Classes', icon: 'fa-layer-group' },
+        { key: 'housemanager',    label: 'Add / Manage Houses',  icon: 'fa-house-user' }
+      ]
+    }
+  ];
+
+  function el(html) { var d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+
+  function currentUser() {
+    try { return JSON.parse(localStorage.getItem('axiom_current_user') || 'null'); }
+    catch (e) { return null; }
+  }
+
+  function setSidebarCollapsed(collapsed) {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    try {
+      if (collapsed) localStorage.setItem('axiom_sidebar_collapsed', '1');
+      else localStorage.removeItem('axiom_sidebar_collapsed');
+    } catch (e) {}
+  }
+
+  function savedSidebarCollapsed() {
+    try { return localStorage.getItem('axiom_sidebar_collapsed') === '1'; }
+    catch (e) { return false; }
+  }
+
+  function allowedNav() {
+    var user = currentUser();
+    if (user && user.isSuperAdmin) {
+      return NAV.map(function (group, index) {
+        var items = group.items.slice();
+        if (index === 0 && !items.some(function(item) { return item.key === 'superadmin'; })) {
+          items.unshift({ key: 'superadmin', label: 'Super Admin', icon: 'fa-user-shield' });
+        }
+        return { title: group.title, items: items };
+      });
+    }
+    if (user && user.type === 'student') {
+      return [{
+        title: 'Student Portal',
+        items: [
+          { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+          { key: 'mydocuments', label: 'My Documents', icon: 'fa-file-shield' },
+          { key: 'transcript', label: 'Transcript', icon: 'fa-file-lines' },
+          { key: 'clearance', label: 'Clearance', icon: 'fa-clipboard-list' }
+        ]
+      }];
+    }
+    if (!user) {
+      return NAV.map(function (group) {
+        return {
+          title: group.title,
+          items: group.items.filter(function (item) { return item.key !== 'schemeofwork'; })
+        };
+      });
+    }
+    if (user.isAdmin) {
+      return NAV.map(function (group) {
+        return {
+          title: group.title,
+          items: group.items.filter(function (item) {
+            return item.key !== 'schemeofwork' || user.category === 'Teaching Staff';
+          })
+        };
+      });
+    }
+    var allowed = (user.privileges || []).slice();
+    if (allowed.indexOf('dashboard') < 0) allowed.push('dashboard');
+    if (user.category === 'Teaching Staff' && allowed.indexOf('cass') < 0) allowed.push('cass');
+    if (user.category === 'Teaching Staff' && allowed.indexOf('schemeofwork') < 0) allowed.push('schemeofwork');
+    if (user.category !== 'Teaching Staff') {
+      allowed = allowed.filter(function (key) { return key !== 'cass' && key !== 'schemeofwork'; });
+    }
+    if (user.id && allowed.indexOf('mydocuments') < 0) allowed.push('mydocuments');
+    if (user.id && allowed.indexOf('clearance') < 0) allowed.push('clearance');
+    return NAV.map(function (group) {
+      var items = group.items.filter(function (item) { return allowed.indexOf(item.key) > -1; });
+      return { title: group.title, items: items };
+    }).filter(function (group) { return group.items.length; });
+  }
+
+  function buildSidebar(active) {
+    var nav = allowedNav();
+    var groups = nav.map(function (g, idx) {
+      var open = g.items.some(function (i) { return i.key === active; }) || idx === 0;
+      var links = g.items.map(function (i) {
+        var cls = i.key === active ? ' class="active"' : '';
+        return '<a href="' + i.key + '.html"' + cls + '><i class="fas ' + i.icon + '"></i> ' + i.label + '</a>';
+      }).join('');
+      return '<div class="nav__group' + (open ? ' open' : '') + '">' +
+        '<button class="nav__title" type="button">' + g.title + ' <i class="fas fa-chevron-down chev"></i></button>' +
+        '<div class="nav__items">' + links + '</div></div>';
+    }).join('');
+
+    return el(
+      '<aside class="sidebar" id="sidebar">' +
+        '<a class="sidebar__brand" href="dashboard.html">' +
+          '<span class="logo"><i class="fas fa-graduation-cap"></i></span>' +
+          '<span>AXIOMBYTE SMS<small>AXIOMBYTE SMS</small></span>' +
+        '</a>' +
+        '<nav class="nav">' + groups + '</nav>' +
+      '</aside>'
+    );
+  }
+
+  function activeSchoolLabel() {
+    try {
+      var code = localStorage.getItem('axiom_active_school_code') || SCHOOL.code;
+      var name = localStorage.getItem('axiom_active_school_name') || SCHOOL.name;
+      return code + ' - ' + name;
+    } catch (e) { return SCHOOL.code + ' - ' + SCHOOL.name; }
+  }
+
+  function buildTopbar(title, subtitle) {
+    var user = currentUser();
+    var displayName = user && user.full_name ? user.full_name : SCHOOL.user;
+    var myDocumentsLabel = user && user.type === 'student' ? 'Student Documents' : 'My Documents';
+    var addUserLink = (!user || user.isAdmin) ? '<a href="registeruser.html"><i class="fas fa-user-plus" style="width:16px"></i> Add New User</a>' : '';
+    return el(
+      '<header class="topbar">' +
+        '<button class="icon-btn hamburger" id="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>' +
+        '<h1>' + title + '<small>' + (subtitle || activeSchoolLabel()) + '</small></h1>' +
+        '<button class="icon-btn" id="helpBtn" title="Quick help" style="margin-left:auto"><i class="far fa-circle-question"></i></button>' +
+        '<div class="usermenu" id="usermenu">' +
+          '<button class="usermenu__btn" type="button">' +
+            '<span class="avatar">' + displayName.charAt(0) + '</span>' +
+            '<span style="font-weight:600;font-size:14px">' + displayName + '</span>' +
+            '<i class="fas fa-chevron-down" style="font-size:11px;color:var(--text-faint)"></i>' +
+          '</button>' +
+          '<div class="usermenu__list">' +
+            '<a href="mydocuments.html"><i class="fas fa-file-shield" style="width:16px"></i> ' + myDocumentsLabel + '</a>' +
+            addUserLink +
+            '<hr/>' +
+            '<a href="#" class="danger" id="logoutLink"><i class="fas fa-arrow-right-from-bracket" style="width:16px"></i> Logout</a>' +
+          '</div>' +
+        '</div>' +
+      '</header>'
+    );
+  }
+
+  function wire(active, title, subtitle) {
+    setSidebarCollapsed(savedSidebarCollapsed());
+
+    // mount sidebar + overlay
+    document.body.prepend(buildSidebar(active));
+    document.body.appendChild(el('<div class="overlay" id="overlay"></div>'));
+
+    // mount topbar at top of .main
+    var main = document.querySelector('.main');
+    main.prepend(buildTopbar(title, subtitle));
+
+    // accordion
+    document.querySelectorAll('.nav__title').forEach(function (b) {
+      b.addEventListener('click', function () { b.closest('.nav__group').classList.toggle('open'); });
+    });
+
+    // mobile nav
+    var hamburger = document.getElementById('hamburger');
+    var overlay = document.getElementById('overlay');
+    hamburger.addEventListener('click', function () {
+      setSidebarCollapsed(false);
+      document.body.classList.toggle('nav-open');
+    });
+    overlay.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
+    document.querySelectorAll('.sidebar a[href$=".html"]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        setSidebarCollapsed(true);
+        document.body.classList.remove('nav-open');
+      });
+    });
+
+    // user menu
+    var um = document.getElementById('usermenu');
+    um.querySelector('.usermenu__btn').addEventListener('click', function (e) { e.stopPropagation(); um.classList.toggle('open'); });
+    document.addEventListener('click', function () { um.classList.remove('open'); });
+
+    // help + logout
+    document.getElementById('helpBtn').addEventListener('click', function () {
+      Portal.toast('Use the field labels and tooltips on this page for guidance.');
+    });
+    document.getElementById('logoutLink').addEventListener('click', function (e) {
+      e.preventDefault();
+      if (confirm('Log out of the portal?')) {
+        if (window.AxiomDB && AxiomDB.signOut) { AxiomDB.signOut(); }
+        else localStorage.removeItem('axiom_current_user');
+        location.href = 'login.html';
+      }
+    });
+
+    // toast host
+    document.body.appendChild(el('<div class="toast-host" id="toastHost"></div>'));
+  }
+
+  var Portal = {
+    SCHOOL: SCHOOL,
+    NAV: NAV,
+    currentUser: currentUser,
+
+    init: function (opts) {
+      opts = opts || {};
+      var active = opts.active || '';
+      var title = opts.title || lookupTitle(active) || 'Dashboard';
+      function go() {
+        wire(active, title, opts.subtitle);
+        var user = currentUser();
+        var pageKey = active || (location.pathname.split('/').pop() || '').replace('.html', '');
+        if (!user && ['login', 'superadmin-login', 'index'].indexOf(pageKey) === -1) {
+          Portal.toast('Please login to continue.', true);
+          setTimeout(function () { location.href = 'login.html'; }, 700);
+          return;
+        }
+        if (user && user.isSuperAdmin) {
+          if (opts.onReady) opts.onReady();
+          return;
+        }
+        if (user && user.type === 'student' && (active === 'dashboard' || active === 'mydocuments' || active === 'transcript' || active === 'clearance')) {
+          if (opts.onReady) opts.onReady();
+          return;
+        }
+        if (user && active === 'dashboard') {
+          if (opts.onReady) opts.onReady();
+          return;
+        }
+        if (user && user.category !== 'Teaching Staff' && active === 'cass') {
+          Portal.toast('Capture Assessment is for Teaching Staff only.', true);
+          setTimeout(function () { location.href = 'mydocuments.html'; }, 900);
+          return;
+        }
+        if (user && user.category === 'Teaching Staff' && active === 'cass') {
+          if (opts.onReady) opts.onReady();
+          return;
+        }
+        if (active === 'schemeofwork' && (!user || user.category !== 'Teaching Staff')) {
+          Portal.toast('Scheme of Work is for Teaching Staff only.', true);
+          setTimeout(function () { location.href = user ? 'dashboard.html' : 'login.html'; }, 900);
+          return;
+        }
+        if (user && user.category === 'Teaching Staff' && active === 'schemeofwork') {
+          if (opts.onReady) opts.onReady();
+          return;
+        }
+        if (user && !user.isAdmin && active && active !== 'mydocuments' && (user.privileges || []).indexOf(active) === -1) {
+          Portal.toast('You do not have access to this module.', true);
+          setTimeout(function () { location.href = 'mydocuments.html'; }, 900);
+          return;
+        }
+        if (opts.onReady) opts.onReady();
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+    },
+
+    toast: function (msg, isErr) {
+      var host = document.getElementById('toastHost'); if (!host) return;
+      var t = el('<div class="toast' + (isErr ? ' err' : '') + '"><i class="fas ' + (isErr ? 'fa-circle-exclamation' : 'fa-circle-check') + '"></i><span>' + msg + '</span></div>');
+      host.appendChild(t);
+      setTimeout(function () { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 300); }, 2800);
+    },
+
+    // Live filter for a table by a search input
+    filterTable: function (inputSel, tableSel) {
+      var input = document.querySelector(inputSel), table = document.querySelector(tableSel);
+      if (!input || !table) return;
+      input.addEventListener('input', function () {
+        var q = input.value.toLowerCase();
+        table.querySelectorAll('tbody tr').forEach(function (tr) {
+          tr.style.display = tr.textContent.toLowerCase().indexOf(q) > -1 ? '' : 'none';
+        });
+      });
+    },
+
+    // Simple tab controller: containers with .tabs button[data-tab] + .tab-panel[data-tab]
+    initTabs: function (rootSel) {
+      var root = rootSel ? document.querySelector(rootSel) : document;
+      root.querySelectorAll('.tabs button[data-tab]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = btn.getAttribute('data-tab');
+          root.querySelectorAll('.tabs button[data-tab]').forEach(function (b) { b.classList.toggle('active', b === btn); });
+          root.querySelectorAll('.tab-panel[data-tab]').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-tab') === id); });
+        });
+      });
+    },
+
+    // WAEC-style grade from a 0-100 score
+    grade: function (score) {
+      score = Number(score);
+      if (isNaN(score)) return { g: '-', cls: 'gray', remark: '' };
+      if (score >= 80) return { g: 'A1', cls: 'green', remark: 'Excellent' };
+      if (score >= 70) return { g: 'B2', cls: 'green', remark: 'Very Good' };
+      if (score >= 60) return { g: 'B3', cls: 'green', remark: 'Good' };
+      if (score >= 55) return { g: 'C4', cls: 'blue',  remark: 'Credit' };
+      if (score >= 50) return { g: 'C5', cls: 'blue',  remark: 'Credit' };
+      if (score >= 45) return { g: 'C6', cls: 'blue',  remark: 'Credit' };
+      if (score >= 40) return { g: 'D7', cls: 'amber', remark: 'Pass' };
+      if (score >= 35) return { g: 'E8', cls: 'amber', remark: 'Pass' };
+      return { g: 'F9', cls: 'red', remark: 'Fail' };
+    }
+  };
+
+  function lookupTitle(key) {
+    var found = null;
+    NAV.forEach(function (g) { g.items.forEach(function (i) { if (i.key === key) found = i.label; }); });
+    return found;
+  }
+
+  w.Portal = Portal;
+})(window);
+
+
+
+

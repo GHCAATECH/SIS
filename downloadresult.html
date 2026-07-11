@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment Records - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .records-card { border-radius: 4px; overflow: hidden; }
+  .records-title {
+    padding: 7px 14px;
+    border-bottom: 1px solid rgba(128,128,128,.3);
+    background: linear-gradient(#f8fff5, #e7f7e0);
+    color: #14532d;
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .records-filter {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(170px, 1fr));
+    gap: 14px;
+    align-items: center;
+    padding: 22px 18px 10px;
+    background: #fff;
+  }
+  .records-search {
+    padding: 8px 18px 14px;
+    background: #fff;
+  }
+  .records-search .input { width: 220px; min-height: 38px; border-radius: 4px; }
+  .records-filter .select,
+  .records-filter .input,
+  .records-filter .btn {
+    min-height: 38px;
+    border-radius: 4px;
+  }
+  .records-filter .btn {
+    background: #2e7d32;
+    color: #fff;
+    border: 1px solid #14532d;
+    font-weight: 800;
+  }
+  .records-table-shell {
+    margin: 0 18px 16px;
+    border: 1px solid rgba(128,128,128,.3);
+    border-radius: 4px;
+    height: clamp(320px, calc(100vh - 312px), 560px);
+    overflow: hidden auto;
+    background: #fff;
+  }
+  .records-table {
+    width: 100%;
+    min-width: 0;
+    border-collapse: collapse;
+    color: #000;
+    font-size: clamp(8px, .72vw, 11px);
+    table-layout: fixed;
+  }
+  .records-table th,
+  .records-table td {
+    border: 1px solid rgba(128,128,128,.3);
+    padding: 7px 5px;
+    text-align: center;
+    vertical-align: top;
+    background: #fff;
+  }
+  .records-table th {
+    background: #f4fff0;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .records-table th:nth-child(1), .records-table td:nth-child(1) { width: 6%; }
+  .records-table th:nth-child(2), .records-table td:nth-child(2) { width: 8%; }
+  .records-table th:nth-child(3), .records-table td:nth-child(3) { width: 15%; }
+  .records-table th:nth-child(4), .records-table td:nth-child(4) { width: 6%; }
+  .records-table th:nth-child(5), .records-table td:nth-child(5) { width: 5%; }
+  .records-table th:nth-child(6), .records-table td:nth-child(6) { width: 7%; }
+  .records-table th:nth-child(7), .records-table td:nth-child(7) { width: 8%; }
+  .records-table th:nth-child(8), .records-table td:nth-child(8) { width: 7%; }
+  .records-table th:nth-child(9), .records-table td:nth-child(9) { width: 5%; }
+  .records-table th:nth-child(10), .records-table td:nth-child(10) { width: 6%; }
+  .records-table th:nth-child(11), .records-table td:nth-child(11) { width: 6%; }
+  .records-table th:nth-child(12), .records-table td:nth-child(12) { width: 5%; }
+  .records-table th:nth-child(13), .records-table td:nth-child(13) { width: 9%; }
+  .records-table th:nth-child(14), .records-table td:nth-child(14) { width: 9%; }
+  .records-table td.name { font-weight: 800; }
+  .record-photo {
+    position: relative;
+    width: 58px;
+    height: 58px;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #f1f8ed;
+  }
+  .record-photo span {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #2e7d32, #9be582);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+  }
+  .record-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #fff;
+  }
+  .records-footer {
+    display: grid;
+    grid-template-columns: 1fr 140px 1fr;
+    gap: 20px;
+    align-items: center;
+    padding: 0 18px 20px;
+    background: #fff;
+  }
+  .student-total {
+    grid-column: 1;
+    text-align: center;
+    color: #000;
+    font-size: 14px;
+    text-transform: uppercase;
+  }
+  .student-total span {
+    color: #2e7d32;
+    margin-left: 24px;
+  }
+  .download-btn {
+    grid-column: 2;
+    min-height: 40px;
+    border: 0;
+    border-radius: 4px;
+    background: #2e7d32;
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .empty-row td {
+    padding: 38px 12px;
+    color: #6b7280;
+    font-weight: 800;
+  }
+  @media (max-width: 1100px) {
+    .records-filter { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 18px 16px 10px; }
+    .records-filter .btn { width: 100%; }
+    .records-search { padding: 8px 16px 16px; }
+    .records-search .input { width: 100%; }
+    .records-table-shell { margin: 0 16px 16px; }
+    .records-footer { grid-template-columns: 1fr; padding: 0 16px 20px; }
+    .student-total, .download-btn { grid-column: auto; }
+    .student-total span { margin-left: 20px; }
+  }
+  @media (max-width: 760px) {
+    .records-filter { grid-template-columns: 1fr; }
+    .records-table { font-size: 8px; }
+    .records-table th,
+    .records-table td { padding: 5px 3px; }
+    .record-photo { width: 38px; height: 38px; }
+    .record-photo span { width: 30px; height: 30px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="card card--pad-0 records-card">
+      <div class="records-title">Student Records</div>
+
+      <div class="records-filter">
+        <input class="input" id="academicYearFilter" pattern="\d{4}/\d{4}" placeholder="Academic Year (2025/2026)">
+        <select class="select" id="yearFilter">
+          <option selected>Year 1</option>
+          <option>Year 2</option>
+          <option>Year 3</option>
+        </select>
+        <select class="select" id="semesterFilter">
+          <option>1st Sem</option>
+          <option>2nd Sem</option>
+          <option value="">All Semesters</option>
+        </select>
+        <select class="select" id="programmeFilter"><option value="">Select Programme</option></select>
+        <select class="select" id="classFilter"><option value="">Select Class</option></select>
+        <select class="select" id="modeFilter">
+          <option>1. Individual Class Assessments (e.g., Classwork, Quizzes, Homework)</option>
+          <option>2. Mid-Sem</option>
+          <option>3. Practical or Portfolio or Performance Assessment (Individual)</option>
+          <option>4. Group Projects, Research, or Case Studies, Practical/Lab work, Workshops, Performances, Presentations (Out of Class)</option>
+          <option>5. Supervised individual Termly</option>
+          <option value="">All Modes</option>
+        </select>
+        <select class="select" id="subjectFilter"><option value="">All Subjects</option></select>
+        <button class="btn" type="button" id="submitFilter">Submit</button>
+        <button class="btn btn--primary" type="button" id="recalculatePositionsBtn"><i class="fas fa-ranking-star"></i> Recalculate Class Positions</button>
+      </div>
+
+      <div class="records-search">
+        <input class="input" id="searchBox" placeholder="AUTO SEARCH.." />
+      </div>
+
+      <div class="records-table-shell">
+        <table class="records-table" id="recordsTable">
+          <thead>
+            <tr>
+              <th>Profile Photo</th>
+              <th>STD_ID</th>
+              <th>Candidate Name</th>
+              <th>National ID</th>
+              <th>Gender</th>
+              <th>Disability</th>
+              <th>Can Read Braille</th>
+              <th>Date of Birth</th>
+              <th>Status</th>
+              <th>Current Year</th>
+              <th>Subject Code</th>
+              <th>Score</th>
+              <th>Captured By</th>
+              <th>Captured On</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="records-footer">
+        <div class="student-total">Total Number of Students <span id="recordCount">0</span></div>
+        <button class="download-btn" id="downloadBtn" type="button">Download</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'downloadresult', title: 'Assessment Records' });
+
+var records = [];
+var renderedRecords = [];
+var availableSubjects = [];
+var availableClasses = [];
+var defaultSubjects = [
+  { name: 'Core Mathematics', code: 'MATH' },
+  { name: 'English Language', code: 'ENG' },
+  { name: 'Integrated Science', code: 'SCI' },
+  { name: 'Social Studies', code: 'SOC' },
+  { name: 'Elective Mathematics', code: 'EMATH' },
+  { name: 'Physics', code: 'PHY' },
+  { name: 'Chemistry', code: 'CHEM' },
+  { name: 'Biology', code: 'BIO' },
+  { name: 'Economics', code: 'ECON' },
+  { name: 'Geography', code: 'GEO' },
+  { name: 'Government', code: 'GOV' },
+  { name: 'History', code: 'HIST' },
+  { name: 'Financial Accounting', code: 'FA' },
+  { name: 'Cost Accounting', code: 'CA' },
+  { name: 'Business Management', code: 'BM' }
+];
+
+function safeList(key) {
+  try {
+    var value = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function fullName(row) {
+  return [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ').toUpperCase();
+}
+
+function initials(name) {
+  return String(name || '?').split(' ').filter(Boolean).slice(0, 2).map(function(part) {
+    return part.charAt(0);
+  }).join('').toUpperCase() || '?';
+}
+
+function studentPhotoUrl(student) {
+  return String(
+    student.passport_url || student.passportUrl || student.photo_url ||
+    student.photoUrl || student.profile_photo || student.photo || ''
+  ).trim();
+}
+
+function safeImageUrl(value) {
+  value = String(value || '').trim();
+  if (!/^(https?:\/\/|data:image\/|blob:)/i.test(value)) return '';
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function padScore(score) {
+  if (score === '' || score === null || score === undefined) return '';
+  var value = Number(score);
+  if (isNaN(value)) return score;
+  return String(value).padStart(3, '0');
+}
+
+function dateOnly(value) {
+  return value ? String(value).slice(0, 10) : '';
+}
+
+function currentAcademicYear() {
+  var today = new Date();
+  var year = today.getFullYear();
+  return today.getMonth() >= 8 ? year + '/' + (year + 1) : (year - 1) + '/' + year;
+}
+
+document.getElementById('academicYearFilter').value = currentAcademicYear();
+
+function normalizeYearLevel(value) {
+  var match = String(value || '').match(/(?:year\s*)?([123])/i);
+  return match ? 'Year ' + match[1] : (String(value || '').toLowerCase() === 'completed' ? 'Completed' : '');
+}
+
+function levelFromAdmissionYear(admissionYear) {
+  if (admissionYear === null || admissionYear === undefined || admissionYear === '') return '';
+  var difference = new Date().getFullYear() - Number(admissionYear);
+  if (!Number.isFinite(difference)) return '';
+  if (difference <= 0) return 'Year 1';
+  if (difference === 1) return 'Year 2';
+  if (difference === 2) return 'Year 3';
+  return 'Completed';
+}
+
+function currentStudentYear(student, assRef) {
+  var overrides = {};
+  try { overrides = JSON.parse(localStorage.getItem('axiom_student_levels') || '{}') || {}; } catch (e) {}
+  if (overrides[assRef]) return normalizeYearLevel(overrides[assRef]);
+  var direct = normalizeYearLevel(student.student_level || student.studentLevel);
+  if (direct) return direct;
+  var admitted = levelFromAdmissionYear(student.year_admitted || student.yearAdmitted);
+  if (admitted) return admitted;
+  return normalizeYearLevel(
+    student.year_level || student.yearLevel || student.class_year ||
+    (student.classes && student.classes.year_level)
+  );
+}
+
+function latestCurrentRecords(rows) {
+  var highestYearByStudent = {};
+  (rows || []).forEach(function(row) {
+    var level = normalizeYearLevel(row.currentYearLevel || row.yearLevel);
+    var rank = Number((level.match(/([123])/) || [0, 0])[1]);
+    if (rank > (highestYearByStudent[row.assRef] || 0)) highestYearByStudent[row.assRef] = rank;
+  });
+  var sorted = (rows || []).slice().sort(function(a, b) {
+    return new Date(b.capturedOn || 0).getTime() - new Date(a.capturedOn || 0).getTime();
+  });
+  var seen = {};
+  return sorted.filter(function(row) {
+    var currentYear = normalizeYearLevel(row.currentYearLevel);
+    if (!currentYear && highestYearByStudent[row.assRef]) currentYear = 'Year ' + highestYearByStudent[row.assRef];
+    row.currentYearLevel = currentYear;
+    if (!currentYear || currentYear === 'Completed') return false;
+    if (normalizeYearLevel(row.yearLevel) !== currentYear) return false;
+    var key = [row.assRef, row.subjectCode || row.subjectName, row.modeName || row.modeLabel, row.semester, currentYear].join('|').toLowerCase();
+    if (seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+}
+
+function modeMatches(row, mode) {
+  if (!mode) return true;
+  return row.modeName === mode || row.modeLabel === mode;
+}
+
+function buildStudentLookup(students) {
+  var lookup = {};
+  (students || []).forEach(function(student) {
+    var ref = student.ass_ref_id || student.assRef;
+    if (ref) lookup[ref] = student;
+  });
+  return lookup;
+}
+
+function localRecords() {
+  var saved = safeList('axiom_assessment_records').filter(function(record) {
+    return record.status === 'Submitted';
+  });
+  var studentLookup = buildStudentLookup(safeList('axiom_registered_students'));
+  var rows = [];
+  saved.forEach(function(record) {
+    (record.scores || []).forEach(function(score) {
+      var student = studentLookup[score.assRef] || {};
+      var name = score.name || student.name || fullName(student);
+      rows.push({
+        photoName: name,
+        photoUrl: studentPhotoUrl(student),
+        assRef: score.assRef,
+        candidateName: name,
+        nationalId: student.ghana_card_number || '',
+        gender: student.gender || '',
+        disability: student.disability_status || 'NORMAL',
+        canReadBraille: 'False',
+        dob: student.date_of_birth || '',
+        status: student.status || '',
+        subjectCode: score.subjectCode || '',
+        subjectName: record.subjectName || score.subject || '',
+        score: score.score,
+        capturedBy: record.captured_by || 'Admin',
+        capturedOn: record.saved_at || '',
+        yearLevel: record.yearLevel || '',
+        currentYearLevel: currentStudentYear(student, score.assRef),
+        semester: record.semester || '',
+        modeName: record.modeName || '',
+        modeLabel: record.modeName || ''
+      });
+    });
+  });
+  return rows;
+}
+
+function mapDbRecord(row) {
+  var assessment = row.assessments || {};
+  var student = row.students || {};
+  var mode = assessment.assessment_modes || {};
+  var subject = assessment.subjects || {};
+  var classInfo = assessment.classes || {};
+  var candidate = fullName(student);
+  return {
+    photoName: candidate,
+    photoUrl: studentPhotoUrl(student),
+    assRef: student.ass_ref_id || '',
+    candidateName: candidate,
+    nationalId: student.ghana_card_number || '',
+    gender: student.gender || '',
+    disability: student.disability_status || 'NORMAL',
+    canReadBraille: 'False',
+    dob: student.date_of_birth || '',
+    status: student.status || '',
+    subjectCode: subject.code || '',
+    subjectName: subject.name || '',
+    score: row.score,
+    capturedBy: 'Staff',
+    capturedOn: assessment.submitted_at || row.updated_at || '',
+    academicYear: assessment.academic_year || '',
+    yearLevel: assessment.year_level || '',
+    currentYearLevel: currentStudentYear(student, student.ass_ref_id || ''),
+    semester: assessment.semester || '',
+    modeName: mode.name || '',
+    modeLabel: mode.display_order ? mode.display_order + '. ' + mode.name : mode.name || '',
+    classId: assessment.class_id || '',
+    className: classInfo.name || '',
+    programmeId: classInfo.programme_id || '',
+    programmeName: classInfo.programmes && classInfo.programmes.name ? classInfo.programmes.name : ''
+  };
+}
+
+function populatePositionScopeFilters() {
+  var programmeSelect = document.getElementById('programmeFilter');
+  var classSelect = document.getElementById('classFilter');
+  var currentProgramme = programmeSelect.value;
+  var programmes = {};
+  availableClasses.forEach(function(cls) {
+    if (cls.programme_id && cls.programme) programmes[cls.programme_id] = cls.programme;
+  });
+  programmeSelect.innerHTML = '<option value="">Select Programme</option>' + Object.keys(programmes).map(function(id) {
+    return '<option value="'+id+'">'+programmes[id]+'</option>';
+  }).join('');
+  if (programmes[currentProgramme]) programmeSelect.value = currentProgramme;
+
+  function refreshClasses() {
+    var programmeId = programmeSelect.value;
+    var currentClass = classSelect.value;
+    var classes = availableClasses.filter(function(cls) { return !programmeId || cls.programme_id === programmeId; });
+    classSelect.innerHTML = '<option value="">Select Class</option>' + classes.map(function(cls) {
+      return '<option value="'+cls.id+'">'+cls.name+'</option>';
+    }).join('');
+    if (classes.some(function(cls) { return cls.id === currentClass; })) classSelect.value = currentClass;
+  }
+  programmeSelect.onchange = function() { refreshClasses(); applyFilters(); };
+  refreshClasses();
+}
+
+function normalizeSubject(subject) {
+  if (!subject) return null;
+  if (typeof subject === 'string') return { name: subject, code: '' };
+  return {
+    name: subject.name || subject.subjectName || '',
+    code: subject.code || subject.subject_code || ''
+  };
+}
+
+function mergeSubjects() {
+  var seen = {};
+  var merged = [];
+  function add(subject) {
+    subject = normalizeSubject(subject);
+    if (!subject || !subject.name) return;
+    var key = subject.name.toLowerCase();
+    if (seen[key]) {
+      if (!seen[key].code && subject.code) seen[key].code = subject.code;
+      return;
+    }
+    seen[key] = { name: subject.name, code: subject.code || '' };
+    merged.push(seen[key]);
+  }
+  defaultSubjects.forEach(add);
+  safeList('axiom_subjects').forEach(add);
+  safeList('axiom_classes').forEach(function(cls) {
+    (cls.subjectLinks || cls.subjects || []).forEach(add);
+  });
+  records.forEach(function(row) {
+    add({ name: row.subjectName, code: row.subjectCode });
+  });
+  availableSubjects.forEach(add);
+  return merged.sort(function(a, b) { return a.name.localeCompare(b.name); });
+}
+
+function populateSubjects() {
+  var select = document.getElementById('subjectFilter');
+  var current = select.value;
+  var subjects = mergeSubjects();
+  select.innerHTML = '<option value="">All Subjects</option>' + subjects.map(function(subject) {
+    return '<option value="'+subject.name+'">'+subject.name+'</option>';
+  }).join('');
+  select.value = subjects.some(function(subject) { return subject.name === current; }) ? current : '';
+}
+
+function applyFilters() {
+  var academicYear = document.getElementById('academicYearFilter').value.trim();
+  var year = document.getElementById('yearFilter').value;
+  var semester = document.getElementById('semesterFilter').value;
+  var mode = document.getElementById('modeFilter').value;
+  var subject = document.getElementById('subjectFilter').value;
+  var programmeId = document.getElementById('programmeFilter').value;
+  var classId = document.getElementById('classFilter').value;
+  var search = document.getElementById('searchBox').value.toLowerCase().trim();
+  renderedRecords = records.filter(function(row) {
+    if (academicYear && row.academicYear && row.academicYear !== academicYear) return false;
+    if (year && row.currentYearLevel !== year) return false;
+    if (semester && row.semester !== semester) return false;
+    if (!modeMatches(row, mode)) return false;
+    if (subject && row.subjectName !== subject) return false;
+    if (programmeId && row.programmeId !== programmeId) return false;
+    if (classId && row.classId !== classId) return false;
+    if (search && JSON.stringify(row).toLowerCase().indexOf(search) === -1) return false;
+    return true;
+  });
+  renderRows();
+}
+
+function submitRecordsSearch() {
+  applyFilters();
+  if (!renderedRecords.length) {
+    Portal.toast('No record found for the selected filters.', true);
+  } else {
+    Portal.toast(renderedRecords.length + ' student record(s) loaded.');
+  }
+}
+
+function renderRows() {
+  var body = document.querySelector('#recordsTable tbody');
+  document.getElementById('recordCount').textContent = renderedRecords.length;
+  if (!renderedRecords.length) {
+    body.innerHTML = '<tr class="empty-row"><td colspan="14">No current assessment records found.</td></tr>';
+    return;
+  }
+  body.innerHTML = renderedRecords.map(function(row) {
+    var photoUrl = safeImageUrl(row.photoUrl);
+    return '<tr>' +
+      '<td><div class="record-photo"><span>'+initials(row.photoName)+'</span>'+(photoUrl ? '<img src="'+photoUrl+'" alt="'+initials(row.photoName)+'" onerror="this.remove()">' : '')+'</div></td>' +
+      '<td>'+row.assRef+'</td>' +
+      '<td class="name">'+row.candidateName+'</td>' +
+      '<td>'+row.nationalId+'</td>' +
+      '<td>'+String(row.gender || '').toUpperCase()+'</td>' +
+      '<td>'+(row.disability || 'NORMAL')+'</td>' +
+      '<td>'+row.canReadBraille+'</td>' +
+      '<td>'+dateOnly(row.dob)+'</td>' +
+      '<td>'+row.status+'</td>' +
+      '<td>'+row.currentYearLevel+'</td>' +
+      '<td>'+(row.subjectCode || row.subjectName)+'</td>' +
+      '<td>'+padScore(row.score)+'</td>' +
+      '<td>'+row.capturedBy+'</td>' +
+      '<td>'+dateOnly(row.capturedOn)+'</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function downloadRecords() {
+  if (!window.XLSX) {
+    Portal.toast('Excel exporter could not load. Check the internet connection and reload.', true);
+    return;
+  }
+  var headers = ['Profile Photo','STD_ID','Candidate Name','National ID','Gender','Disability','Can Read Braille','Date of Birth','Status','Current Year','Subject Code','Score','Captured By','Captured On'];
+  var rows = renderedRecords.map(function(row) {
+    return [row.photoUrl || '', row.assRef, row.candidateName, row.nationalId, row.gender, row.disability, row.canReadBraille, dateOnly(row.dob), row.status, row.currentYearLevel, row.subjectCode || row.subjectName, padScore(row.score), row.capturedBy, dateOnly(row.capturedOn)];
+  });
+  var worksheet = XLSX.utils.aoa_to_sheet([headers].concat(rows));
+  worksheet['!cols'] = headers.map(function(header, index) {
+    var width = String(header).length;
+    rows.forEach(function(row) { width = Math.max(width, String(row[index] === null || row[index] === undefined ? '' : row[index]).length); });
+    return { wch: Math.min(Math.max(width + 2, 12), 34) };
+  });
+  var workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Assessment Records');
+  XLSX.writeFile(workbook, 'assessment-records.xlsx');
+  Portal.toast('Downloaded ' + renderedRecords.length + ' assessment records to Excel.');
+}
+
+async function loadRecords() {
+  records = localRecords();
+  availableSubjects = safeList('axiom_subjects').map(normalizeSubject).filter(Boolean);
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listAssessmentRecords) {
+    try {
+      if (AxiomDB.listSubjects) {
+        var dbSubjects = await AxiomDB.listSubjects();
+        if (dbSubjects && dbSubjects.length) availableSubjects = dbSubjects.map(normalizeSubject).filter(Boolean);
+      }
+      if (AxiomDB.listClasses) {
+        var dbClasses = await AxiomDB.listClasses();
+        if (dbClasses && dbClasses.length) availableClasses = dbClasses;
+      }
+      var dbRows = await AxiomDB.listAssessmentRecords();
+      if (dbRows && dbRows.length) records = dbRows.map(mapDbRecord);
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load Supabase assessment records. Showing local records.', true);
+    }
+  }
+  records = latestCurrentRecords(records);
+  populatePositionScopeFilters();
+  populateSubjects();
+  applyFilters();
+}
+
+document.getElementById('submitFilter').addEventListener('click', submitRecordsSearch);
+document.getElementById('recalculatePositionsBtn').addEventListener('click', function() {
+  var button = this;
+  var payload = {
+    academicYear: document.getElementById('academicYearFilter').value.trim(),
+    term: document.getElementById('semesterFilter').value,
+    programmeId: document.getElementById('programmeFilter').value,
+    classId: document.getElementById('classFilter').value
+  };
+  if (!/^\d{4}\/\d{4}$/.test(payload.academicYear) || !payload.term || !payload.programmeId || !payload.classId) {
+    Portal.toast('Select academic year, term, programme, and class first.', true);
+    return;
+  }
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.recalculateClassPositions) {
+    Portal.toast('Run the class position SQL migration and connect Supabase first.', true);
+    return;
+  }
+  button.disabled = true;
+  button.classList.add('loading');
+  AxiomDB.recalculateClassPositions(payload).then(function(results) {
+    Portal.toast('Class positions recalculated for '+results.length+' student(s).');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not recalculate positions: '+(err.message || 'Unknown error'), true);
+  }).finally(function() {
+    button.disabled = false;
+    button.classList.remove('loading');
+  });
+});
+document.getElementById('searchBox').addEventListener('input', applyFilters);
+document.getElementById('downloadBtn').addEventListener('click', downloadRecords);
+['academicYearFilter','yearFilter','semesterFilter','modeFilter','subjectFilter','classFilter'].forEach(function(id) {
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+loadRecords();
+</script>
+</body>
+</html>
+

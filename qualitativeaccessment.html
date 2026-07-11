@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Qualitative Assessment — AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-star-half-stroke"></i></span>
+      <div><h2>Qualitative Assessment</h2><p>Record conduct, attitudes, interests and psychomotor skills.</p></div>
+      <div class="ph-actions"><button class="btn btn--success" id="saveBtn"><i class="fas fa-floppy-disk"></i> Save</button></div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card__body">
+        <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="field"><label>Class</label><select class="select" id="qaClass"><option>Year 2 A</option><option>Year 1 A</option><option>Year 3 A</option></select></div>
+          <div class="field"><label>Student</label>
+            <select class="select" id="qaStudent"><option>Mensah Kwabena</option><option>Owusu Abena</option><option>Asante Yaw</option><option>Boateng Akosua</option></select></div>
+          <div class="field"><label>Term</label><select class="select" id="qaTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card card--pad-0">
+        <div class="card__head"><i class="fas fa-heart"></i> Attitudes &amp; Conduct</div>
+        <div class="card__body" id="attitudes"></div>
+      </div>
+      <div class="card card--pad-0">
+        <div class="card__head"><i class="fas fa-lightbulb"></i> Interests &amp; Skills</div>
+        <div class="card__body" id="interests"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="card__head"><i class="fas fa-comment-dots"></i> Class Teacher's Remark</div>
+      <div class="card__body"><textarea class="textarea" placeholder="Overall remark on the student's conduct and development…"></textarea></div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'qualitativeaccessment' });
+
+var ratings = ['Excellent','Very Good','Good','Satisfactory','Needs Improvement'];
+var QA_KEY = 'axiom_qualitative_assessments';
+function ratingRows(items){
+  return items.map(function(it){
+    var opts = ratings.map(function(r,i){ return '<option'+(i===2?' selected':'')+'>'+r+'</option>'; }).join('');
+    return '<div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid var(--border)">'+
+      '<label style="margin:0">'+it+'</label>'+
+      '<select class="select qa-rating" data-item="'+it+'" style="max-width:190px">'+opts+'</select></div>';
+  }).join('');
+}
+document.getElementById('attitudes').innerHTML = ratingRows(['Punctuality','Attendance','Politeness','Honesty','Neatness','Relationship with peers','Respect for authority']);
+document.getElementById('interests').innerHTML = ratingRows(['Sports & games','Drama / music','Debating / public speaking','Leadership','Handwriting','Creativity','Initiative']);
+
+function collectRatings() {
+  var values = {};
+  document.querySelectorAll('.qa-rating').forEach(function(select) {
+    values[select.dataset.item] = select.value;
+  });
+  return values;
+}
+
+function qualitativePayload() {
+  var studentSelect = document.getElementById('qaStudent');
+  var remark = document.querySelector('textarea.textarea');
+  return {
+    class_name: document.getElementById('qaClass').value,
+    student_ref: studentSelect.value,
+    student_name: studentSelect.options[studentSelect.selectedIndex].textContent,
+    term: document.getElementById('qaTerm').value,
+    ratings: collectRatings(),
+    teacher_remark: remark ? remark.value.trim() : '',
+    updated_at: new Date().toISOString()
+  };
+}
+
+function saveLocalQualitative(payload) {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem(QA_KEY) || '[]'); } catch (e) {}
+  var key = [payload.class_name, payload.student_ref, payload.term].join('|');
+  list = list.filter(function(item) { return item.key !== key; });
+  list.push(Object.assign({ key: key }, payload));
+  localStorage.setItem(QA_KEY, JSON.stringify(list));
+}
+
+async function populateQualitativeFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var classes = await AxiomDB.listClasses();
+    var students = await AxiomDB.listStudents();
+    if (classes && classes.length) {
+      document.getElementById('qaClass').innerHTML = classes.map(function(cls) {
+        return '<option value="'+cls.name+'">'+cls.name+'</option>';
+      }).join('');
+    }
+    if (students && students.length) {
+      document.getElementById('qaStudent').innerHTML = students.map(function(student) {
+        var name = [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase();
+        return '<option value="'+student.ass_ref_id+'">'+name+' - STD_ID: '+student.ass_ref_id+'</option>';
+      }).join('');
+    }
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load qualitative options: ' + (err.message || 'Unknown error'), true);
+  }
+}
+populateQualitativeFromSupabase();
+
+document.getElementById('saveBtn').addEventListener('click', function(){
+  async function saveQualitative() {
+    var payload = qualitativePayload();
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.saveQualitativeAssessment) {
+      await AxiomDB.saveQualitativeAssessment(payload);
+    } else {
+      saveLocalQualitative(payload);
+    }
+    Portal.toast('Qualitative assessment saved.');
+  }
+  saveQualitative().catch(function(err) {
+    console.error(err);
+    saveLocalQualitative(qualitativePayload());
+    Portal.toast('Saved locally. Run the qualitative assessment SQL to save online.', true);
+  });
+});
+</script>
+</body>
+</html>

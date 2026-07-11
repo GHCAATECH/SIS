@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Panel - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .admin-content {
+    min-height: calc(100vh - var(--header-h));
+    padding: 14px 16px 16px;
+    overflow: hidden;
+  }
+  .admin-content .page-head { margin-bottom: 12px; }
+  .admin-content .page-head .ph-ico { width: 38px; height: 38px; font-size: 16px; }
+  .admin-content .page-head h2 { font-size: 18px; }
+  .admin-content .page-head p { font-size: 12px; }
+  .admin-stats { gap: 10px; }
+  .admin-stats .card { padding: 10px; }
+  .admin-stats .stat i { font-size: 18px; margin-bottom: 4px; }
+  .admin-stats .stat .num { font-size: 20px; }
+  .admin-content .section-title { margin: 12px 0 8px; font-size: 13px; }
+  .admin-tiles { gap: 10px; }
+  .tile { display:flex; align-items:center; gap:14px; color:var(--text); transition:transform .18s ease, box-shadow .18s ease; }
+  .tile:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+  .tile .ico { width:46px; height:46px; border-radius:12px; flex:none; display:grid; place-items:center; font-size:19px; color:#fff; background:linear-gradient(135deg,var(--brand),var(--accent)); }
+  .tile small { color:var(--text-faint); }
+  .admin-tiles .tile { min-height: 58px; padding: 10px 12px; gap: 10px; }
+  .admin-tiles .tile .ico { width: 36px; height: 36px; border-radius: 8px; font-size: 15px; }
+  .admin-system .card__body { padding: 12px; }
+  @media (max-width: 900px) {
+    .admin-content { padding: 12px; overflow: visible; }
+    .admin-stats { grid-template-columns: repeat(2, 1fr); }
+    .admin-tiles { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .admin-content { padding: 10px; }
+    .admin-stats,
+    .admin-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+    .admin-stats .card { padding: 8px; }
+    .admin-stats .stat .num { font-size: 17px; }
+    .admin-stats .stat .cap { font-size: 10px; }
+    .admin-tiles .tile { min-height: 52px; padding: 8px; }
+    .admin-tiles .tile .ico { width: 30px; height: 30px; font-size: 13px; }
+    .admin-tiles .tile small { display: none; }
+    .admin-system .form-grid { gap: 8px; }
+  }
+</style>
+<link rel="stylesheet" href="assets/admin-premium.css" />
+</head>
+<body class="admin-dashboard">
+<div class="main">
+  <main class="content admin-content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-list-check"></i></span>
+      <div><h2>Administration Overview</h2><p>Manage your school operations from one secure workspace.</p></div>
+      <div class="admin-head-meta"><span class="admin-live">All systems operational</span></div>
+    </div>
+
+    <div class="grid cols-4 admin-stats">
+      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-users"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminStudents">0</div><div class="cap">Active Students</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-user-gear"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminUsers">0</div><div class="cap">Portal Users</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-layer-group"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminClasses">0</div><div class="cap">Active Classes</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-book"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminSubjects">0</div><div class="cap">Available Subjects</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+    </div>
+
+    <div class="section-title"><i class="fas fa-bolt"></i> Quick Actions <span class="rule"></span></div>
+    <div class="grid cols-3 admin-tiles" id="tiles"></div>
+
+    <div class="section-title"><i class="fas fa-circle-info"></i> System Overview <span class="rule"></span></div>
+    <div class="admin-lower">
+      <div class="card admin-system"><div class="card__body">
+        <div class="system-grid">
+          <div class="system-item"><div class="cap">PORTAL VERSION</div><div class="system-value"><i class="fas fa-code-branch" style="color:var(--brand)"></i> v2.5 (2025/2026)</div></div>
+          <div class="system-item"><div class="cap">SUBSCRIBER</div><div class="system-value"><i class="fas fa-school" style="color:var(--brand)"></i> 0021101</div></div>
+          <div class="system-item"><div class="cap">DATABASE STATUS</div><div class="system-value"><span class="status-dot"></span> Connected</div></div>
+        </div>
+      </div></div>
+      <div class="card activity-card">
+        <div class="activity-head"><span><i class="fas fa-clock-rotate-left"></i> Recent Activity</span><small style="color:var(--text-faint)">Today</small></div>
+        <ul class="activity-list">
+          <li><span class="activity-ico"><i class="fas fa-cloud-arrow-up"></i></span><span class="activity-copy"><b>Data synchronized</b><small>School records updated</small></span><span class="activity-time">08:42</span></li>
+          <li><span class="activity-ico"><i class="fas fa-shield-halved"></i></span><span class="activity-copy"><b>System secure</b><small>Access controls active</small></span><span class="activity-time">Live</span></li>
+        </ul>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: '', title: 'Admin Panel' });
+var tiles = [
+  ['registeruser','Add User','Create a new portal account','fa-user-plus'],
+  ['AssignPrivilege','Manage Users','Roles & privileges','fa-users-gear'],
+  ['classmanager','Manage Classes','Add or edit classes','fa-layer-group'],
+  ['schoolupdate','School Info','Profile & crest','fa-school'],
+  ['logintrace','Login Trace','Sign-in audit log','fa-shoe-prints'],
+  ['assessmentmonitor','School Monitor','Capture progress','fa-chart-line']
+];
+document.getElementById('tiles').innerHTML = tiles.map(function(t){
+  return '<a class="card tile" href="'+t[0]+'.html"><span class="ico"><i class="fas '+t[3]+'"></i></span>'+
+    '<span><b>'+t[1]+'</b><br><small>'+t[2]+'</small></span></a>';
+}).join('');
+
+function safeList(key) {
+  try {
+    var value = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch (e) {
+    return [];
+  }
+}
+function setAdminCount(id, value) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = (Number(value) || 0).toLocaleString();
+}
+function localSubjectsFromClasses(classes) {
+  var seen = {};
+  (classes || []).forEach(function(cls) {
+    (cls.subjects || []).forEach(function(subject) {
+      if (subject) seen[String(subject).toLowerCase()] = true;
+    });
+  });
+  return Object.keys(seen).length;
+}
+function renderAdminCounts(students, staff, classes, subjects) {
+  students = (students || []).filter(function(row) {
+    return String(row.status || 'Active').toLowerCase() !== 'deleted';
+  });
+  staff = (staff || []).filter(function(row) {
+    return String(row.status || 'Active').toLowerCase() !== 'suspended';
+  });
+  setAdminCount('adminStudents', students.length);
+  setAdminCount('adminUsers', staff.length);
+  setAdminCount('adminClasses', (classes || []).length);
+  setAdminCount('adminSubjects', (subjects && subjects.length) || localSubjectsFromClasses(classes));
+}
+async function loadAdminCounts() {
+  var students = safeList('axiom_registered_students');
+  var staff = safeList('axiom_local_staff_users');
+  var classes = safeList('axiom_classes');
+  var subjects = safeList('axiom_subjects');
+  if (window.AxiomDB && AxiomDB.isConfigured()) {
+    try {
+      var dbStudents = await AxiomDB.listStudents();
+      var dbStaff = await AxiomDB.listStaff();
+      var dbClasses = await AxiomDB.listClasses();
+      var dbSubjects = await AxiomDB.listSubjects();
+      students = dbStudents || students;
+      staff = dbStaff || staff;
+      classes = dbClasses || classes;
+      subjects = dbSubjects || subjects;
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load admin counts from Supabase. Showing local totals.', true);
+    }
+  }
+  renderAdminCounts(students, staff, classes, subjects);
+}
+loadAdminCounts();
+</script>
+</body>
+</html>

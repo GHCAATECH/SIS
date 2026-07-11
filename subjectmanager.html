@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manage Subjects - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-book"></i></span>
+      <div><h2>Add / Manage Subjects</h2><p>Create subjects and link each one to a programme.</p></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
+      <div class="card">
+        <div class="card__head"><i class="fas fa-plus"></i> Add Subject</div>
+        <div class="card__body">
+          <form id="subjectForm" class="grid" style="gap:14px">
+            <div class="field"><label>Programme <span class="req">*</span></label>
+              <select class="select" id="sProgramme" required><option value="">Loading programmes...</option></select></div>
+            <div class="field"><label>Subject name <span class="req">*</span></label><input class="input" id="sName" required placeholder="e.g. Physics"></div>
+            <div class="field"><label>Subject code</label><input class="input" id="sCode" placeholder="e.g. PHY"></div>
+            <div class="field"><label>Subject type <span class="req">*</span></label>
+              <select class="select" id="sType" required>
+                <option>Elective</option>
+                <option>Core</option>
+              </select></div>
+            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Add Subject</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card card--pad-0">
+        <div class="card__head"><i class="fas fa-table-list"></i> Existing Subjects</div>
+        <div class="table-wrap">
+          <table class="tbl" id="subjectTbl">
+            <thead><tr><th>Subject</th><th>Code</th><th>Type</th><th>Programme</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'subjectmanager' });
+
+var PROGRAMME_KEY = 'axiom_programmes';
+var SUBJECT_KEY = 'axiom_subjects';
+var defaultProgrammes = [
+  { name: 'General Science' },
+  { name: 'General Arts' },
+  { name: 'Business' },
+  { name: 'Visual Arts' },
+  { name: 'Home Economics' },
+  { name: 'Agricultural Science' }
+];
+var defaultSubjects = [
+  { name: 'Core Mathematics', code: 'MATH', type: 'Core', programme: 'All Programmes' },
+  { name: 'English Language', code: 'ENG', type: 'Core', programme: 'All Programmes' },
+  { name: 'Integrated Science', code: 'SCI', type: 'Core', programme: 'All Programmes' },
+  { name: 'Social Studies', code: 'SOC', type: 'Core', programme: 'All Programmes' },
+  { name: 'Elective Mathematics', code: 'EMATH', type: 'Elective', programme: 'General Science' },
+  { name: 'Physics', code: 'PHY', type: 'Elective', programme: 'General Science' },
+  { name: 'Chemistry', code: 'CHEM', type: 'Elective', programme: 'General Science' },
+  { name: 'Biology', code: 'BIO', type: 'Elective', programme: 'General Science' },
+  { name: 'Economics', code: 'ECON', type: 'Elective', programme: 'General Arts' },
+  { name: 'Geography', code: 'GEO', type: 'Elective', programme: 'General Arts' },
+  { name: 'Government', code: 'GOV', type: 'Elective', programme: 'General Arts' },
+  { name: 'History', code: 'HIST', type: 'Elective', programme: 'General Arts' },
+  { name: 'Financial Accounting', code: 'FA', type: 'Elective', programme: 'Business' },
+  { name: 'Cost Accounting', code: 'CA', type: 'Elective', programme: 'Business' },
+  { name: 'Business Management', code: 'BM', type: 'Elective', programme: 'Business' }
+];
+
+function loadList(key, fallback) {
+  try {
+    var saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback.slice();
+  } catch (e) {
+    return fallback.slice();
+  }
+}
+
+function saveSubjects() {
+  try { localStorage.setItem(SUBJECT_KEY, JSON.stringify(subjects)); } catch (e) {}
+}
+
+function saveProgrammes() {
+  try { localStorage.setItem(PROGRAMME_KEY, JSON.stringify(programmes)); } catch (e) {}
+}
+
+function programmeName(programme) {
+  return typeof programme === 'string' ? programme : programme.name;
+}
+
+var programmes = loadList(PROGRAMME_KEY, defaultProgrammes);
+var subjects = loadList(SUBJECT_KEY, defaultSubjects);
+
+function mapDbSubject(subject) {
+  return {
+    id: subject.id,
+    name: subject.name,
+    code: subject.code || '',
+    type: subject.subject_type || subject.type || 'Elective',
+    programme: subject.applies_to_all_programmes ? 'All Programmes' : ((subject.programmes && subject.programmes.name) || subject.programme || '')
+  };
+}
+
+function populateProgrammes() {
+  var select = document.getElementById('sProgramme');
+  select.innerHTML = '<option value="">Select programme...</option><option>All Programmes</option>';
+  programmes.forEach(function(programme) {
+    var name = programmeName(programme);
+    if (!name) return;
+    var option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  });
+}
+
+function render() {
+  document.querySelector('#subjectTbl tbody').innerHTML = subjects.map(function(s, idx) {
+    return '<tr><td style="font-weight:600">'+s.name+'</td><td>'+(s.code || '-')+'</td><td>'+s.type+'</td><td>'+s.programme+'</td>'+
+      '<td><div class="row-actions">'+
+        '<button class="btn btn--danger" data-act="Drop" data-i="'+idx+'" title="Drop"><i class="fas fa-trash"></i></button>'+
+      '</div></td></tr>';
+  }).join('');
+}
+
+populateProgrammes();
+render();
+
+async function refreshSubjectsFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var dbProgrammes = await AxiomDB.listProgrammes();
+    var dbSubjects = await AxiomDB.listSubjects();
+    if (dbProgrammes && dbProgrammes.length) {
+      programmes = dbProgrammes.map(function(p) {
+        return { id: p.id, name: p.name, code: p.code || '', department: p.department || '' };
+      });
+      saveProgrammes();
+    }
+    if (dbSubjects && dbSubjects.length) {
+      subjects = dbSubjects.map(mapDbSubject);
+      saveSubjects();
+    }
+    populateProgrammes();
+    render();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load subjects from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+refreshSubjectsFromSupabase();
+
+document.getElementById('subjectForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form = this;
+  async function saveSubject() {
+    var subject = {
+      programme: document.getElementById('sProgramme').value,
+      name: document.getElementById('sName').value.trim(),
+      code: document.getElementById('sCode').value.trim(),
+      type: document.getElementById('sType').value
+    };
+    var exists = subjects.some(function(s) {
+      return s.name.toLowerCase() === subject.name.toLowerCase() && s.programme === subject.programme;
+    });
+    if (exists) {
+      Portal.toast('Subject already exists for this programme.', true);
+      return;
+    }
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createSubject) {
+      subject = mapDbSubject(await AxiomDB.createSubject(subject));
+    }
+    subjects.push(subject);
+    saveSubjects();
+    render();
+    form.reset();
+    populateProgrammes();
+    Portal.toast('Subject added.');
+  }
+  saveSubject().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not add subject: ' + (err.message || 'Unknown error'), true);
+  });
+});
+
+document.getElementById('subjectTbl').addEventListener('click', function(e) {
+  var b = e.target.closest('button[data-act]');
+  if (!b) return;
+  var i = +b.dataset.i;
+  if (!confirm('Drop '+subjects[i].name+'?')) return;
+  async function dropSubject() {
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteSubject && subjects[i].id) {
+      await AxiomDB.deleteSubject(subjects[i].id);
+    }
+    subjects.splice(i, 1);
+    saveSubjects();
+    render();
+    Portal.toast('Subject dropped.');
+  }
+  dropSubject().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not drop subject: remove it from linked classes first. ' + (err.message || ''), true);
+  });
+});
+</script>
+</body>
+</html>

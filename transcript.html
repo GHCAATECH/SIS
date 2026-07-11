@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Transcript — AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .ts-head { display:flex; align-items:center; gap:16px; border-bottom:2px solid var(--brand); padding-bottom:16px; margin-bottom:18px; }
+  .ts-head .crest { width:74px; height:74px; border-radius:50%; background:var(--surface-2); border:1px solid var(--border); display:grid; place-items:center; color:var(--text-faint); flex:none; }
+  .ts-head h3 { font-size:18px; } .ts-head p { margin:2px 0 0; color:var(--text-soft); font-size:13px; }
+  .ts-passport, .pdf-passport { display:grid; place-items:center; overflow:hidden; background:#f8fafc; border:1px solid #94a3b8; color:#64748b; font-weight:700; }
+  .ts-passport { width:76px; height:90px; margin-left:auto; border-radius:4px; flex:none; }
+  .pdf-passport { width:82px; height:98px; justify-self:end; align-self:start; }
+  .ts-passport img, .pdf-passport img { grid-area:1 / 1; position:relative; z-index:2; width:100%; height:100%; object-fit:cover; background:#fff; }
+  .ts-passport span, .pdf-passport span { grid-area:1 / 1; position:relative; z-index:1; }
+  .ts-meta { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+  .ts-meta .k { font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); }
+  .ts-meta .v { font-weight:600; }
+  .year-title { margin:18px 0 8px; font-size:15px; color:var(--brand); text-transform:uppercase; }
+  .score-total { display:block; margin-top:2px; font-size:10.5px; color:var(--text-faint); }
+  .summary-line { margin-top:16px; font-size:15px; font-weight:700; color:var(--brand-dark); }
+  .grade-legend { margin-top:20px; }
+  .grade-legend h4 { margin:0 0 8px; font-size:14px; color:var(--brand); }
+  .download-panel { min-height: calc(100vh - 165px); border:1px solid rgba(128,128,128,.3); border-radius:4px; background:#fff; }
+  .download-title { padding:10px 18px; color:var(--brand); font-size:16px; font-weight:700; text-transform:uppercase; background:linear-gradient(#fafafa,#eeeeee); border-bottom:1px solid rgba(128,128,128,.3); }
+  .download-form { display:grid; grid-template-columns:180px 230px 230px 160px 250px; gap:26px 18px; align-items:end; padding:34px 42px 22px; }
+  .download-form label { display:block; margin-bottom:5px; font-size:12px; font-weight:700; text-transform:uppercase; color:#000; }
+  .download-form .select, .download-form .input { width:100%; height:38px; }
+  .download-space { margin:0 26px 18px; min-height:420px; border-right:18px solid #f7f7f7; position:relative; }
+  .download-space::before, .download-space::after { content:""; position:absolute; right:-14px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; }
+  .download-space::before { top:5px; border-bottom:10px solid #8b8b8b; }
+  .download-space::after { bottom:5px; border-top:10px solid #8b8b8b; }
+  .student-report-mode #downloadTranscriptModule { display:none; }
+  .admin-download-mode #studentTranscriptReport { display:none; }
+  .admin-download-mode .page-head { display:none; }
+  #batchTranscriptArea { display:none; }
+  .printing-transcripts #downloadTranscriptModule, .printing-transcripts .page-head { display:none; }
+  .printing-transcripts #batchTranscriptArea { display:block; }
+  .print-transcript { page-break-after:always; padding:22px; background:#fff; border:1px solid rgba(128,128,128,.3); margin-bottom:18px; }
+  .print-transcript:last-child { page-break-after:auto; }
+  .transcript-page { page-break-after:always; min-height:265mm; padding:14mm 16mm; background:#fff; color:#111; font-family:"Times New Roman", Times, serif; }
+  .transcript-page:last-child { page-break-after:auto; }
+  .pdf-head { display:grid; grid-template-columns:1fr 1fr 82px; gap:14px; margin-bottom:16px; font-size:13px; line-height:1.45; }
+  .pdf-head h2 { grid-column:1 / -1; margin:0 0 4px; text-align:left; font-size:18px; letter-spacing:0; color:#111; }
+  .pdf-head .right { text-align:left; }
+  .official-title { text-align:center; margin:14px 0 8px; font-size:17px; font-weight:700; letter-spacing:.02em; }
+  .star-line { text-align:center; font-size:16px; margin-bottom:10px; }
+  .pdf-section-title { margin:14px 0 8px; font-size:15px; font-weight:700; color:#111; }
+  .table-academic-year { margin:8px 0 6px; font-size:14px; font-weight:700; color:var(--brand-dark); text-align:left; }
+  .pdf-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:10px; }
+  .pdf-table th, .pdf-table td { border:0; padding:4px 6px; text-align:left; vertical-align:top; }
+  .pdf-table th { font-weight:700; }
+  .pdf-table .center { text-align:center; }
+  .pdf-table .score-total { display:none; }
+  .transcript-record-table {
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+    margin:0 0 12px;
+    color:#111;
+    background:#fff;
+    font-family:Calibri, Arial, sans-serif;
+    font-size:11px;
+    box-shadow:0 4px 14px rgba(15, 23, 42, .07);
+  }
+  .transcript-record-table th,
+  .transcript-record-table td {
+    height:29px;
+    padding:4px 5px;
+    border:1px solid #94a3b8 !important;
+    color:#111;
+    background:#fff !important;
+    line-height:1.15;
+    vertical-align:middle;
+  }
+  .transcript-record-table th {
+    font-weight:700;
+    text-align:center;
+  }
+  .transcript-record-table .academic-record-title {
+    height:auto;
+    padding:0 2px 7px;
+    border:0 !important;
+    text-align:left;
+    font-size:12px;
+    text-transform:uppercase;
+    color:#0f315f;
+    background:#fff !important;
+  }
+  .transcript-record-table thead tr:nth-child(2) th:not(.semester-gap) {
+    color:#fff;
+    background:#0f766e !important;
+    border-color:#0b5f59 !important;
+  }
+  .transcript-record-table .semester-position {
+    display:inline-block;
+    margin-left:8px;
+    padding-left:8px;
+    border-left:1px solid rgba(255,255,255,.55);
+    font-size:9px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .transcript-record-table thead tr:nth-child(3) th {
+    color:#0f315f;
+    background:#e8f3f2 !important;
+    border-color:#94a3b8 !important;
+    text-transform:uppercase;
+    font-size:10px;
+  }
+  .transcript-record-table .course-title { text-align:center; color:#fff; background:#0f766e !important; }
+  .transcript-record-table .course-name { text-align:left; font-weight:600; color:#1e293b; }
+  .transcript-record-table .result-cell { text-align:center; }
+  .transcript-record-table .semester-gap {
+    padding:0;
+    border:0 !important;
+    background:#fff !important;
+  }
+  .transcript-record-table thead th.semester-gap { border:0 !important; background:#fff !important; }
+  .transcript-record-table tbody tr:nth-child(even) td:not(.semester-gap) { background:#f8fafc !important; }
+  .transcript-record-table tbody tr:hover td:not(.semester-gap) { background:#f0fdfa !important; }
+  .tbl.transcript-record-table { min-width:900px; }
+  .pdf-table.transcript-record-table { min-width:0; font-size:8.5px; box-shadow:none; }
+  .pdf-table.transcript-record-table th,
+  .pdf-table.transcript-record-table td { height:24px; padding:3px 4px; }
+  .pdf-table.transcript-record-table .academic-record-title { font-size:10.5px; padding-bottom:5px; }
+  .pdf-summary { margin-top:12px; font-size:13px; font-weight:700; }
+  .semester-gpa-summary {
+    display:grid;
+    grid-template-columns:55% 4% 41%;
+    margin:5px 0 14px;
+    font-size:10.5px;
+    font-weight:700;
+    line-height:1.45;
+  }
+  .semester-gpa-summary .semester-summary { padding:5px 6px; text-align:left; line-height:1; }
+  .print-summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
+  .print-summary-item { padding:9px 8px; border:1px solid var(--border); text-align:center; background:#f8fafc; }
+  .print-summary-item strong { display:block; color:var(--brand); font-size:15px; }
+  .print-summary-item span { display:block; margin-top:2px; color:var(--text-soft); font-size:9px; text-transform:uppercase; }
+  .qa-text { margin-top:8px; font-size:14px; line-height:1.5; }
+  .signature-line { margin-top:14px; font-size:13px; line-height:1.5; }
+  .grade-page-title { margin:0 0 16px; text-align:center; font-size:18px; font-weight:700; }
+  @media(max-width:760px){ .ts-meta{ grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:1100px){ .download-form{ grid-template-columns:repeat(2, minmax(180px,1fr)); padding:24px; } }
+  @media print {
+    #batchTranscriptArea { display:block !important; }
+    .printing-transcripts #studentTranscriptReport { display:none !important; }
+    body.printing-student-transcript .page-head,
+    body.printing-student-transcript #downloadTranscriptModule,
+    body.printing-student-transcript #batchTranscriptArea { display:none !important; }
+    body.printing-student-transcript #studentTranscriptReport {
+      display:block !important;
+      width:100% !important;
+      margin:0 !important;
+      padding:0 !important;
+      border:0 !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+    }
+    @page { size:A4; margin:0; }
+    .print-transcript { border:0; margin:0; padding:0; }
+    .transcript-page { min-height:277mm; height:auto; padding:12mm 16mm; page-break-after:always; }
+    .transcript-record-table {
+      box-shadow:none !important;
+      print-color-adjust:exact;
+      -webkit-print-color-adjust:exact;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-file-lines"></i></span>
+      <div><h2>Transcript</h2><p>Generate and print a student's cumulative academic transcript.</p></div>
+      <div class="ph-actions">
+        <button class="btn" id="printTranscriptBtn" type="button"><i class="fas fa-print"></i> Print</button>
+        <button class="btn btn--primary" id="saveTranscriptPdfBtn" type="button"><i class="fas fa-file-pdf"></i> Save as PDF</button>
+        <button class="btn btn--danger" id="transcriptLogout" type="button"><i class="fas fa-arrow-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+
+    <section class="download-panel no-print" id="downloadTranscriptModule">
+      <div class="download-title">Download Transcript</div>
+      <div class="download-form">
+        <div>
+          <label>Year:</label>
+          <select class="select" id="downloadYear"><option selected>Year 1</option><option>Year 2</option><option>Year 3</option></select>
+        </div>
+        <div>
+          <label>Learning Areas :</label>
+          <select class="select" id="downloadProgramme"><option value="">***SELECT LEARNING AREA***</option></select>
+        </div>
+        <div>
+          <label>Class :</label>
+          <select class="select" id="downloadClass"><option value="">***SELECT CLASS***</option></select>
+        </div>
+        <button class="btn btn--primary" id="downloadTranscriptBtn" type="button">Download</button>
+        <input class="input" id="downloadSearch" placeholder="SEARCH BY STD_ID..">
+      </div>
+      <div class="download-space" id="downloadResultArea"></div>
+    </section>
+
+    <div class="card" id="studentTranscriptReport">
+      <div class="card__body">
+        <div class="ts-head">
+          <div class="crest"><i class="fas fa-shield-halved" style="font-size:30px"></i></div>
+          <div>
+            <h3>ASUOM SENIOR HIGH SCHOOL</h3>
+            <p>0021101 · AXIOMBYTE SMS — AXIOMBYTE SMS</p>
+            <p style="font-weight:600;color:var(--brand);margin-top:4px">ACADEMIC TRANSCRIPT</p>
+          </div>
+          <div class="ts-passport" id="tsPassport"><span>PHOTO</span></div>
+        </div>
+
+        <div class="ts-meta">
+          <div><div class="k">Student</div><div class="v" id="tsStudent">-</div></div>
+          <div><div class="k">STD_ID</div><div class="v" id="tsRef">-</div></div>
+          <div><div class="k">Programme</div><div class="v" id="tsProgramme">-</div></div>
+          <div><div class="k">Class</div><div class="v" id="tsClass">-</div></div>
+          <div><div class="k">Gender</div><div class="v" id="tsGender">-</div></div>
+          <div><div class="k">Date of Birth</div><div class="v" id="tsDob">-</div></div>
+          <div><div class="k">Year Admitted</div><div class="v" id="tsYear">-</div></div>
+          <div><div class="k">Academic Year</div><div class="v" id="tsAcademicYear">2025/2026</div></div>
+        </div>
+
+        <div class="table-academic-year">Academic Year: <span id="tableAcademicYear">2025/2026</span></div>
+        <div id="ts-body"></div>
+
+        <div class="grid cols-3" style="margin-top:18px">
+          <div class="card stat"><div class="num" id="avg">-</div><div class="cap">Cumulative GPA</div></div>
+          <div class="card stat"><div class="num" id="subjects">-</div><div class="cap">Subjects</div></div>
+          <div class="card stat"><div class="num" id="yearsCovered">-</div><div class="cap">Academic Years</div></div>
+        </div>
+
+        <div class="grade-legend">
+          <h4>Grade Interpretation</h4>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead><tr><th>Grade</th><th>Points</th><th>Score Range</th><th>Interpretation</th></tr></thead>
+              <tbody id="gradeLegend"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <p style="margin-top:22px;color:var(--text-soft);font-size:13px">
+          This transcript is computer-generated. Verify authenticity at the issuing school.
+          <span style="float:right">Date issued: <b id="issued"></b></span>
+        </p>
+      </div>
+    </div>
+    <div id="batchTranscriptArea"></div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'transcript' });
+
+var currentUser = Portal.currentUser();
+document.body.classList.add(currentUser && currentUser.type === 'student' ? 'student-report-mode' : 'admin-download-mode');
+
+function formatDate(value) {
+  if (!value) return '-';
+  var date = new Date(value);
+  return isNaN(date.getTime()) ? value : date.toLocaleDateString();
+}
+
+function safeAttribute(value) {
+  return String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function profileInitials(profile) {
+  return String(profile.full_name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function(part) {
+    return part.charAt(0).toUpperCase();
+  }).join('') || 'PHOTO';
+}
+
+function passportHtml(profile) {
+  var fallback = '<span>'+profileInitials(profile)+'</span>';
+  if (!profile.passport_url) return fallback;
+  return '<img src="'+safeAttribute(profile.passport_url)+'" alt="Student passport photo" onerror="this.remove()">'+fallback;
+}
+
+var GRADE_SCALE = [
+  { grade: 'A1', points: 4.0, min: 80, max: 100, interpretation: 'EXCELLENT' },
+  { grade: 'B2', points: 3.5, min: 70, max: 79, interpretation: 'VERY GOOD' },
+  { grade: 'B3', points: 3.0, min: 60, max: 69, interpretation: 'GOOD' },
+  { grade: 'C4', points: 2.5, min: 55, max: 59, interpretation: 'CREDIT' },
+  { grade: 'C5', points: 2.0, min: 50, max: 54, interpretation: 'CREDIT' },
+  { grade: 'C6', points: 1.5, min: 45, max: 49, interpretation: 'CREDIT' },
+  { grade: 'D7', points: 1.0, min: 40, max: 44, interpretation: 'PASS' },
+  { grade: 'E8', points: 0.5, min: 35, max: 39, interpretation: 'PASS' },
+  { grade: 'F9', points: 0.0, min: 0, max: 34, interpretation: 'FAIL' }
+];
+
+var ASSESSMENT_WEIGHTS = [
+  { match: 'individual class', weight: 15 },
+  { match: 'mid-sem', weight: 15 },
+  { match: 'portfolio', weight: 10 },
+  { match: 'performance assessment', weight: 10 },
+  { match: 'group project', weight: 20 },
+  { match: 'group projects', weight: 20 },
+  { match: 'research', weight: 20 },
+  { match: 'case studies', weight: 20 },
+  { match: 'supervised individual termly', weight: 40 },
+  { match: 'termly', weight: 40 }
+];
+
+function gradeInfo(score) {
+  score = Number(score);
+  if (isNaN(score)) return { grade: '-', points: 0, interpretation: '-' };
+  if (score > 100) score = 100;
+  if (score < 0) score = 0;
+  return GRADE_SCALE.find(function(item) { return score >= item.min && score <= item.max; }) || GRADE_SCALE[GRADE_SCALE.length - 1];
+}
+
+function semesterSlot(value) {
+  var text = String(value || '').toLowerCase();
+  if (text.indexOf('2') > -1) return 'sem2';
+  return 'sem1';
+}
+
+function sortYearLabel(a, b) {
+  return (Number(String(a).replace(/\D/g, '')) || 0) - (Number(String(b).replace(/\D/g, '')) || 0);
+}
+
+function renderGradeLegend() {
+  document.getElementById('gradeLegend').innerHTML = GRADE_SCALE.map(function(item) {
+    return '<tr><td>'+item.grade+'</td><td>'+item.points.toFixed(1)+'</td><td>'+item.min+' - '+item.max+'</td><td>'+item.interpretation+'</td></tr>';
+  }).join('');
+}
+
+function academicYearLabel(profile) {
+  profile = profile || {};
+  if (profile.academic_year) return profile.academic_year;
+  var academicYear = document.getElementById('tsAcademicYear');
+  return academicYear && academicYear.textContent ? academicYear.textContent : '2025/2026';
+}
+
+function assessmentWeight(modeName) {
+  var text = String(modeName || '').toLowerCase();
+  var match = ASSESSMENT_WEIGHTS.find(function(item) {
+    return text.indexOf(item.match) > -1;
+  });
+  return match ? match.weight : 0;
+}
+
+function aggregateSubjectScores(records) {
+  var totals = {};
+  records.forEach(function(record) {
+    var score = Number(record.score);
+    if (isNaN(score)) return;
+    var year = record.year_level || record.yearLevel || 'Year 1';
+    var subject = record.subject || '-';
+    var semester = record.semester || '1st Sem';
+    var academicYear = record.academic_year || record.academicYear || '';
+    var modeName = record.modeName || record.mode_name || record.assessment_mode || '';
+    var weight = assessmentWeight(modeName);
+    var overallScore = Number(record.overall_score || record.overallScore || 0);
+    var key = [year, academicYear, semesterSlot(semester), subject].join('|');
+    totals[key] = totals[key] || {
+      year_level: year,
+      semester: semester,
+      subject: subject,
+      subject_type: record.subject_type || record.subjectType || 'Elective',
+      academic_year: academicYear,
+      score: 0,
+      raw_total: 0,
+      weight_total: 0,
+      mode_count: 0
+    };
+    totals[key].raw_total += score;
+    totals[key].score += weight
+      ? (overallScore > 0 ? Math.min((score / overallScore) * weight, weight) : (score * weight / 100))
+      : score;
+    totals[key].weight_total += weight;
+    totals[key].mode_count++;
+  });
+  return Object.keys(totals).map(function(key) {
+    totals[key].score = Number(totals[key].score.toFixed(2));
+    return totals[key];
+  });
+}
+
+function ordinalPosition(value) {
+  var position = Number(value);
+  if (!position) return '-';
+  var mod100 = position % 100;
+  var suffix = mod100 >= 11 && mod100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[position % 10] || 'th');
+  return position + suffix;
+}
+
+function summaryForTerm(summaries, term, academicYear) {
+  var wanted = String(term || '').toLowerCase();
+  return (summaries || []).find(function(summary) {
+    var summaryTerm = String(summary.term || '').toLowerCase();
+    var termMatches = wanted.indexOf('1') > -1 ? (summaryTerm.indexOf('1') > -1) : (summaryTerm.indexOf('2') > -1);
+    var yearMatches = !academicYear || !summary.academic_year || summary.academic_year === academicYear;
+    return termMatches && yearMatches;
+  }) || null;
+}
+
+function semesterHeading(label, summary) {
+  var position = summary ? ordinalPosition(summary.class_position)+' out of '+summary.class_size : '-';
+  var detail = summary
+    ? 'Core: '+transcriptScore(summary.best_three_core_total)+', Elective: '+transcriptScore(summary.best_three_elective_total)+', Overall: '+transcriptScore(summary.overall_total)
+    : 'Position not calculated';
+  return label+'<span class="semester-position" title="'+detail+'">Position: '+position+'</span>';
+}
+
+function transcriptTableHeader(year, tableClass, yearRows, summaries, academicYear) {
+  var semester1Position = summaryForTerm(summaries, '1st Sem', academicYear);
+  var semester2Position = summaryForTerm(summaries, '2nd Sem', academicYear);
+  return '<table class="'+tableClass+' transcript-record-table">' +
+    '<colgroup>' +
+      '<col style="width:7%"><col style="width:7%">' +
+      '<col style="width:7%"><col style="width:10%"><col style="width:10%"><col style="width:14%">' +
+      '<col style="width:4%">' +
+      '<col style="width:7%"><col style="width:10%"><col style="width:10%"><col style="width:14%">' +
+    '</colgroup>' +
+    '<thead>' +
+      '<tr><th class="academic-record-title" colspan="11">'+(year+' Academic Record').toUpperCase()+'</th></tr>' +
+      '<tr>' +
+        '<th class="course-title" colspan="2" rowspan="2">Course Title</th>' +
+        '<th colspan="4">'+semesterHeading('Semester 1', semester1Position)+'</th>' +
+        '<th class="semester-gap" rowspan="2"></th>' +
+        '<th colspan="4">'+semesterHeading('Semester 2', semester2Position)+'</th>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>GPA</th><th>Final Grade</th><th>Total Score</th><th>Interpretation</th>' +
+        '<th>GPA</th><th>Final Grade</th><th>Total Score</th><th>Interpretation</th>' +
+      '</tr>' +
+    '</thead><tbody>';
+}
+
+function transcriptScore(value) {
+  if (value === '' || value === null || value === undefined || isNaN(Number(value))) return '';
+  var number = Number(value);
+  return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+function transcriptSubjectRow(subject, sem1, sem2) {
+  sem1 = sem1 || {};
+  sem2 = sem2 || {};
+  return '<tr>' +
+    '<td class="course-name" colspan="2">'+subject+'</td>' +
+    '<td class="result-cell">'+(sem1.grade ? sem1.points.toFixed(1) : '')+'</td>' +
+    '<td class="result-cell">'+(sem1.grade || '')+'</td>' +
+    '<td class="result-cell">'+(sem1.grade ? transcriptScore(sem1.score) : '')+'</td>' +
+    '<td class="result-cell">'+(sem1.interpretation || '')+'</td>' +
+    '<td class="semester-gap"></td>' +
+    '<td class="result-cell">'+(sem2.grade ? sem2.points.toFixed(1) : '')+'</td>' +
+    '<td class="result-cell">'+(sem2.grade || '')+'</td>' +
+    '<td class="result-cell">'+(sem2.grade ? transcriptScore(sem2.score) : '')+'</td>' +
+    '<td class="result-cell">'+(sem2.interpretation || '')+'</td>' +
+  '</tr>';
+}
+
+function semesterGpaStats(yearRows, slot) {
+  var core = [];
+  var elective = [];
+  Object.keys(yearRows || {}).forEach(function(subject) {
+    var row = yearRows[subject] || {};
+    var score = row[slot] && row[slot].score;
+    if (score === '' || score === null || score === undefined || isNaN(Number(score))) return;
+    var numericScore = Number(score);
+    var result = { score: numericScore, points: gradeInfo(numericScore).points };
+    (String(row.subject_type || '').toLowerCase() === 'core' ? core : elective).push(result);
+  });
+  core.sort(function(a, b) { return b.score - a.score; });
+  elective.sort(function(a, b) { return b.score - a.score; });
+  var selected = core.slice(0, 3).concat(elective.slice(0, 3));
+  var points = selected.reduce(function(total, result) { return total + result.points; }, 0);
+  return {
+    totalPoints: points,
+    subjectCount: selected.length,
+    semesterGpa: selected.length ? (points / selected.length).toFixed(2) : '-'
+  };
+}
+
+function addSemesterToCumulative(state, semester) {
+  state.totalPoints += semester.totalPoints;
+  state.subjectCount += semester.subjectCount;
+  return {
+    gpa: state.subjectCount ? (state.totalPoints / state.subjectCount).toFixed(2) : '-',
+    credits: (state.totalPoints * 4).toFixed(1)
+  };
+}
+
+function semesterAcademicSummariesHtml(yearRows, cumulativeState) {
+  var semester1 = semesterGpaStats(yearRows, 'sem1');
+  var semester1Cumulative = addSemesterToCumulative(cumulativeState, semester1);
+  var semester2 = semesterGpaStats(yearRows, 'sem2');
+  var semester2Cumulative = addSemesterToCumulative(cumulativeState, semester2);
+  return '<div class="semester-gpa-summary">' +
+    '<div class="semester-summary">Academic Summary<br>Cumulative GPA: '+semester1Cumulative.gpa+' | Credits Earned: '+semester1Cumulative.credits+'</div>' +
+    '<div></div>' +
+    '<div class="semester-summary">Academic Summary<br>Cumulative GPA: '+semester2Cumulative.gpa+' | Credits Earned: '+semester2Cumulative.credits+'</div>' +
+  '</div>';
+}
+
+function renderTranscript(profile, records) {
+  records = aggregateSubjectScores(records || []);
+  var user = currentUser || {};
+  document.getElementById('tsStudent').textContent = profile.full_name || user.full_name || '-';
+  document.getElementById('tsRef').textContent = profile.ass_ref_id || user.ass_ref_id || '-';
+  document.getElementById('tsProgramme').textContent = profile.programme || '-';
+  document.getElementById('tsClass').textContent = profile.class_name || user.class_name || '-';
+  document.getElementById('tsGender').textContent = profile.gender || '-';
+  document.getElementById('tsDob').textContent = formatDate(profile.date_of_birth);
+  document.getElementById('tsYear').textContent = profile.year_admitted || '-';
+  document.getElementById('tsPassport').innerHTML = passportHtml(profile);
+  document.getElementById('tableAcademicYear').textContent = academicYearLabel(profile);
+
+  var grouped = {};
+  var academicYears = {};
+  var subjects = {};
+  var totalPoints = 0;
+  var totalEntries = 0;
+  records.forEach(function(record) {
+    var score = Number(record.score);
+    if (isNaN(score)) return;
+    var year = record.year_level || record.yearLevel || 'Year 1';
+    var subject = record.subject || '-';
+    var academicYear = record.academic_year || record.academicYear || '';
+    var slot = semesterSlot(record.semester);
+    var info = gradeInfo(score);
+    grouped[year] = grouped[year] || {};
+    grouped[year][subject] = grouped[year][subject] || { subject: subject, subject_type: record.subject_type || 'Elective' };
+    grouped[year][subject][slot] = { score: score, grade: info.grade, points: info.points, interpretation: info.interpretation };
+    if (academicYear) academicYears[year] = academicYear;
+    subjects[subject] = true;
+    totalPoints += info.points;
+    totalEntries++;
+  });
+
+  var body = [];
+  var years = Object.keys(grouped).sort(sortYearLabel);
+  var cumulativeState = { totalPoints: 0, subjectCount: 0 };
+  years.forEach(function(year) {
+    body.push('<div class="table-wrap">'+transcriptTableHeader(year, 'tbl', grouped[year], [], academicYears[year]));
+    Object.keys(grouped[year]).sort().forEach(function(subject) {
+      var row = grouped[year][subject];
+      body.push(transcriptSubjectRow(subject, row.sem1, row.sem2));
+    });
+    body.push('</tbody></table>'+semesterAcademicSummariesHtml(grouped[year], cumulativeState)+'</div>');
+  });
+  if (!body.length) body.push('<div class="table-wrap"><table class="tbl"><tbody><tr><td style="text-align:center;color:var(--text-soft)">No submitted assessment records found.</td></tr></tbody></table></div>');
+  document.getElementById('ts-body').innerHTML = body.join('');
+
+  var cumulative = totalEntries ? (totalPoints / totalEntries).toFixed(1) : '-';
+  document.getElementById('avg').textContent = cumulative;
+  document.getElementById('subjects').textContent = Object.keys(subjects).length || '-';
+  document.getElementById('yearsCovered').textContent = years.length || '-';
+  renderGradeLegend();
+}
+
+function studentFullName(student) {
+  return [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase() ||
+    student.full_name || student.name || '-';
+}
+
+function studentClassName(student) {
+  return student.classes && student.classes.name ? student.classes.name : (student.class_name || student.className || '');
+}
+
+function studentProgrammeName(student) {
+  return student.classes && student.classes.programmes ? student.classes.programmes.name : (student.programme || '');
+}
+
+function studentRef(student) {
+  return student.ass_ref_id || student.assRef || student.ref || '';
+}
+
+function getStudentLevel(admissionYear, currentYear) {
+  var difference = currentYear - Number(admissionYear);
+  if (difference === 0) return 'Year 1';
+  if (difference === 1) return 'Year 2';
+  if (difference === 2) return 'Year 3';
+  return '';
+}
+
+function studentYearLevel(student) {
+  return student.student_level || student.year_level || student.yearLevel || (student.year_admitted ? getStudentLevel(student.year_admitted, new Date().getFullYear()) : '');
+}
+
+function transcriptRowsHtml(records, summaries) {
+  records = aggregateSubjectScores(records || []);
+  var grouped = {};
+  var academicYears = {};
+  var subjects = {};
+  var totalPoints = 0;
+  var totalEntries = 0;
+  records.forEach(function(record) {
+    var score = Number(record.score);
+    if (isNaN(score)) return;
+    var year = record.year_level || record.yearLevel || 'Year 1';
+    var subject = record.subject || '-';
+    var academicYear = record.academic_year || record.academicYear || '';
+    var slot = semesterSlot(record.semester);
+    var info = gradeInfo(score);
+    grouped[year] = grouped[year] || {};
+    grouped[year][subject] = grouped[year][subject] || { subject: subject, subject_type: record.subject_type || 'Elective' };
+    grouped[year][subject][slot] = { score: score, grade: info.grade, points: info.points, interpretation: info.interpretation };
+    if (academicYear) academicYears[year] = academicYear;
+    subjects[subject] = true;
+    totalPoints += info.points;
+    totalEntries++;
+  });
+  var rows = [];
+  var cumulativeState = { totalPoints: 0, subjectCount: 0 };
+  Object.keys(grouped).sort(sortYearLabel).forEach(function(year) {
+    rows.push(transcriptTableHeader(year, 'pdf-table', grouped[year], summaries, academicYears[year]));
+    Object.keys(grouped[year]).sort().forEach(function(subject) {
+      var row = grouped[year][subject];
+      rows.push(transcriptSubjectRow(subject, row.sem1, row.sem2));
+    });
+    rows.push('</tbody></table>'+semesterAcademicSummariesHtml(grouped[year], cumulativeState));
+  });
+  if (!rows.length) rows.push('<table class="pdf-table"><tbody><tr><td>No submitted assessment records found.</td></tr></tbody></table>');
+  return {
+    rows: rows.join(''),
+    cumulative: totalEntries ? (totalPoints / totalEntries).toFixed(1) : '-',
+    subjects: Object.keys(subjects).length || '-',
+    years: Object.keys(grouped).length || '-'
+  };
+}
+
+function gradeLegendHtml() {
+  return GRADE_SCALE.map(function(item) {
+    return '<tr><td>'+item.grade+'</td><td>'+item.points.toFixed(1)+'</td><td>'+item.min+' - '+item.max+'</td><td>'+item.interpretation+'</td></tr>';
+  }).join('');
+}
+
+function transcriptCardHtml(profile, records, qualitative, positionSummaries) {
+  var calc = transcriptRowsHtml(records, positionSummaries || []);
+  qualitative = qualitative || {};
+  var remark = qualitative.teacher_remark || 'No qualitative assessment available.';
+  var teacher = qualitative.updated_by || qualitative.teacher_name || qualitative.captured_by || '';
+  var academicYear = academicYearLabel(profile);
+  return '<section class="print-transcript">'+
+    '<div class="transcript-page">'+
+      '<div class="pdf-head">'+
+        '<h2>ASUOM SENIOR HIGH SCHOOL</h2>'+ 
+        '<div><b>Headmaster, Box 08, AKYEM ASUOM.</b><br>Tel. 0244791325<br>E-Mail: asuomshs1970@gmail.com</div>'+ 
+        '<div class="right"><b>'+(profile.full_name || '-')+'</b><br>Study Area: '+(profile.programme || '-')+'<br>Date of Birth: '+formatDate(profile.date_of_birth)+'<br>Year of Admission: '+(profile.year_admitted || '-')+'<br>STD_ID: '+(profile.ass_ref_id || '-')+'</div>'+ 
+        '<div class="pdf-passport">'+passportHtml(profile)+'</div>'+ 
+      '</div>'+ 
+      '<div class="official-title">OFFICIAL TRANSCRIPT</div><div class="star-line">***</div>'+ 
+      '<div class="pdf-section-title">Academic Year: '+academicYear+'</div>'+ 
+      calc.rows+
+      '<div class="pdf-section-title">Qualitative Assessment</div>'+ 
+      '<p class="qa-text">'+remark+'</p>'+ 
+      '<p class="signature-line">Qualitative Assessment by: '+(teacher || '________________')+'</p>'+ 
+      '<p class="signature-line">Signature: ______________</p>'+ 
+    '</div>'+ 
+    '<div class="transcript-page">'+
+      '<h2 class="grade-page-title">GRADE INTERPRETATION</h2>'+ 
+      '<table class="pdf-table"><thead><tr><th>GRADE</th><th>POINTS</th><th>SCORE RANGES</th><th>INTERPRETATION</th></tr></thead><tbody>'+gradeLegendHtml()+'</tbody></table>'+ 
+    '</div>'+ 
+  '</section>';
+}
+
+function renderOfficialStudentTranscript(profile, records, qualitative, positionSummaries) {
+  document.getElementById('studentTranscriptReport').innerHTML = transcriptCardHtml(profile, records, qualitative, positionSummaries || []);
+}
+
+function localSubjectType(subjectName) {
+  var subjects = [];
+  try { subjects = JSON.parse(localStorage.getItem('axiom_subjects') || '[]'); } catch (e) {}
+  var match = subjects.find(function(subject) {
+    return String(subject.name || subject.subjectName || '').toLowerCase() === String(subjectName || '').toLowerCase();
+  });
+  return match ? (match.subject_type || match.type || 'Elective') : 'Elective';
+}
+
+function loadLocalTranscript() {
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('axiom_assessment_records') || '[]'); } catch (e) {}
+  var rows = [];
+  records.forEach(function(record) {
+    (record.scores || []).forEach(function(score) {
+      if (score.assRef !== currentUser.ass_ref_id) return;
+      var subjectName = record.subjectName || score.subject || '-';
+      rows.push({
+        subject: subjectName,
+        subject_type: localSubjectType(subjectName),
+        academic_year: record.academicYear || record.academic_year || '',
+        year_level: record.yearLevel || 'Year 1',
+        semester: record.semester || '1st Sem',
+        modeName: record.modeName || '',
+        overall_score: record.overallScore || record.overall_score || 100,
+        score: score.score || '',
+        grade: score.grade || '',
+        remark: score.remark || ''
+      });
+    });
+  });
+  var profile = {
+    full_name: currentUser.full_name,
+    ass_ref_id: currentUser.ass_ref_id,
+    class_name: currentUser.class_name,
+    programme: currentUser.programme || '',
+    passport_url: currentUser.passport_url || currentUser.photoUrl || ''
+  };
+  var qualitative = latestQualitativeForRef(localQualitativeRows([currentUser.ass_ref_id]), currentUser.ass_ref_id);
+  renderOfficialStudentTranscript(profile, rows, qualitative, localPositionSummaries(currentUser.ass_ref_id));
+}
+
+function localClasses() {
+  try { return JSON.parse(localStorage.getItem('axiom_classes') || '[]'); } catch (e) { return []; }
+}
+
+function localStudents() {
+  var list = [];
+  try { list = list.concat(JSON.parse(localStorage.getItem('axiom_students') || '[]')); } catch (e) {}
+  try { list = list.concat(JSON.parse(localStorage.getItem('axiom_registered_students') || '[]')); } catch (e) {}
+  return list;
+}
+
+function localTranscriptRowsForStudent(ref) {
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('axiom_assessment_records') || '[]'); } catch (e) {}
+  var rows = [];
+  records.forEach(function(record) {
+    (record.scores || []).forEach(function(score) {
+      if (String(score.assRef || '').toUpperCase() !== String(ref || '').toUpperCase()) return;
+      var subjectName = record.subjectName || score.subject || '-';
+      rows.push({
+        subject: subjectName,
+        subject_type: localSubjectType(subjectName),
+        academic_year: record.academicYear || record.academic_year || '',
+        year_level: record.yearLevel || 'Year 1',
+        semester: record.semester || '1st Sem',
+        modeName: record.modeName || '',
+        overall_score: record.overallScore || record.overall_score || 100,
+        score: score.score || ''
+      });
+    });
+  });
+  return rows;
+}
+
+function localQualitativeRows(refs) {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem('axiom_qualitative_assessments') || '[]'); } catch (e) {}
+  if (!refs || !refs.length) return list;
+  var wanted = {};
+  refs.forEach(function(ref) { wanted[String(ref || '').toUpperCase()] = true; });
+  return list.filter(function(row) { return wanted[String(row.student_ref || '').toUpperCase()]; });
+}
+
+function localPositionSummaries(ref) {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem('axiom_result_summaries') || '[]'); } catch (e) {}
+  return list.filter(function(row) {
+    return String(row.ass_ref_id || row.assRef || '').toUpperCase() === String(ref || '').toUpperCase();
+  });
+}
+
+async function loadQualitativeRows(refs) {
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listQualitativeAssessments) {
+    try {
+      var rows = await AxiomDB.listQualitativeAssessments(refs);
+      if (rows) return rows;
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load qualitative assessments. Showing local remarks.', true);
+    }
+  }
+  return localQualitativeRows(refs);
+}
+
+function latestQualitativeForRef(rows, ref) {
+  var matches = (rows || []).filter(function(row) {
+    return String(row.student_ref || '').toUpperCase() === String(ref || '').toUpperCase();
+  });
+  matches.sort(function(a, b) {
+    return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+  });
+  return matches[0] || null;
+}
+
+function fillSelect(select, items, placeholder) {
+  select.innerHTML = '<option value="">'+placeholder+'</option>';
+  items.forEach(function(item) {
+    var option = document.createElement('option');
+    option.value = item;
+    option.textContent = item;
+    select.appendChild(option);
+  });
+}
+
+async function initDownloadTranscriptModule() {
+  var programmeSelect = document.getElementById('downloadProgramme');
+  var classSelect = document.getElementById('downloadClass');
+  var classes = localClasses();
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listClasses) {
+    try {
+      var dbClasses = await AxiomDB.listClasses();
+      if (dbClasses && dbClasses.length) classes = dbClasses;
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load transcript setup from Supabase. Showing local setup.', true);
+    }
+  }
+  var programmes = [];
+  classes.forEach(function(cls) {
+    var programme = cls.programme || (cls.programmes && cls.programmes.name) || '';
+    if (programme && programmes.indexOf(programme) === -1) programmes.push(programme);
+  });
+  fillSelect(programmeSelect, programmes.sort(), '***SELECT LEARNING AREA***');
+  function refreshClasses() {
+    var selectedProgramme = programmeSelect.value;
+    var classNames = classes.filter(function(cls) {
+      var programme = cls.programme || (cls.programmes && cls.programmes.name) || '';
+      return !selectedProgramme || programme === selectedProgramme;
+    }).map(function(cls) { return cls.name; }).filter(Boolean);
+    fillSelect(classSelect, classNames, '***SELECT CLASS***');
+  }
+  programmeSelect.addEventListener('change', refreshClasses);
+  refreshClasses();
+}
+
+async function loadTranscriptByRef(assRef) {
+  assRef = String(assRef || '').trim().toUpperCase();
+  if (!assRef) {
+    Portal.toast('Enter STD_ID to download a student transcript.', true);
+    return;
+  }
+  var student = null;
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listStudents) {
+    var students = await AxiomDB.listStudents();
+    student = (students || []).find(function(row) { return String(row.ass_ref_id || '').toUpperCase() === assRef; });
+  }
+  if (!student) {
+    student = localStudents().find(function(row) {
+      return String(row.ass_ref_id || row.assRef || row.ref || '').toUpperCase() === assRef;
+    });
+  }
+  if (!student) {
+    Portal.toast('No student found for that STD_ID.', true);
+    return;
+  }
+  currentUser = {
+    id: student.id,
+    type: 'student',
+    ass_ref_id: student.ass_ref_id || student.assRef,
+    full_name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase() || student.full_name || student.name,
+    class_name: student.classes && student.classes.name ? student.classes.name : (student.class_name || student.className || ''),
+    programme: student.classes && student.classes.programmes ? student.classes.programmes.name : (student.programme || ''),
+    passport_url: student.passport_url || student.photoUrl || ''
+  };
+  document.body.classList.remove('admin-download-mode');
+  document.body.classList.add('student-report-mode');
+  await loadStudentTranscript();
+}
+
+async function getStudentTranscriptRows(student) {
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listStudentTranscript && student.id) {
+    var data = await AxiomDB.listStudentTranscript(student.id);
+    return (data.scores || []).map(function(row) {
+      var assessment = row.assessments || {};
+      return {
+        subject: assessment.subjects && assessment.subjects.name ? assessment.subjects.name : '-',
+        subject_type: assessment.subjects && assessment.subjects.subject_type ? assessment.subjects.subject_type : 'Elective',
+        academic_year: assessment.academic_year || '',
+        year_level: assessment.year_level || 'Year 1',
+        semester: assessment.semester || '1st Sem',
+        modeName: assessment.assessment_modes && assessment.assessment_modes.name ? assessment.assessment_modes.name : '',
+        overall_score: assessment.overall_score,
+        score: row.score === null || row.score === undefined ? '' : row.score
+      };
+    });
+  }
+  return localTranscriptRowsForStudent(studentRef(student));
+}
+
+async function getStudentPositionSummaries(student) {
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listResultSummaries && student.id) {
+    try {
+      return await AxiomDB.listResultSummaries({ studentId: student.id }) || [];
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  return localPositionSummaries(studentRef(student));
+}
+
+function profileFromStudent(student) {
+  return {
+    full_name: studentFullName(student),
+    ass_ref_id: studentRef(student),
+    programme: studentProgrammeName(student),
+    class_name: studentClassName(student),
+    gender: student.gender || '-',
+    date_of_birth: student.date_of_birth,
+    year_admitted: student.year_admitted || '-',
+    passport_url: student.passport_url || student.photoUrl || student.profile_photo || ''
+  };
+}
+
+function waitForTranscriptImages(containerSelector) {
+  var images = Array.from(document.querySelectorAll((containerSelector || '#batchTranscriptArea')+' img'));
+  if (!images.length) return Promise.resolve();
+  var loading = images.filter(function(image) { return !image.complete; }).map(function(image) {
+    return new Promise(function(resolve) {
+      image.addEventListener('load', resolve, { once: true });
+      image.addEventListener('error', resolve, { once: true });
+    });
+  });
+  if (!loading.length) return Promise.resolve();
+  return Promise.race([
+    Promise.all(loading),
+    new Promise(function(resolve) { setTimeout(resolve, 3000); })
+  ]);
+}
+
+async function downloadTranscriptSet() {
+  var ref = String(document.getElementById('downloadSearch').value || '').trim().toUpperCase();
+  var className = document.getElementById('downloadClass').value;
+  var programme = document.getElementById('downloadProgramme').value;
+  var year = document.getElementById('downloadYear').value;
+  var students = [];
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listStudents) {
+    students = await AxiomDB.listStudents();
+  }
+  if (!students || !students.length) students = localStudents();
+
+  if (ref) {
+    students = students.filter(function(student) { return String(studentRef(student)).toUpperCase() === ref; });
+  } else {
+    if (!className) {
+      Portal.toast('Select class or enter STD_ID before downloading transcript.', true);
+      return;
+    }
+    students = students.filter(function(student) {
+      var matchesClass = studentClassName(student) === className;
+      var matchesProgramme = !programme || studentProgrammeName(student) === programme;
+      var matchesYear = !year || !studentYearLevel(student) || studentYearLevel(student) === year;
+      return matchesClass && matchesProgramme && matchesYear;
+    });
+  }
+
+  if (!students.length) {
+    Portal.toast(ref ? 'No student found for that STD_ID.' : 'No students found for the selected class.', true);
+    return;
+  }
+
+  var cards = [];
+  var refs = students.map(studentRef).filter(Boolean);
+  var qualitativeRows = await loadQualitativeRows(refs);
+  for (var i = 0; i < students.length; i++) {
+    var rows = await getStudentTranscriptRows(students[i]);
+    var positionSummaries = await getStudentPositionSummaries(students[i]);
+    cards.push(transcriptCardHtml(profileFromStudent(students[i]), rows, latestQualitativeForRef(qualitativeRows, studentRef(students[i])), positionSummaries));
+  }
+  document.getElementById('batchTranscriptArea').innerHTML = cards.join('');
+  document.body.classList.add('printing-transcripts');
+  await waitForTranscriptImages();
+  setTimeout(function() { window.print(); }, 100);
+}
+
+async function loadStudentTranscript() {
+  if (!currentUser || currentUser.type !== 'student') {
+    return;
+  }
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listStudentTranscript) {
+    loadLocalTranscript();
+    return;
+  }
+  try {
+    var data = await AxiomDB.listStudentTranscript(currentUser.id);
+    var student = data.student || {};
+    var rows = (data.scores || []).map(function(row) {
+      var assessment = row.assessments || {};
+      return {
+        subject: assessment.subjects && assessment.subjects.name ? assessment.subjects.name : '-',
+        subject_type: assessment.subjects && assessment.subjects.subject_type ? assessment.subjects.subject_type : 'Elective',
+        academic_year: assessment.academic_year || '',
+        year_level: assessment.year_level || 'Year 1',
+        semester: assessment.semester || '1st Sem',
+        modeName: assessment.assessment_modes && assessment.assessment_modes.name ? assessment.assessment_modes.name : '',
+        overall_score: assessment.overall_score,
+        score: row.score === null || row.score === undefined ? '' : row.score,
+        grade: row.grade || '',
+        remark: row.remark || ''
+      };
+    });
+    var profile = {
+      full_name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase(),
+      ass_ref_id: student.ass_ref_id,
+      programme: student.classes && student.classes.programmes ? student.classes.programmes.name : '-',
+      class_name: student.classes && student.classes.name ? student.classes.name : '-',
+      gender: student.gender || '-',
+      date_of_birth: student.date_of_birth,
+      year_admitted: student.year_admitted || '-',
+      passport_url: student.passport_url || student.photoUrl || student.profile_photo || currentUser.passport_url || ''
+    };
+    var qualitativeRows = await loadQualitativeRows([student.ass_ref_id]);
+    renderOfficialStudentTranscript(profile, rows, latestQualitativeForRef(qualitativeRows, student.ass_ref_id), data.summaries || []);
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load transcript: ' + (err.message || 'Unknown error'), true);
+    loadLocalTranscript();
+  }
+}
+
+async function printCurrentTranscriptReport() {
+  if (currentUser && currentUser.type === 'student') {
+    var report = document.querySelector('#studentTranscriptReport .print-transcript');
+    if (!report) {
+      Portal.toast('The transcript report is still loading. Please try again.', true);
+      return;
+    }
+    document.body.classList.remove('printing-transcripts');
+    document.body.classList.add('printing-student-transcript');
+    var studentId = currentUser.ass_ref_id || 'Student';
+    document.title = studentId + ' - Official Transcript';
+    await waitForTranscriptImages('#studentTranscriptReport');
+    window.print();
+    return;
+  }
+  if (document.querySelector('#batchTranscriptArea .print-transcript')) {
+    document.body.classList.add('printing-transcripts');
+    await waitForTranscriptImages();
+    window.print();
+    return;
+  }
+  Portal.toast('Select a class or STD_ID and generate the transcript before printing.', true);
+}
+
+async function initializeTranscriptPage() {
+  if (currentUser && currentUser.type === 'student') {
+    await loadStudentTranscript();
+    return;
+  }
+  await initDownloadTranscriptModule();
+  var params = new URLSearchParams(window.location.search);
+  var requestedRef = String(params.get('ref') || '').trim().toUpperCase();
+  if (!requestedRef) return;
+  document.getElementById('downloadSearch').value = requestedRef;
+  if (params.get('download') === '1') await downloadTranscriptSet();
+}
+initializeTranscriptPage().catch(function(err) {
+  console.error(err);
+  Portal.toast('Could not prepare transcript: ' + (err.message || 'Unknown error'), true);
+});
+document.getElementById('issued').textContent = new Date().toLocaleDateString();
+document.getElementById('downloadTranscriptBtn').addEventListener('click', function() {
+  downloadTranscriptSet().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not load transcript: ' + (err.message || 'Unknown error'), true);
+  });
+});
+document.getElementById('printTranscriptBtn').addEventListener('click', function() {
+  printCurrentTranscriptReport().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not prepare the transcript for printing.', true);
+  });
+});
+document.getElementById('saveTranscriptPdfBtn').addEventListener('click', function() {
+  printCurrentTranscriptReport().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not prepare the transcript PDF.', true);
+  });
+});
+window.addEventListener('afterprint', function() {
+  document.body.classList.remove('printing-transcripts');
+  document.body.classList.remove('printing-student-transcript');
+  document.title = 'Transcript - AXIOMBYTE SMS';
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('embedded') === '1' && window.parent !== window) {
+    window.parent.postMessage({ type: 'axiom-transcript-finished' }, '*');
+  }
+});
+document.getElementById('transcriptLogout').addEventListener('click', function() {
+  if (!confirm('Log out of the portal?')) return;
+  localStorage.removeItem('axiom_current_user');
+  location.href = 'login.html';
+});
+</script>
+</body>
+</html>

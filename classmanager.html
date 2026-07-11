@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manage Classes - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .class-shell {
+    max-width: 670px;
+    margin: 0 auto;
+    padding: 10px 0 26px;
+  }
+  .required-note {
+    text-align: center;
+    color: #1e90ff;
+    font-size: 18px;
+    margin: 0 0 28px;
+  }
+  .class-form label {
+    color: #000;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .class-form .req { color: #ef4444; }
+  .class-form .select,
+  .class-form .input {
+    border-radius: 4px;
+    min-height: 38px;
+    font-size: 14px;
+    color: #374151;
+    background: #fff;
+  }
+  .subject-pair-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 30px;
+    margin-top: 8px;
+  }
+  .class-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 60px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .class-actions .btn {
+    border: 0;
+    border-radius: 4px;
+    min-width: 74px;
+    height: 38px;
+    font-weight: 800;
+  }
+  .btn-refresh {
+    background: #f3f4f6;
+    color: #000;
+  }
+  .btn-update {
+    background: #9ac36b;
+    color: #fff;
+  }
+  .class-list {
+    max-width: 940px;
+    margin: 24px auto 0;
+  }
+  .subject-summary {
+    max-width: 360px;
+    white-space: normal;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 760px) {
+    .class-shell { max-width: none; }
+    .subject-pair-grid { grid-template-columns: 1fr; gap: 14px; }
+    .class-actions { margin-top: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="class-shell">
+      <p class="required-note">All Fields Marked * Are Mandatory</p>
+
+      <form id="classForm" class="class-form">
+        <div class="field">
+          <label>Department: <span class="req">*</span></label>
+          <select class="select" id="classDepartment" required>
+            <option value="">***SELECT DEPARTMENT***</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Learning Area: <span class="req">*</span></label>
+          <select class="select" id="learningArea" required>
+            <option value="">***SELECT LEARNING AREA***</option>
+          </select>
+        </div>
+
+        <div style="margin-top:20px">
+          <label>Subjects: <span class="req">*</span></label>
+          <div class="subject-pair-grid" id="subjectSelectors"></div>
+        </div>
+
+        <div class="field" style="margin-top:0">
+          <label>Class Name: <span class="req">*</span></label>
+          <input class="input" id="className" required placeholder="CLASS NAME...">
+        </div>
+
+        <div class="class-actions">
+          <button type="submit" class="btn btn--primary">Submit</button>
+          <button type="button" class="btn btn-refresh" id="refreshBtn">Refresh</button>
+          <button type="button" class="btn btn-update" id="updateBtn">Update</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card card--pad-0 class-list">
+      <div class="card__head"><i class="fas fa-table-list"></i> Existing Classes</div>
+      <div class="table-wrap">
+        <table class="tbl" id="classTable">
+          <thead><tr><th>Class Name</th><th>Department</th><th>Learning Area</th><th>Subjects</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'classmanager' });
+
+var PROGRAMME_KEY = 'axiom_programmes';
+var DEPARTMENT_KEY = 'axiom_departments';
+var SUBJECT_KEY = 'axiom_subjects';
+var CLASS_KEY = 'axiom_classes';
+var editingIndex = -1;
+
+var defaultProgrammes = [
+  { name: 'General Science', department: 'Science Department' },
+  { name: 'General Arts', department: 'Arts Department' },
+  { name: 'Business', department: 'Business Department' },
+  { name: 'Visual Arts', department: 'Visual Arts Department' },
+  { name: 'Home Economics', department: 'Home Economics Department' },
+  { name: 'Agricultural Science', department: 'Agriculture Department' }
+];
+
+var defaultDepartments = [];
+
+var defaultSubjects = [
+  { name: 'Core Mathematics', type: 'Core', programme: 'All Programmes' },
+  { name: 'English Language', type: 'Core', programme: 'All Programmes' },
+  { name: 'Integrated Science', type: 'Core', programme: 'All Programmes' },
+  { name: 'Social Studies', type: 'Core', programme: 'All Programmes' },
+  { name: 'Elective Mathematics', type: 'Elective', programme: 'General Science' },
+  { name: 'Physics', type: 'Elective', programme: 'General Science' },
+  { name: 'Chemistry', type: 'Elective', programme: 'General Science' },
+  { name: 'Biology', type: 'Elective', programme: 'General Science' },
+  { name: 'Economics', type: 'Elective', programme: 'General Arts' },
+  { name: 'Geography', type: 'Elective', programme: 'General Arts' },
+  { name: 'Government', type: 'Elective', programme: 'General Arts' },
+  { name: 'History', type: 'Elective', programme: 'General Arts' },
+  { name: 'Financial Accounting', type: 'Elective', programme: 'Business' },
+  { name: 'Cost Accounting', type: 'Elective', programme: 'Business' },
+  { name: 'Business Management', type: 'Elective', programme: 'Business' }
+];
+
+function loadList(key, fallback) {
+  try {
+    var saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback.slice();
+  } catch (e) {
+    return fallback.slice();
+  }
+}
+
+function saveClasses() {
+  try { localStorage.setItem(CLASS_KEY, JSON.stringify(classes)); } catch (e) {}
+}
+
+function saveList(key, list) {
+  try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) {}
+}
+
+function itemName(item) {
+  return typeof item === 'string' ? item : item.name;
+}
+
+function subjectMatchesProgramme(subject, programme) {
+  return subject.programme === 'All Programmes' || subject.programme === programme;
+}
+
+var classes = loadList(CLASS_KEY, [
+  { name: 'SCI_24', department:'Science Department', programme: 'General Science', subjects: ['Core Mathematics', 'English Language', 'Integrated Science', 'Social Studies', 'Physics', 'Chemistry'] },
+  { name: 'BUS_24', department:'Business Department', programme: 'Business', subjects: ['Core Mathematics', 'English Language', 'Social Studies', 'Financial Accounting', 'Cost Accounting', 'Business Management'] }
+]);
+var departments = loadList(DEPARTMENT_KEY, defaultDepartments);
+var legacyDepartmentNames = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
+departments = departments.filter(function(department) { return legacyDepartmentNames.indexOf(department.name) === -1; });
+saveList(DEPARTMENT_KEY, departments);
+var programmes = loadList(PROGRAMME_KEY, defaultProgrammes);
+var subjects = loadList(SUBJECT_KEY, defaultSubjects);
+
+function mapDbSubject(subject) {
+  return {
+    id: subject.id,
+    name: subject.name,
+    code: subject.code || '',
+    type: subject.subject_type || subject.type || 'Elective',
+    programme: subject.applies_to_all_programmes ? 'All Programmes' : ((subject.programmes && subject.programmes.name) || subject.programme || '')
+  };
+}
+
+function programmeDepartment(programme) {
+  return programme.department || (programme.departments && programme.departments.name) || '';
+}
+
+function classDepartment(classRow) {
+  if (classRow.department) return classRow.department;
+  var programme = programmes.find(function(item) { return itemName(item) === classRow.programme; });
+  return programme ? programmeDepartment(programme) : '';
+}
+
+function populateDepartments() {
+  var select = document.getElementById('classDepartment');
+  select.innerHTML = '<option value="">***SELECT DEPARTMENT***</option>';
+  departments.forEach(function(department) {
+    if (!department.name) return;
+    var option = document.createElement('option');
+    option.value = department.name;
+    option.textContent = department.name.toUpperCase();
+    select.appendChild(option);
+  });
+}
+
+function populateProgrammes() {
+  var select = document.getElementById('learningArea');
+  var selectedDepartment = document.getElementById('classDepartment').value;
+  select.innerHTML = '<option value="">***SELECT LEARNING AREA***</option>';
+  programmes.forEach(function(programme) {
+    var name = itemName(programme);
+    if (!name || !selectedDepartment || programmeDepartment(programme) !== selectedDepartment) return;
+    var option = document.createElement('option');
+    option.value = name;
+    option.textContent = name.toUpperCase();
+    select.appendChild(option);
+  });
+}
+
+function makeSubjectSelect(index, subjects, selectedValue) {
+  var select = document.createElement('select');
+  select.className = 'select subject-select';
+  select.required = index === 0;
+  select.innerHTML = '<option value="">***SELECT SUBJECT***</option>';
+  subjects.forEach(function(subject) {
+    var option = document.createElement('option');
+    option.value = subject.name;
+    option.textContent = subject.name.toUpperCase();
+    if (subject.name === selectedValue) option.selected = true;
+    select.appendChild(option);
+  });
+  return select;
+}
+
+function populateSubjects(selectedSubjects) {
+  var programme = document.getElementById('learningArea').value;
+  var box = document.getElementById('subjectSelectors');
+  var matchingSubjects = subjects.filter(function(subject) {
+    return programme && subjectMatchesProgramme(subject, programme);
+  });
+  selectedSubjects = selectedSubjects || [];
+  box.innerHTML = '';
+  for (var i = 0; i < 12; i++) {
+    box.appendChild(makeSubjectSelect(i, matchingSubjects, selectedSubjects[i] || ''));
+  }
+}
+
+function selectedSubjects() {
+  return Array.from(document.querySelectorAll('.subject-select')).map(function(select) {
+    return select.value;
+  }).filter(Boolean);
+}
+
+function resetForm() {
+  editingIndex = -1;
+  document.getElementById('classForm').reset();
+  populateDepartments();
+  populateProgrammes();
+  populateSubjects();
+}
+
+function renderClasses() {
+  document.querySelector('#classTable tbody').innerHTML = classes.map(function(cls, idx) {
+    return '<tr><td style="font-weight:700">'+cls.name+'</td><td>'+classDepartment(cls)+'</td><td>'+cls.programme+'</td><td class="subject-summary">'+cls.subjects.join(', ')+'</td>'+
+      '<td><div class="row-actions">'+
+        '<button class="btn btn--sm" data-act="Edit" data-i="'+idx+'"><i class="fas fa-pen"></i></button>'+
+        '<button class="btn btn--danger btn--sm" data-act="Drop" data-i="'+idx+'"><i class="fas fa-trash"></i></button>'+
+      '</div></td></tr>';
+  }).join('');
+}
+
+populateDepartments();
+populateProgrammes();
+populateSubjects();
+renderClasses();
+
+async function refreshAcademicSetupFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var setup = await Promise.all([AxiomDB.listDepartments ? AxiomDB.listDepartments() : [], AxiomDB.listProgrammes(), AxiomDB.listSubjects(), AxiomDB.listClasses()]);
+    var dbDepartments = (setup[0] || []).filter(function(department) { return legacyDepartmentNames.indexOf(department.name) === -1; });
+    var dbProgrammes = setup[1];
+    var dbSubjects = setup[2];
+    var dbClasses = setup[3];
+    if (dbDepartments && dbDepartments.length) {
+      departments = dbDepartments;
+      saveList(DEPARTMENT_KEY, departments);
+    }
+    if (dbProgrammes && dbProgrammes.length) {
+      programmes = dbProgrammes.map(function(p) {
+        return { id: p.id, name: p.name, code: p.code || '', department_id: p.department_id || '', department: (p.departments && p.departments.name) || p.department || '' };
+      });
+      saveList(PROGRAMME_KEY, programmes);
+    }
+    if (dbSubjects && dbSubjects.length) {
+      subjects = dbSubjects.map(mapDbSubject);
+      saveList(SUBJECT_KEY, subjects);
+    }
+    if (dbClasses && dbClasses.length) {
+      classes = dbClasses;
+      saveClasses();
+    }
+    populateDepartments();
+    populateProgrammes();
+    populateSubjects();
+    renderClasses();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load class setup from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+refreshAcademicSetupFromSupabase();
+
+document.getElementById('learningArea').addEventListener('change', function() {
+  populateSubjects();
+});
+
+document.getElementById('classDepartment').addEventListener('change', function() {
+  populateProgrammes();
+  populateSubjects();
+});
+
+document.getElementById('classForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  async function saveClassRecord() {
+    var selected = selectedSubjects();
+    if (!selected.length) {
+      Portal.toast('Select at least one subject.', true);
+      return;
+    }
+    var classRecord = {
+      name: document.getElementById('className').value.trim(),
+      department: document.getElementById('classDepartment').value,
+      programme: document.getElementById('learningArea').value,
+      subjects: selected.slice(0, 12)
+    };
+    var wasUpdate = editingIndex > -1;
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      if (editingIndex > -1 && classes[editingIndex].id && AxiomDB.updateClass) {
+        classRecord = await AxiomDB.updateClass(classes[editingIndex].id, classRecord);
+      } else if (AxiomDB.createClass) {
+        classRecord = await AxiomDB.createClass(classRecord);
+      }
+    }
+    if (editingIndex > -1) classes[editingIndex] = classRecord;
+    else classes.push(classRecord);
+    saveClasses();
+    renderClasses();
+    resetForm();
+    Portal.toast(wasUpdate ? 'Class updated.' : 'Class added.');
+  }
+  saveClassRecord().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not save class: ' + (err.message || 'Unknown error'), true);
+  });
+});
+
+document.getElementById('refreshBtn').addEventListener('click', resetForm);
+
+document.getElementById('updateBtn').addEventListener('click', function() {
+  if (editingIndex < 0) {
+    Portal.toast('Select a class from the table to update.', true);
+    return;
+  }
+  document.getElementById('classForm').requestSubmit();
+});
+
+document.getElementById('classTable').addEventListener('click', function(e) {
+  var b = e.target.closest('button[data-act]');
+  if (!b) return;
+  var i = +b.dataset.i;
+  if (b.dataset.act === 'Drop') {
+    if (confirm('Drop '+classes[i].name+'?')) {
+      async function dropClass() {
+        if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteClass && classes[i].id) {
+          await AxiomDB.deleteClass(classes[i].id);
+        }
+      classes.splice(i, 1);
+      saveClasses();
+      renderClasses();
+      Portal.toast('Class dropped.');
+      }
+      dropClass().catch(function(err) {
+        console.error(err);
+        Portal.toast('Could not drop class: ' + (err.message || 'Unknown error'), true);
+      });
+    }
+    return;
+  }
+  editingIndex = i;
+  document.getElementById('classDepartment').value = classDepartment(classes[i]);
+  populateProgrammes();
+  document.getElementById('learningArea').value = classes[i].programme;
+  populateSubjects(classes[i].subjects);
+  document.getElementById('className').value = classes[i].name;
+  Portal.toast('Class loaded for editing.');
+});
+</script>
+</body>
+</html>

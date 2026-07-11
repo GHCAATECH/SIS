@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dashboard — AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  .quick { display:flex; align-items:center; gap:14px; color:var(--text); transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease; }
+  .quick:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+  .quick .ico { width:48px; height:48px; border-radius:12px; flex:none; display:grid; place-items:center; font-size:20px; color:#fff; transition:transform .25s cubic-bezier(.2,.8,.2,1); }
+  .quick:hover .ico { transform:scale(1.12) rotate(-6deg); }
+  .ico.b1{background:linear-gradient(135deg,#4caf50,#9be582)} .ico.b2{background:linear-gradient(135deg,#68c85f,#b9ef8f)}
+  .ico.b3{background:linear-gradient(135deg,#3d9f45,#8edb72)} .ico.b4{background:linear-gradient(135deg,#7ccf6b,#d6f6bf)}
+  .hero{ text-align:center; padding:8px 0 4px; }
+  .hero .crest{ width:120px; height:120px; border-radius:50%; object-fit:cover; border:4px solid var(--surface); box-shadow:var(--shadow-lg); background:var(--surface-2); margin:6px auto 12px; display:block; animation:popIn .6s ease both, floaty 5s ease-in-out 1s infinite; }
+  .chart-wrap{ position:relative; height:220px; }
+  .panel__head{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; background:linear-gradient(135deg,var(--brand),var(--accent),var(--brand)); background-size:200% 200%; animation:gradientShift 8s ease infinite; color:#fff; padding:13px 16px; font-weight:650; border-radius:var(--radius); }
+  .panel__head .chev{ transition:transform .2s ease; } .panel.open .panel__head .chev{ transform:rotate(180deg); } .panel.open .panel__head{ border-radius:var(--radius) var(--radius) 0 0; }
+  .panel__body{ display:none; padding:18px; border:1px solid var(--border); border-top:0; border-radius:0 0 var(--radius) var(--radius);} .panel.open .panel__body{ display:block; }
+  .mini{ background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; text-align:center;} .mini .cap{ font-size:12px; color:var(--text-soft);} .mini .num{ font-size:20px; font-weight:700; color:var(--green); margin-top:4px;}
+  .portal-card {
+    display: none;
+    margin-bottom: 18px;
+  }
+  .portal-card .identity {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .portal-card .identity-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #4caf50, #9be582);
+    color: #fff;
+    font-size: 24px;
+  }
+  .portal-card .identity h2 {
+    font-size: 22px;
+    margin-bottom: 2px;
+  }
+  .profile-tile {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .profile-tile .k {
+    color: var(--text-faint);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .profile-tile .v {
+    margin-top: 5px;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  body.portal-dashboard-only #portalDashboard .identity {
+    display: none;
+  }
+  .scheme-dashboard { display:none; margin-top:20px; padding-top:18px; border-top:1px solid var(--border); }
+  .scheme-dashboard__head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .scheme-dashboard__head h3 { margin:0; font-size:17px; }
+  .scheme-summary { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+  .scheme-summary > div { padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); }
+  .scheme-summary b { display:block; color:var(--brand); font-size:21px; }
+  .scheme-summary span { color:var(--text-faint); font-size:11px; font-weight:800; text-transform:uppercase; }
+  .scheme-review-queue { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; padding:12px 14px; border:1px solid #99d5cf; border-radius:8px; background:#f0fdfa; }
+  .scheme-review-queue[hidden] { display:none; }
+  .scheme-review-queue p { margin:2px 0 0; color:var(--text-soft); font-size:12px; }
+  .scheme-progress-list { display:grid; gap:8px; }
+  .scheme-progress-row { display:grid; grid-template-columns:minmax(180px,1.4fr) minmax(220px,1fr) auto; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .scheme-progress-row:last-child { border-bottom:0; }
+  .scheme-progress-row small { color:var(--text-faint); }
+  .scheme-track { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+  .scheme-track span { height:6px; border-radius:999px; background:#dbe3ea; }
+  .scheme-track span.done { background:var(--brand); }
+  .scheme-track span.failed { background:#ef4444; }
+  .scheme-status { padding:5px 8px; border-radius:999px; font-size:11px; font-weight:800; white-space:nowrap; background:#fef3c7; color:#92400e; }
+  .scheme-status.approved { background:#dcfce7; color:#166534; }
+  .scheme-status.declined { background:#fee2e2; color:#991b1b; }
+  @media (max-width:760px) { .scheme-summary { grid-template-columns:1fr 1fr; } .scheme-progress-row { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="card portal-card" id="portalDashboard">
+      <div class="card__body">
+        <div class="identity">
+          <div class="identity-icon" id="portalIcon"><i class="fas fa-user"></i></div>
+          <div>
+            <h2 id="portalName">Dashboard</h2>
+            <p id="portalSubtitle" style="color:var(--text-soft);margin:0">Welcome to AXIOMBYTE SMS</p>
+          </div>
+        </div>
+        <div class="grid cols-4" id="portalProfileGrid"></div>
+        <section class="scheme-dashboard" id="schemeDashboard">
+          <div class="scheme-dashboard__head"><h3><i class="fas fa-book-open-reader"></i> Scheme of Work Progress</h3><a class="btn btn--primary btn--sm" href="schemeofwork.html">Open Scheme of Work</a></div>
+          <div class="scheme-summary">
+            <div><b id="dashboardSchemeHod">0</b><span>Pending HOD</span></div>
+            <div><b id="dashboardSchemeFinal">0</b><span>Pending Final Review</span></div>
+            <div><b id="dashboardSchemeApproved">0</b><span>Final Approved</span></div>
+            <div><b id="dashboardSchemeDeclined">0</b><span>Declined</span></div>
+          </div>
+          <div class="scheme-review-queue" id="dashboardSchemeReviewQueue" hidden>
+            <div><b id="dashboardSchemeReviewTitle">Review Queue</b><p id="dashboardSchemeReviewText"></p></div>
+            <a class="btn btn--primary btn--sm" href="schemeofwork.html"><i class="fas fa-list-check"></i> Review Now</a>
+          </div>
+          <div class="scheme-progress-list" id="dashboardSchemeRows"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="grid cols-4" id="quickActions">
+      <a class="card quick reveal" href="cass.html"><span class="ico b1"><i class="fas fa-star"></i></span><span><b>Capture Assessment</b><br><span style="font-size:12px;color:var(--text-faint)">Enter / modify scores</span></span></a>
+      <a class="card quick reveal" href="schoolupdate.html"><span class="ico b2"><i class="fas fa-school"></i></span><span><b>Update School Info</b><br><span style="font-size:12px;color:var(--text-faint)">School profile</span></span></a>
+      <a class="card quick reveal" href="registerstudent.html"><span class="ico b3"><i class="fas fa-user-plus"></i></span><span><b>Register Students</b><br><span style="font-size:12px;color:var(--text-faint)">Add new students</span></span></a>
+      <a class="card quick reveal" href="index.html"><span class="ico b4"><i class="fas fa-cloud-arrow-down"></i></span><span><b>User Resources</b><br><span style="font-size:12px;color:var(--text-faint)">Manual &amp; guides</span></span></a>
+    </div>
+
+    <!-- Hero + stat row -->
+    <div class="card" style="margin-top:18px">
+      <div class="hero">
+        <h2>AXIOMBYTE SMS</h2>
+        <img class="crest" src="schoolcrests/0021101.png" alt="School crest" onerror="this.style.display='none'" />
+        <p style="color:var(--text-soft);margin:0">ASUOM SENIOR HIGH SCHOOL</p>
+      </div>
+      <div class="grid cols-4" style="margin-top:18px">
+        <div class="card stat"><i class="fas fa-users" style="color:var(--brand)"></i><div class="num" id="TotalStudents">—</div><div class="cap">Total Students</div></div>
+        <div class="card stat"><i class="fas fa-book" style="color:var(--green)"></i><div class="num" id="TotalSubjects">0</div><div class="cap">Subjects Offered</div></div>
+        <div class="card stat"><i class="fas fa-chalkboard-user" style="color:var(--blue)"></i><div class="num" id="TeachingStaff">0</div><div class="cap">Teaching Staff</div></div>
+        <a class="card stat" href="admin.html"><i class="fas fa-list-check" style="color:var(--green)"></i><div class="num"><i class="fas fa-arrow-right" style="font-size:16px"></i></div><div class="cap">Admin Panel</div></a>
+      </div>
+    </div>
+
+    <div class="section-title"><i class="fas fa-chart-pie"></i> Enrolment Analytics <span class="rule"></span></div>
+
+    <div class="grid" style="grid-template-columns:2fr 1fr">
+      <div class="grid">
+        <div class="grid cols-3">
+          <div class="card stat"><i class="fas fa-users" style="color:var(--brand)"></i><div class="num" id="TotalStudents2">—</div><div class="cap">Total Students</div></div>
+          <div class="card stat"><i class="fas fa-mars" style="color:var(--blue)"></i><div class="num" id="TotalMale">—</div><div class="cap">Total Male</div></div>
+          <div class="card stat"><i class="fas fa-venus" style="color:var(--pink)"></i><div class="num" id="TotalFemale">—</div><div class="cap">Total Female</div></div>
+        </div>
+        <div class="grid cols-3">
+          <div class="card stat"><div class="num" id="Year1">—</div><div class="cap">Year 1</div></div>
+          <div class="card stat"><div class="num" id="Year2">—</div><div class="cap">Year 2</div></div>
+          <div class="card stat"><div class="num" id="Year3">—</div><div class="cap">Year 3</div></div>
+        </div>
+        <div class="panel" id="advancedPanel">
+          <div class="panel__head" id="advHead"><span><i class="fas fa-layer-group"></i> &nbsp;Advanced Analytics</span><i class="fas fa-chevron-down chev"></i></div>
+          <div class="panel__body">
+            <div class="grid cols-4">
+              <div class="mini"><div class="cap">Year 1 Male</div><div class="num" id="Year1Male">—</div></div>
+              <div class="mini"><div class="cap">Year 1 Female</div><div class="num" id="Year1Female">—</div></div>
+              <div class="mini"><div class="cap">Year 2 Male</div><div class="num" id="Year2Male">—</div></div>
+              <div class="mini"><div class="cap">Year 2 Female</div><div class="num" id="Year2Female">—</div></div>
+            </div>
+            <div class="grid cols-4" style="margin-top:14px">
+              <div class="mini"><div class="cap">Year 3 Male</div><div class="num" id="Year3Male">—</div></div>
+              <div class="mini"><div class="cap">Year 3 Female</div><div class="num" id="Year3Female">—</div></div>
+              <div class="mini"><div class="cap">Male %</div><div class="num" id="MalePercent">—</div></div>
+              <div class="mini"><div class="cap">Female %</div><div class="num" id="FemalePercent">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="card"><h4 style="text-align:center;margin-bottom:10px">Gender Distribution</h4><div class="chart-wrap"><canvas id="genderChart"></canvas></div></div>
+        <div class="card"><h4 style="text-align:center;margin-bottom:10px">Year Distribution</h4><div class="chart-wrap"><canvas id="yearChart"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="footer">&copy; <span id="yr"></span> AXIOMBYTE SMS. All rights reserved. &nbsp;·&nbsp; Powered by AXIOMBYTE SMS</div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'dashboard', title: 'Dashboard' });
+
+$(function () {
+  var currentUser = Portal.currentUser();
+  function profileTile(label, value) {
+    return '<div class="profile-tile"><div class="k">'+label+'</div><div class="v">'+(value || '-')+'</div></div>';
+  }
+  function firstValue() {
+    for (var i = 0; i < arguments.length; i++) {
+      if (arguments[i] !== null && arguments[i] !== undefined && String(arguments[i]).trim() !== '') return arguments[i];
+    }
+    return '';
+  }
+  function renderPortalDashboard() {
+    if (!currentUser) return;
+    var card = document.getElementById('portalDashboard');
+    var grid = document.getElementById('portalProfileGrid');
+    document.body.classList.add('portal-dashboard-only');
+    Array.from(document.querySelector('.content').children).forEach(function(child) {
+      if (child.id !== 'portalDashboard') child.style.display = 'none';
+    });
+    card.style.display = 'block';
+    document.getElementById('portalName').textContent = currentUser.full_name || 'Portal User';
+    if (currentUser.type === 'student') {
+      document.getElementById('portalIcon').innerHTML = '<i class="fas fa-user-graduate"></i>';
+      document.getElementById('portalSubtitle').textContent = 'Student Portal';
+      grid.innerHTML = [
+        profileTile('Full Name', currentUser.full_name),
+        profileTile('STD_ID', currentUser.ass_ref_id),
+        profileTile('Programme', currentUser.programme),
+        profileTile('Class', currentUser.class_name)
+      ].join('');
+    } else {
+      document.getElementById('portalIcon').innerHTML = '<i class="fas fa-user-tie"></i>';
+      document.getElementById('portalSubtitle').textContent = (currentUser.category || 'Staff') + ' Portal';
+      grid.innerHTML = [
+        profileTile('Full Name', currentUser.full_name),
+        profileTile('Staff ID', firstValue(currentUser.staff_id, currentUser.staffId, currentUser.staffID)),
+        profileTile('Category', currentUser.category),
+        profileTile('Position', firstValue(currentUser.position_responsibility, currentUser.position, currentUser.positionResponsibility, currentUser.role)),
+        profileTile('Rank', firstValue(currentUser.rank, currentUser.staff_rank))
+      ].join('');
+    }
+  }
+  renderPortalDashboard();
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  }
+  function schemeTrack(status) {
+    var hodDone = ['Pending Head Academic','Declined by Head Academic','Final Approved'].indexOf(status) > -1;
+    var finalDone = status === 'Final Approved';
+      return '<div class="scheme-track" title="Submission, HOD review, final review"><span class="done"></span><span class="'+(status === 'Declined by HOD' ? 'failed' : hodDone ? 'done' : '')+'"></span><span class="'+(status === 'Declined by Head Academic' ? 'failed' : finalDone ? 'done' : '')+'"></span></div>';
+  }
+  function dashboardPositions() {
+    return String(currentUser && currentUser.position_responsibility || '').replace(/_/g, ' ').split(/[;,]/).map(function(value) { return value.trim().toLowerCase().replace(/\s+/g, ' '); }).filter(Boolean);
+  }
+  function dashboardIsHod() {
+    return dashboardPositions().some(function(position) { return position === 'hod' || position === 'head of department' || position === 'head of department (hod)'; });
+  }
+  function dashboardIsHeadAcademic() {
+    return dashboardPositions().some(function(position) { return position === 'assistant headmaster (academics)' || position === 'head academic' || position === 'head academics' || position === 'head of academic' || position === 'head of academics' || position === 'academic head'; });
+  }
+  async function loadSchemeProgress() {
+    var section = document.getElementById('schemeDashboard');
+    if (!currentUser || currentUser.type === 'student' || currentUser.category !== 'Teaching Staff' || !window.AxiomDB || !AxiomDB.listSchemeOfWork) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    try {
+      var reviewer = dashboardIsHod() || dashboardIsHeadAcademic();
+      var rows = await AxiomDB.listSchemeOfWork(reviewer ? {} : { teacherId: currentUser.id }) || [];
+      var mine = rows.filter(function(row) { return row.teacher_id === currentUser.id; });
+      document.getElementById('dashboardSchemeHod').textContent = mine.filter(function(r){ return r.status === 'Pending HOD'; }).length;
+      document.getElementById('dashboardSchemeFinal').textContent = mine.filter(function(r){ return r.status === 'Pending Head Academic'; }).length;
+      document.getElementById('dashboardSchemeApproved').textContent = mine.filter(function(r){ return r.status === 'Final Approved'; }).length;
+      document.getElementById('dashboardSchemeDeclined').textContent = mine.filter(function(r){ return String(r.status).indexOf('Declined') > -1; }).length;
+      var hodQueue = dashboardIsHod() ? rows.filter(function(row) { return row.status === 'Pending HOD' && String(row.department || '').trim().toLowerCase() === String(currentUser.department || '').trim().toLowerCase(); }).length : 0;
+      var finalQueue = dashboardIsHeadAcademic() ? rows.filter(function(row) { return row.status === 'Pending Head Academic'; }).length : 0;
+      var queue = document.getElementById('dashboardSchemeReviewQueue');
+      queue.hidden = !reviewer;
+      if (reviewer) {
+        document.getElementById('dashboardSchemeReviewTitle').textContent = dashboardIsHod() && dashboardIsHeadAcademic() ? 'HOD and Final Review Queue' : dashboardIsHod() ? 'Department HOD Review Queue' : 'Head Academic Final Review Queue';
+        document.getElementById('dashboardSchemeReviewText').textContent = dashboardIsHod() && dashboardIsHeadAcademic() ? hodQueue+' awaiting HOD review and '+finalQueue+' awaiting final review.' : dashboardIsHod() ? hodQueue+' scheme(s) from your department await review.' : finalQueue+' HOD-approved scheme(s) await final review.';
+      }
+      var recent = mine.slice(0, 5);
+      document.getElementById('dashboardSchemeRows').innerHTML = recent.length ? recent.map(function(row) {
+        var statusClass = row.status === 'Final Approved' ? ' approved' : String(row.status).indexOf('Declined') > -1 ? ' declined' : '';
+        return '<div class="scheme-progress-row"><div><b>'+escapeHtml(row.title)+'</b><br><small>'+escapeHtml(row.class_name)+' | '+escapeHtml(row.subject_name)+' | '+escapeHtml(row.term)+'</small></div>'+schemeTrack(row.status)+'<span class="scheme-status'+statusClass+'">'+escapeHtml(row.status)+'</span></div>';
+      }).join('') : '<div style="padding:14px 0;color:var(--text-faint)">No scheme of work submitted yet.</div>';
+    } catch (err) {
+      console.error(err);
+      document.getElementById('dashboardSchemeRows').innerHTML = '<div style="padding:14px 0;color:var(--text-faint)">Scheme progress will appear after the database migration is run.</div>';
+    }
+  }
+  loadSchemeProgress();
+
+  async function refreshStaffDashboardUser() {
+    if (!currentUser || currentUser.type === 'student' || !window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.getStaffUser) return;
+    try {
+      var staff = await AxiomDB.getStaffUser(currentUser.id);
+      if (!staff) return;
+      currentUser.staff_id = staff.staff_id || currentUser.staff_id;
+      currentUser.staffId = staff.staff_id || currentUser.staffId;
+      currentUser.category = staff.category || currentUser.category;
+      currentUser.position_responsibility = staff.position_responsibility || currentUser.position_responsibility;
+      currentUser.position = staff.position_responsibility || currentUser.position;
+      currentUser.rank = staff.rank || currentUser.rank;
+      currentUser.full_name = staff.full_name || currentUser.full_name;
+      currentUser.department = staff.department || currentUser.department;
+      localStorage.setItem('axiom_current_user', JSON.stringify(currentUser));
+      renderPortalDashboard();
+      loadSchemeProgress();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  refreshStaffDashboardUser();
+
+  function quickCard(href, icon, color, title, subtitle) {
+    return '<a class="card quick reveal" href="'+href+'"><span class="ico '+color+'"><i class="fas '+icon+'"></i></span><span><b>'+title+'</b><br><span style="font-size:12px;color:var(--text-faint)">'+subtitle+'</span></span></a>';
+  }
+  function renderQuickActions() {
+    if (currentUser) return;
+    var quickGrid = document.getElementById('quickActions');
+    if (!quickGrid || !currentUser) return;
+    if (currentUser.type === 'student') {
+      quickGrid.innerHTML = [
+        quickCard('mydocuments.html', 'fa-file-shield', 'b1', 'My Documents', 'View uploaded documents'),
+        quickCard('transcript.html', 'fa-file-lines', 'b2', 'Transcript', 'View academic transcript')
+      ].join('');
+      return;
+    }
+    var cards = [];
+    if (currentUser.category === 'Teaching Staff') {
+      cards.push(quickCard('cass.html', 'fa-clipboard-check', 'b1', 'Capture Assessment', 'Enter / modify scores'));
+    }
+    cards.push(quickCard('mydocuments.html', 'fa-file-shield', 'b2', 'My Documents', 'View staff documents'));
+    cards.push(quickCard('transcript.html', 'fa-file-lines', 'b3', 'Transcript', 'Open transcript module'));
+    quickGrid.innerHTML = cards.join('');
+  }
+  renderQuickActions();
+
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  document.getElementById('advHead').addEventListener('click', function(){ document.getElementById('advancedPanel').classList.toggle('open'); });
+
+  var fontColor = getComputedStyle(document.body).color, genderChart=null, yearChart=null;
+  function num(id,v){ var el=document.getElementById(id); if(el) el.textContent=(Number(v)||0).toLocaleString(); }
+  function pct(id,v){ var el=document.getElementById(id); if(el) el.textContent=(parseFloat(v)||0).toFixed(1)+'%'; }
+
+  function gChart(m,f){ if(genderChart){genderChart.data.datasets[0].data=[m,f];genderChart.update();return;}
+    genderChart=new Chart(document.getElementById('genderChart'),{type:'doughnut',data:{labels:['Male','Female'],datasets:[{data:[m,f],backgroundColor:['#1976d2','#e91e63'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{color:fontColor,usePointStyle:true,padding:16}}}}});
+  }
+  function yChart(a,b,c){ if(yearChart){yearChart.data.datasets[0].data=[a,b,c];yearChart.update();return;}
+    yearChart=new Chart(document.getElementById('yearChart'),{type:'bar',data:{labels:['Year 1','Year 2','Year 3'],datasets:[{data:[a,b,c],backgroundColor:['#2e7d32','#f9a825','#6a1b9a'],borderRadius:8,maxBarThickness:60}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:fontColor}},y:{beginAtZero:true,ticks:{color:fontColor,precision:0},grid:{color:'rgba(125,125,125,.12)'}}}}});
+  }
+
+  function render(d){
+    num('TotalStudents',d.TotalStudents); num('TotalStudents2',d.TotalStudents);
+    num('TotalSubjects',d.TotalSubjects);
+    num('TeachingStaff',d.TeachingStaff);
+    num('TotalMale',d.TotalMale); num('TotalFemale',d.TotalFemale);
+    num('Year1',d.Year1); num('Year2',d.Year2); num('Year3',d.Year3);
+    num('Year1Male',d.Year1Male); num('Year1Female',d.Year1Female);
+    num('Year2Male',d.Year2Male); num('Year2Female',d.Year2Female);
+    num('Year3Male',d.Year3Male); num('Year3Female',d.Year3Female);
+    pct('MalePercent',d.MalePercent); pct('FemalePercent',d.FemalePercent);
+    gChart(Number(d.TotalMale)||0,Number(d.TotalFemale)||0);
+    yChart(Number(d.Year1)||0,Number(d.Year2)||0,Number(d.Year3)||0);
+  }
+
+  function safeList(key) {
+    try {
+      var value = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(value) ? value : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function studentLevelFromAdmission(admissionYear) {
+    var year = Number(admissionYear);
+    if (!year) return '';
+    var diff = new Date().getFullYear() - year;
+    if (diff === 0) return 'Year 1';
+    if (diff === 1) return 'Year 2';
+    if (diff === 2) return 'Year 3';
+    return 'Completed';
+  }
+  function studentLevel(row) {
+    return firstValue(
+      row.student_level,
+      row.year_level,
+      row.classes && row.classes.year_level,
+      row.class_year,
+      studentLevelFromAdmission(row.year_admitted)
+    );
+  }
+  function genderOf(row) {
+    return String(row.gender || '').trim().toLowerCase();
+  }
+  function isMale(row) {
+    var gender = genderOf(row);
+    return gender === 'male' || gender === 'm';
+  }
+  function isFemale(row) {
+    var gender = genderOf(row);
+    return gender === 'female' || gender === 'f';
+  }
+  function isActiveStudent(row) {
+    var status = String(row.status || 'Active').toLowerCase();
+    return status !== 'deleted' && status !== 'suspended';
+  }
+  function countUnique(items, getter) {
+    var seen = {};
+    (items || []).forEach(function(item) {
+      var value = getter(item);
+      if (value) seen[String(value).toLowerCase()] = true;
+    });
+    return Object.keys(seen).length;
+  }
+  function localSubjectsFromClasses(classes) {
+    var seen = {};
+    (classes || []).forEach(function(cls) {
+      (cls.subjects || []).forEach(function(subject) {
+        if (subject) seen[String(subject).toLowerCase()] = true;
+      });
+    });
+    return Object.keys(seen).length;
+  }
+  function calculateDashboard(students, subjects, staff, classes) {
+    students = (students || []).filter(isActiveStudent);
+    staff = staff || [];
+    classes = classes || [];
+    var totals = {
+      TotalStudents: students.length,
+      TotalMale: 0,
+      TotalFemale: 0,
+      Year1: 0,
+      Year2: 0,
+      Year3: 0,
+      Year1Male: 0,
+      Year1Female: 0,
+      Year2Male: 0,
+      Year2Female: 0,
+      Year3Male: 0,
+      Year3Female: 0,
+      TotalSubjects: (subjects && subjects.length) || localSubjectsFromClasses(classes),
+      TeachingStaff: staff.filter(function(row) {
+        return String(row.category || '').toLowerCase() === 'teaching staff' &&
+          String(row.status || 'Active').toLowerCase() !== 'suspended';
+      }).length
+    };
+    students.forEach(function(row) {
+      var level = studentLevel(row);
+      if (isMale(row)) totals.TotalMale++;
+      if (isFemale(row)) totals.TotalFemale++;
+      if (level === 'Year 1') {
+        totals.Year1++;
+        if (isMale(row)) totals.Year1Male++;
+        if (isFemale(row)) totals.Year1Female++;
+      }
+      if (level === 'Year 2') {
+        totals.Year2++;
+        if (isMale(row)) totals.Year2Male++;
+        if (isFemale(row)) totals.Year2Female++;
+      }
+      if (level === 'Year 3') {
+        totals.Year3++;
+        if (isMale(row)) totals.Year3Male++;
+        if (isFemale(row)) totals.Year3Female++;
+      }
+    });
+    totals.MalePercent = totals.TotalStudents ? (totals.TotalMale / totals.TotalStudents) * 100 : 0;
+    totals.FemalePercent = totals.TotalStudents ? (totals.TotalFemale / totals.TotalStudents) * 100 : 0;
+    return totals;
+  }
+  async function loadDashboardCalculations() {
+    var students = safeList('axiom_registered_students');
+    var subjects = safeList('axiom_subjects');
+    var staff = safeList('axiom_local_staff_users');
+    var classes = safeList('axiom_classes');
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      try {
+        var dbStudents = await AxiomDB.listStudents();
+        var dbSubjects = await AxiomDB.listSubjects();
+        var dbStaff = await AxiomDB.listStaff();
+        var dbClasses = await AxiomDB.listClasses();
+        students = dbStudents || students;
+        subjects = dbSubjects || subjects;
+        staff = dbStaff || staff;
+        classes = dbClasses || classes;
+      } catch (err) {
+        console.error(err);
+        Portal.toast('Could not load dashboard data from Supabase. Showing local totals.', true);
+      }
+    }
+    render(calculateDashboard(students, subjects, staff, classes));
+  }
+  loadDashboardCalculations();
+});
+</script>
+</body>
+</html>

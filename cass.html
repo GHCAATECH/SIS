@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Capture Assessment - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .cass-shell {
+    padding: 20px 18px 24px;
+    background: #fff;
+    color: #000;
+    min-height: calc(100vh - 112px);
+  }
+  .cass-filter {
+    display: grid;
+    grid-template-columns: 1fr .8fr .8fr 1.25fr .9fr .9fr 1fr;
+    gap: 14px;
+    align-items: end;
+  }
+  .cass-bulk {
+    display: grid;
+    grid-template-columns: .9fr 1.45fr 1fr 1.45fr 1fr;
+    gap: 14px;
+    align-items: end;
+    margin-top: 14px;
+  }
+  .cass-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .cass-field .select,
+  .cass-field .input,
+  .bulk-file {
+    width: 100%;
+    min-height: 29px;
+    border-radius: 3px;
+    font-size: 10px;
+    padding: 4px 7px;
+    background: #fff;
+    color: #374151;
+  }
+  .cass-blue-btn {
+    width: 100%;
+    min-height: 29px;
+    border: 0;
+    border-radius: 3px;
+    background: #12b8ed;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .capture-area {
+    margin-top: 22px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 16px;
+  }
+  .capture-status {
+    display: none;
+    margin-bottom: 10px;
+    padding: 9px 12px;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .capture-status.show { display: block; }
+  .capture-status.success { border-color:#bbf7d0; background:#f0fdf4; color:#166534; }
+  .capture-status.error { border-color:#fecaca; background:#fef2f2; color:#991b1b; }
+  .score-panel {
+    height: clamp(320px, calc(100vh - 390px), 520px);
+    overflow-y: auto;
+    border: 1px solid #d9d9d9;
+    border-radius: 3px;
+    background: #fff;
+  }
+  .score-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .score-table th,
+  .score-table td {
+    border: 1px solid #e0e0e0;
+    padding: 8px 8px;
+    text-align: center;
+  }
+  .score-table th {
+    background: #f7f7f7;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .score-table td.name { text-align: left; font-weight: 700; }
+  .score-box {
+    width: 78px;
+    min-height: 28px;
+    border: 1px solid #cfcfcf;
+    border-radius: 3px;
+    text-align: center;
+    font-size: 12px;
+  }
+  .cass-footer {
+    display: grid;
+    grid-template-columns: 1fr 220px 220px 340px 1fr;
+    gap: 20px;
+    align-items: center;
+    margin-top: 16px;
+  }
+  .student-count {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .student-count span { margin-left: 70px; }
+  .footer-btn {
+    min-height: 29px;
+    border: 0;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .footer-btn.refresh { background: #73b82f; }
+  .footer-btn.download { background: #12b8ed; }
+  .footer-btn.submit { background: linear-gradient(#f56b00, #dc4d00); }
+  .submitted-records {
+    display: none;
+    margin-top: 16px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background: #fff;
+  }
+  .submitted-records.show { display: block; }
+  .submitted-records-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    border-bottom:1px solid #e5e7eb;
+    background:#f8fafc;
+  }
+  .submitted-records-head strong { font-size:12px; text-transform:uppercase; }
+  .submitted-records-meta { color:#475569; font-size:11px; }
+  .submitted-records .score-panel { height:auto; max-height:320px; border:0; border-radius:0; }
+  .submitted-records-tools { display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; }
+  .submitted-overall { font-size:11px; font-weight:800; white-space:nowrap; }
+  .submitted-overall-input { width:76px; min-height:30px; margin-left:5px; padding:4px 7px; border:1px solid #94a3b8; border-radius:4px; text-align:center; font-size:11px; font-weight:800; }
+  .submitted-overall-input:focus { border-color:#0f766e; outline:2px solid rgba(15,118,110,.15); }
+  .submitted-search { width:220px; min-height:30px; padding:5px 9px; border:1px solid #cbd5e1; border-radius:4px; font-size:11px; }
+  .change-score-table { min-width:1350px; }
+  .change-score-box { width:84px; min-height:28px; border:1px solid #94a3b8; border-radius:3px; text-align:center; font-size:12px; }
+  .change-score-box:focus { border-color:#0f766e; outline:2px solid rgba(15,118,110,.15); }
+  .score-updated { color:#15803d; font-weight:800; }
+
+  @media (max-width: 1200px) {
+    .cass-filter { grid-template-columns: repeat(3, 1fr); }
+    .cass-bulk { grid-template-columns: repeat(2, 1fr); }
+    .cass-footer { grid-template-columns: 1fr 1fr 1fr; }
+    .student-count { grid-column: 1 / -1; }
+  }
+  @media (max-width: 720px) {
+    .cass-shell { padding: 18px 12px; }
+    .cass-filter, .cass-bulk { grid-template-columns: 1fr; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="cass-shell">
+      <div class="cass-filter">
+        <div class="cass-field">
+          <label>Academic Year:</label>
+          <input class="input" id="academicYearSelect" pattern="\d{4}/\d{4}" placeholder="2025/2026">
+        </div>
+        <div class="cass-field">
+          <label>Year:</label>
+          <select class="select" id="yearSelect"><option selected>Year 1</option><option>Year 2</option><option>Year 3</option></select>
+        </div>
+        <div class="cass-field">
+          <label>Semester:</label>
+          <select class="select" id="semesterSelect"><option>1st Sem</option><option>2nd Sem</option></select>
+        </div>
+        <div class="cass-field">
+          <label>Assessment_Mode:</label>
+          <select class="select" id="modeSelect">
+            <option>1. Individual Class Assessments (e.g., Classwork, Quizzes, Homework)</option>
+            <option>2. Mid-Sem</option>
+            <option>3. Practical or Portfolio or Performance Assessment (Individual)</option>
+            <option>4. Group Projects, Research, or Case Studies, Practical/Lab work, Workshops, Performances, Presentations (Out of Class)</option>
+            <option>5. Supervised individual Termly</option>
+          </select>
+        </div>
+        <div class="cass-field">
+          <label>Class:</label>
+          <select class="select" id="classSelect"><option value=""></option></select>
+        </div>
+        <div class="cass-field">
+          <label>Subject:</label>
+          <select class="select" id="subjectSelect"><option value=""></option></select>
+        </div>
+        <button class="cass-blue-btn" id="filterBtn" type="button">&lt;&lt;Filter&gt;&gt;</button>
+      </div>
+
+      <div class="cass-bulk">
+        <div class="cass-field">
+          <label>Overall_Score:</label>
+          <input class="input" id="overallScore" type="number" min="1" max="100" placeholder="OVER-ALL SCORE" required aria-required="true">
+        </div>
+        <button class="cass-blue-btn" id="downloadStudents" type="button">Download Excel Template</button>
+        <input class="bulk-file" id="bulkScores" type="file" accept=".xlsx,.xlsm">
+        <button class="cass-blue-btn" id="uploadBulk" type="button">Upload Bulk Scores</button>
+        <div></div>
+      </div>
+
+      <div class="capture-area">
+        <div class="capture-status" id="captureStatus" role="status" aria-live="polite"></div>
+        <div class="score-panel">
+          <table class="score-table" id="scoreTable">
+            <thead><tr><th>#</th><th>STD_ID</th><th>Candidate Name</th><th>Class</th><th>Subject</th><th>Score</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="cass-footer">
+        <div class="student-count">Total Number of Students <span id="studentCount">/</span></div>
+        <button class="footer-btn refresh" id="refreshBtn" type="button">Refresh</button>
+        <button class="footer-btn download" id="downloadData" type="button">Download Data</button>
+        <button class="footer-btn submit" id="submitComplete" type="button">Submit Complete</button>
+        <div></div>
+      </div>
+
+      <section class="submitted-records" id="submittedRecordsPanel" aria-live="polite">
+        <div class="submitted-records-head">
+          <div><strong>CHANGE_SCORE</strong><div class="submitted-records-meta" id="submittedRecordsMeta"></div></div>
+          <div class="submitted-records-tools">
+            <label class="submitted-overall">OVERALL SCORE: <input class="submitted-overall-input" id="submittedOverallScore" type="number" min="1" max="100" aria-label="Edit submitted assessment overall score"></label>
+            <input class="submitted-search" id="submittedScoreSearch" type="search" placeholder="Search record..." aria-label="Search submitted assessment records">
+          </div>
+        </div>
+        <div class="score-panel">
+          <table class="score-table change-score-table" id="submittedScoreTable">
+            <thead><tr><th>CHANGE_SCORE</th><th>SCORE</th><th>OVER-ALL-SCORE</th><th>STD_ID</th><th>NAME</th><th>ASST_YEAR</th><th>SEM</th><th>SUBJ-CODE</th><th>INSERTED_BY</th><th>DATE_INSERTED</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'cass' });
+
+function currentAcademicYear() {
+  var today = new Date();
+  var year = today.getFullYear();
+  return today.getMonth() >= 8 ? year + '/' + (year + 1) : (year - 1) + '/' + year;
+}
+document.getElementById('academicYearSelect').value = currentAcademicYear();
+
+var defaultClasses = [
+  { name: 'SCI_24', programme: 'General Science', subjects: ['Social Studies','Additional Mathematics','Mathematics','English Language','French','Biology','Chemistry','Physics','Physical Education & Health','Computing','Economics','Geography'] },
+  { name: 'BUS_24', programme: 'Business', subjects: ['Core Mathematics','English Language','Social Studies','Financial Accounting','Cost Accounting','Business Management'] }
+];
+var students = [
+  ['2400211013DB', 'FOSTER TETTEY ADAMNOR', 'SCI_24', 'Year 2'],
+  ['2400211013DC', 'DAVID ADDIN', 'SCI_24', 'Year 2'],
+  ['2400211013DD', 'STANLEY ADJEIKWEI ADJEI', 'SCI_24', 'Year 2'],
+  ['2400211013DE', 'GILBERT ADUKO', 'SCI_24', 'Year 2'],
+  ['2400211013DF', 'RUBY TEINOKIE AGBOZO', 'SCI_24', 'Year 2'],
+  ['2400211013DG', 'PRINCE MENSAH', 'SCI_24', 'Year 2'],
+  ['2400211013DH', 'ABENA OWUSU', 'SCI_24', 'Year 2']
+];
+var LOCAL_ASSESSMENTS_KEY = 'axiom_assessment_records';
+var currentUser = Portal.currentUser();
+var activeFilter = null;
+var submittedFilter = null;
+var teacherAssignments = currentUser && currentUser.id ? (function() {
+  try { return JSON.parse(localStorage.getItem('axiom_subject_classes_' + currentUser.id) || '[]'); } catch (e) { return []; }
+})() : [];
+
+function loadClasses() {
+  if (window.liveClasses) return window.liveClasses;
+  try {
+    var saved = localStorage.getItem('axiom_classes');
+    return saved ? JSON.parse(saved) : defaultClasses;
+  } catch (e) {
+    return defaultClasses;
+  }
+}
+
+function isTeachingStaffUser() {
+  return currentUser && currentUser.category === 'Teaching Staff' && currentUser.type !== 'student';
+}
+
+function isSchoolAdministratorUser() {
+  if (!currentUser || currentUser.type === 'student') return false;
+  var identity = [currentUser.type, currentUser.category, currentUser.role, currentUser.designation].join(' ').toLowerCase();
+  return identity.indexOf('administrator') > -1 || identity.indexOf('admin') > -1;
+}
+
+function requiresAssessmentAssignment() {
+  return !isSchoolAdministratorUser();
+}
+
+function assignmentKey(userId) {
+  return 'axiom_subject_classes_' + userId;
+}
+
+function localTeacherAssignments() {
+  if (!currentUser || !currentUser.id) return [];
+  try { return JSON.parse(localStorage.getItem(assignmentKey(currentUser.id)) || '[]'); } catch (e) { return []; }
+}
+
+function classesAllowedForTeacher(classes) {
+  if (!requiresAssessmentAssignment()) return classes;
+  if (!teacherAssignments.length) return [];
+  var allowedClassNames = {};
+  teacherAssignments.forEach(function(item) { allowedClassNames[item.className] = true; });
+  return classes.filter(function(cls) { return allowedClassNames[cls.name]; });
+}
+
+function subjectsAllowedForTeacher(className, subjects) {
+  if (!requiresAssessmentAssignment()) return subjects;
+  var allowedSubjects = {};
+  teacherAssignments.filter(function(item) { return item.className === className; }).forEach(function(item) {
+    allowedSubjects[item.subjectName] = true;
+  });
+  return subjects.filter(function(subject) { return allowedSubjects[subject]; });
+}
+
+async function loadTeacherAssignments() {
+  if (!requiresAssessmentAssignment()) return;
+  teacherAssignments = localTeacherAssignments();
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listStaffSubjectClasses && currentUser.id) {
+    try {
+      var saved = await AxiomDB.listStaffSubjectClasses(currentUser.id);
+      if (saved) {
+        teacherAssignments = saved;
+        localStorage.setItem(assignmentKey(currentUser.id), JSON.stringify(saved));
+      }
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load your assigned classes. Showing local assignment.', true);
+    }
+  }
+}
+
+function saveClassesCache(list) {
+  try { localStorage.setItem('axiom_classes', JSON.stringify(list)); } catch (e) {}
+}
+
+function getStudentLevel(admissionYear, currentYear) {
+  var difference = currentYear - Number(admissionYear);
+  if (difference === 0) return 'Year 1';
+  if (difference === 1) return 'Year 2';
+  if (difference === 2) return 'Year 3';
+  return 'Completed';
+}
+
+function promoteStudent(currentLevel) {
+  if (currentLevel === 'Year 1') return 'Year 2';
+  if (currentLevel === 'Year 2') return 'Year 3';
+  if (currentLevel === 'Year 3') return 'Completed';
+  return currentLevel;
+}
+
+async function loadAssessmentSetupFromSupabase() {
+  await loadTeacherAssignments();
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) {
+    populateClasses();
+    document.getElementById('classSelect').value = classesAllowedForTeacher(loadClasses())[0] ? classesAllowedForTeacher(loadClasses())[0].name : '';
+    populateSubjects();
+    showFilterPending();
+    return;
+  }
+  try {
+    var dbClasses = await AxiomDB.listClasses();
+    var dbModes = await AxiomDB.listAssessmentModes();
+    var dbStudents = await AxiomDB.listStudents();
+    if (dbClasses && dbClasses.length) {
+      window.liveClasses = dbClasses;
+      saveClassesCache(dbClasses);
+    }
+    if (dbStudents && dbStudents.length) {
+      students = dbStudents.map(function(row) {
+        return [
+          row.ass_ref_id,
+          [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ').toUpperCase(),
+          row.classes && row.classes.name ? row.classes.name : '',
+          row.student_level || (row.year_admitted ? getStudentLevel(row.year_admitted, new Date().getFullYear()) : '')
+        ];
+      });
+    }
+    if (dbModes && dbModes.length) {
+      document.getElementById('modeSelect').innerHTML = dbModes.map(function(mode) {
+        return '<option>'+mode.display_order+'. '+mode.name+'</option>';
+      }).join('');
+    }
+    populateClasses();
+    var allowedClasses = classesAllowedForTeacher(loadClasses());
+    document.getElementById('classSelect').value = allowedClasses[0] ? allowedClasses[0].name : '';
+    populateSubjects();
+    showFilterPending();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load assessment data from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+
+function populateClasses() {
+  var select = document.getElementById('classSelect');
+  select.innerHTML = '<option value=""></option>';
+  classesAllowedForTeacher(loadClasses()).forEach(function(cls) {
+    var option = document.createElement('option');
+    option.value = cls.name;
+    option.textContent = cls.name;
+    select.appendChild(option);
+  });
+}
+
+function populateSubjects() {
+  var className = document.getElementById('classSelect').value;
+  var cls = loadClasses().find(function(item) { return item.name === className; });
+  var select = document.getElementById('subjectSelect');
+  select.innerHTML = '<option value=""></option>';
+  subjectsAllowedForTeacher(className, cls ? cls.subjects : []).forEach(function(subject) {
+    var option = document.createElement('option');
+    option.value = subject;
+    option.textContent = subject;
+    select.appendChild(option);
+  });
+}
+
+function selectedFilters() {
+  return {
+    academicYear: document.getElementById('academicYearSelect').value.trim(),
+    yearLevel: document.getElementById('yearSelect').value,
+    semester: document.getElementById('semesterSelect').value,
+    modeName: document.getElementById('modeSelect').value,
+    className: document.getElementById('classSelect').value,
+    subjectName: document.getElementById('subjectSelect').value
+  };
+}
+
+function assessmentKey(filters) {
+  return [filters.academicYear, filters.yearLevel, filters.semester, filters.modeName, filters.className, filters.subjectName].join('|');
+}
+
+function setCaptureStatus(message, type) {
+  var status = document.getElementById('captureStatus');
+  status.textContent = message || '';
+  status.className = 'capture-status' + (message ? ' show' : '') + (type ? ' '+type : '');
+}
+
+function clearCaptureRows(message) {
+  document.querySelector('#scoreTable tbody').innerHTML = message
+    ? '<tr><td colspan="6" style="padding:24px;text-align:center;color:#64748b">'+message+'</td></tr>'
+    : '';
+  document.getElementById('studentCount').textContent = '/';
+}
+
+function showFilterPending() {
+  activeFilter = null;
+  clearCaptureRows('Select the assessment filters, then click Filter.');
+  setCaptureStatus('Selections are pending. Click Filter to load students.');
+}
+
+function studentRowsForFilter(filters) {
+  return students.filter(function(student) {
+    return student[2] === filters.className && (!student[3] || student[3] === filters.yearLevel);
+  });
+}
+
+function scoreRowHtml(row, idx, filters, score) {
+  var overallScore = Number(document.getElementById('overallScore').value) || 100;
+  return '<tr data-ass-ref="'+row[0]+'" data-name="'+row[1]+'" data-class-name="'+filters.className+'" data-subject="'+filters.subjectName+'"><td>'+(idx + 1)+'</td><td>'+row[0]+'</td><td class="name">'+row[1]+'</td><td>'+filters.className+'</td><td>'+filters.subjectName+'</td>'+
+    '<td><input class="score-box" type="number" min="0" max="'+overallScore+'" value="'+(score === null || score === undefined ? '' : score)+'" placeholder="0"></td></tr>';
+}
+
+function renderNewAssessmentRows(filters) {
+  var rows = studentRowsForFilter(filters);
+  document.querySelector('#scoreTable tbody').innerHTML = rows.map(function(student, idx) {
+    return scoreRowHtml(student, idx, filters, '');
+  }).join('');
+  document.getElementById('studentCount').textContent = rows.length || '/';
+  setCaptureStatus(rows.length ? 'Students loaded. Enter scores and submit this assessment mode.' : 'No students found for the selected class and year.', rows.length ? '' : 'error');
+}
+
+function localSubmittedAssessment(filters) {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem(LOCAL_ASSESSMENTS_KEY) || '[]'); } catch (e) {}
+  var key = assessmentKey(filters);
+  var record = list.find(function(item) { return item.key === key && item.status === 'Submitted'; });
+  return record ? {
+    overallScore: record.overallScore,
+    subjectCode: record.subjectCode || record.subjectName || '-',
+    insertedBy: record.captured_by || 'Admin',
+    insertedAt: record.saved_at || '',
+    scores: record.scores || []
+  } : null;
+}
+
+async function loadSubmittedAssessment(filters) {
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listAssessmentRecords) {
+    var rows = await AxiomDB.listAssessmentRecords(filters);
+    if (rows && rows.length) {
+      return {
+        overallScore: rows[0].assessments && rows[0].assessments.overall_score,
+        subjectCode: rows[0].assessments && rows[0].assessments.subjects ? rows[0].assessments.subjects.code : '-',
+        insertedBy: rows[0].assessments && rows[0].assessments.inserted_by ? rows[0].assessments.inserted_by : 'System',
+        insertedAt: (rows[0].assessments && rows[0].assessments.submitted_at) || rows[0].updated_at || '',
+        scores: rows.map(function(row) {
+          var student = row.students || {};
+          return {
+            assRef: student.ass_ref_id || '',
+            name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase(),
+            className: filters.className,
+            subject: filters.subjectName,
+            score: row.score
+          };
+        })
+      };
+    }
+  }
+  return localSubmittedAssessment(filters);
+}
+
+async function applyAssessmentFilter() {
+  var filters = selectedFilters();
+  if (!/^\d{4}\/\d{4}$/.test(filters.academicYear)) throw new Error('Academic year must use YYYY/YYYY format.');
+  if (!filters.className || !filters.subjectName) throw new Error('Select class and subject before filtering.');
+  activeFilter = Object.assign({}, filters);
+  document.getElementById('submittedRecordsPanel').classList.remove('show');
+  clearCaptureRows('Checking submitted scores...');
+  setCaptureStatus('Checking the selected assessment mode...');
+  var submitted = await loadSubmittedAssessment(filters);
+  if (submitted) {
+    if (submitted.overallScore) document.getElementById('overallScore').value = submitted.overallScore;
+    clearCaptureRows('Scores have already been submitted for this assessment mode.');
+    setCaptureStatus('Score submitted. Click Refresh to display the saved assessment below for updating.', 'success');
+    return;
+  }
+  renderNewAssessmentRows(filters);
+}
+
+function downloadExcel(filename, sheetName, headers, rows) {
+  if (!window.XLSX) throw new Error('Excel exporter could not load. Check the internet connection and reload.');
+  var worksheet = XLSX.utils.aoa_to_sheet([headers].concat(rows));
+  worksheet['!cols'] = headers.map(function(header, index) {
+    var width = String(header).length;
+    rows.forEach(function(row) { width = Math.max(width, String(row[index] === null || row[index] === undefined ? '' : row[index]).length); });
+    return { wch: Math.min(Math.max(width + 2, 12), 36) };
+  });
+  var workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, String(sheetName || 'Data').slice(0, 31));
+  XLSX.writeFile(workbook, filename);
+}
+
+function scoreRows(tableSelector) {
+  return Array.from(document.querySelectorAll((tableSelector || '#scoreTable')+' tbody tr[data-ass-ref]')).map(function(row) {
+    var scoreInput = row.querySelector('.score-box');
+    var changeInput = row.querySelector('.change-score-box');
+    return {
+      assRef: row.dataset.assRef || '',
+      name: row.dataset.name || '',
+      className: row.dataset.className || '',
+      subject: row.dataset.subject || '',
+      score: changeInput && changeInput.value !== '' ? changeInput.value : (scoreInput ? scoreInput.value : row.dataset.currentScore)
+    };
+  });
+}
+
+function assessmentPayload(status, tableSelector, filterOverride) {
+  var filters = filterOverride || activeFilter || selectedFilters();
+  return {
+    academicYear: filters.academicYear,
+    yearLevel: filters.yearLevel,
+    semester: filters.semester,
+    modeName: filters.modeName,
+    className: filters.className,
+    subjectName: filters.subjectName,
+    overallScore: document.getElementById('overallScore').value || null,
+    capturedBy: (currentUser && (currentUser.full_name || currentUser.staff_id)) || 'System',
+    staffUserId: currentUser && currentUser.id,
+    requireAssignment: requiresAssessmentAssignment(),
+    status: status || 'Draft',
+    scores: scoreRows(tableSelector)
+  };
+}
+
+function saveLocalAssessment(payload) {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem(LOCAL_ASSESSMENTS_KEY) || '[]'); } catch (e) {}
+  var key = [payload.academicYear, payload.yearLevel, payload.semester, payload.modeName, payload.className, payload.subjectName].join('|');
+  var user = Portal.currentUser && Portal.currentUser();
+  var record = Object.assign({
+    key: key,
+    saved_at: new Date().toISOString(),
+    captured_by: user && user.full_name ? user.full_name : 'Admin'
+  }, payload);
+  list = list.filter(function(item) { return item.key !== key; });
+  list.push(record);
+  localStorage.setItem(LOCAL_ASSESSMENTS_KEY, JSON.stringify(list));
+  return record;
+}
+
+function validateAssessmentPayload(payload) {
+  var overallScore = Number(payload.overallScore);
+  if (!payload.overallScore || !isFinite(overallScore) || overallScore <= 0 || overallScore > 100) {
+    throw new Error('Overall Score is compulsory and must be between 1 and 100.');
+  }
+  if (!/^\d{4}\/\d{4}$/.test(payload.academicYear)) {
+    throw new Error('Academic year must use YYYY/YYYY format.');
+  }
+  if (!payload.className || !payload.subjectName) {
+    throw new Error('Select class and subject before saving assessment.');
+  }
+  if (payload.requireAssignment) {
+    var assigned = teacherAssignments.some(function(item) {
+      return item.className === payload.className && item.subjectName === payload.subjectName;
+    });
+    if (!assigned) throw new Error('You are not assigned to capture scores for this class and subject.');
+  }
+  if (!payload.scores.length) throw new Error('No student scores are available to save.');
+  var invalidScore = payload.scores.find(function(row) {
+    if (row.score === '' || row.score === null || row.score === undefined) return false;
+    var score = Number(row.score);
+    return !isFinite(score) || score < 0 || score > overallScore;
+  });
+  if (invalidScore) throw new Error('The score for '+invalidScore.name+' must be between 0 and '+overallScore+'.');
+}
+
+async function saveAssessment(status, silent, tableSelector, filterOverride) {
+  var payload = assessmentPayload(status, tableSelector, filterOverride);
+  validateAssessmentPayload(payload);
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.saveAssessmentScores) {
+    await AxiomDB.saveAssessmentScores(payload);
+  }
+  saveLocalAssessment(payload);
+  if (!silent) Portal.toast(status === 'Submitted' ? 'Assessment submitted complete.' : 'Assessment saved.');
+  return payload;
+}
+
+function renderSubmittedAssessment(record, filters) {
+  submittedFilter = Object.assign({}, filters);
+  if (record.overallScore) document.getElementById('overallScore').value = record.overallScore;
+  var scoreByRef = {};
+  (record.scores || []).forEach(function(row) { scoreByRef[row.assRef] = row; });
+  var rows = studentRowsForFilter(filters);
+  document.querySelector('#submittedScoreTable tbody').innerHTML = rows.map(function(student, idx) {
+    var saved = scoreByRef[student[0]] || {};
+    var score = saved.score === null || saved.score === undefined ? '' : saved.score;
+    var insertedBy = saved.insertedBy || record.insertedBy || 'System';
+    var insertedAt = saved.insertedAt || record.insertedAt || '';
+    return '<tr data-ass-ref="'+student[0]+'" data-name="'+student[1]+'" data-class-name="'+filters.className+'" data-subject="'+filters.subjectName+'" data-current-score="'+score+'">'+
+      '<td><input class="change-score-box" type="number" min="0" max="'+record.overallScore+'" placeholder="Enter score"></td>'+
+      '<td class="current-score">'+score+'</td><td class="row-overall-score">'+record.overallScore+'</td><td>'+student[0]+'</td><td class="name">'+student[1]+'</td>'+
+      '<td>'+filters.academicYear+'</td><td>'+filters.semester+'</td><td>'+(record.subjectCode || '-')+'</td><td>'+insertedBy+'</td><td>'+formatAssessmentDate(insertedAt)+'</td></tr>';
+  }).join('');
+  document.getElementById('submittedRecordsMeta').textContent = [filters.academicYear, filters.yearLevel, filters.semester, filters.modeName, filters.className, filters.subjectName].join(' | ');
+  document.getElementById('submittedOverallScore').value = record.overallScore || '';
+  document.getElementById('submittedScoreSearch').value = '';
+  document.getElementById('submittedRecordsPanel').classList.add('show');
+}
+
+function formatAssessmentDate(value) {
+  if (!value) return '-';
+  var date = new Date(value);
+  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+}
+
+function safeAssessmentFileName(value) {
+  return String(value || 'assessment').replace(/^\s*\d+\.\s*/, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'assessment';
+}
+
+function subjectCodeForFilter(filters) {
+  var cls = loadClasses().find(function(item) { return item.name === filters.className; });
+  var subject = cls && (cls.subjectLinks || []).find(function(item) { return item.name === filters.subjectName; });
+  return subject && subject.code ? subject.code : '-';
+}
+
+async function downloadAssessmentExcelTemplate() {
+  if (!window.ExcelJS) throw new Error('Excel generator could not load. Check the internet connection and reload.');
+  if (!activeFilter) throw new Error('Select the filters and click Filter before downloading the template.');
+  var overallScore = Number(document.getElementById('overallScore').value);
+  if (!isFinite(overallScore) || overallScore <= 0 || overallScore > 100) throw new Error('Enter an Overall Score between 1 and 100 before downloading.');
+  var subjectCode = subjectCodeForFilter(activeFilter);
+  var rows = studentRowsForFilter(activeFilter).map(function(student) {
+    return [activeFilter.academicYear, activeFilter.semester, activeFilter.className, activeFilter.subjectName, subjectCode, student[1], student[0], overallScore, ''];
+  });
+  if (!rows.length) throw new Error('No students found for the filtered class and year.');
+  var cleanMode = safeAssessmentFileName(activeFilter.modeName);
+  var sheetName = cleanMode.replace(/_/g, ' ').slice(0, 31);
+  var workbook = new ExcelJS.Workbook();
+  workbook.creator = 'AXIOMBYTE SMS';
+  workbook.title = activeFilter.modeName;
+  workbook.subject = activeFilter.subjectName;
+  var worksheet = workbook.addWorksheet(sheetName);
+  worksheet.addRow(['Assessment Year', 'Semester', 'Class Name', 'Subject Name', 'Subject Code', 'Student Name', 'STD_ID', 'Overall Score', 'Score']);
+  rows.forEach(function(row) { worksheet.addRow(row); });
+  worksheet.columns = [{ width:18 }, { width:14 }, { width:20 }, { width:26 }, { width:16 }, { width:34 }, { width:22 }, { width:16 }, { width:14 }];
+  worksheet.views = [{ state:'frozen', ySplit:1 }];
+  worksheet.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } };
+  worksheet.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF0F766E' } };
+  worksheet.getRow(1).alignment = { vertical:'middle', horizontal:'center' };
+  worksheet.autoFilter = 'A1:I'+(rows.length + 1);
+  for (var rowNumber = 2; rowNumber <= rows.length + 1; rowNumber++) {
+    var scoreCell = worksheet.getCell('I'+rowNumber);
+    scoreCell.protection = { locked:false };
+    scoreCell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFF7CC' } };
+    scoreCell.dataValidation = {
+      type: 'custom',
+      allowBlank: true,
+      formulae: ['AND(ISNUMBER(I'+rowNumber+'),I'+rowNumber+'>=0,I'+rowNumber+'<=H'+rowNumber+')'],
+      showErrorMessage: true,
+      errorStyle: 'stop',
+      errorTitle: 'Invalid Score',
+      error: 'Score is greater than Overall Score.',
+      showInputMessage: true,
+      promptTitle: 'Enter Score',
+      prompt: 'Score must be between 0 and the Overall Score in column H.'
+    };
+  }
+  await worksheet.protect('AXIOMBYTE_SMS', {
+    selectLockedCells: false,
+    selectUnlockedCells: true,
+    formatCells: false,
+    formatColumns: false,
+    formatRows: false,
+    insertRows: false,
+    deleteRows: false,
+    sort: false,
+    autoFilter: true
+  });
+  var buffer = await workbook.xlsx.writeBuffer();
+  var blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = cleanMode+'_assessment_template.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+async function applyBulkExcel(file) {
+  if (!window.XLSX) throw new Error('Excel reader could not load. Check the internet connection and reload.');
+  var workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  if (!activeFilter) throw new Error('Select the assessment filters and click Filter before uploading the template.');
+  var expectedSheetName = safeAssessmentFileName(activeFilter.modeName).replace(/_/g, ' ').slice(0, 31);
+  if (String(workbook.SheetNames[0] || '').trim().toLowerCase() !== expectedSheetName.trim().toLowerCase()) {
+    throw new Error('This Excel template belongs to a different assessment mode.');
+  }
+  var worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  var rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+  if (rows.length < 2) return 0;
+  var headerRowIndex = rows.findIndex(function(row) {
+    var normalized = row.map(function(value) { return String(value).trim().toLowerCase(); });
+    return normalized.indexOf('std_id') > -1 && normalized.indexOf('score') > -1;
+  });
+  if (headerRowIndex < 0) return 0;
+  var header = rows[headerRowIndex].map(function(value) { return String(value).trim().toLowerCase(); });
+  var refIndex = header.indexOf('std_id');
+  if (refIndex < 0) refIndex = header.indexOf('std id');
+  var scoreIndex = header.indexOf('score');
+  var overallIndex = header.indexOf('overall score');
+  var yearIndex = header.indexOf('assessment year');
+  var semesterIndex = header.indexOf('semester');
+  var classIndex = header.indexOf('class name');
+  var subjectIndex = header.indexOf('subject name');
+  var subjectCodeIndex = header.indexOf('subject code');
+  if (refIndex < 0 || scoreIndex < 0 || overallIndex < 0 || yearIndex < 0 || semesterIndex < 0 || classIndex < 0 || subjectIndex < 0 || subjectCodeIndex < 0) {
+    throw new Error('The Excel template is missing one or more required assessment columns.');
+  }
+  var scoreByRef = {};
+  var importedOverallScore = '';
+  var expectedSubjectCode = subjectCodeForFilter(activeFilter);
+  var normalize = function(value) { return String(value || '').trim().toLowerCase(); };
+  rows.slice(headerRowIndex + 1).forEach(function(cols, dataIndex) {
+    var ref = String(cols[refIndex] || '').trim();
+    if (!ref) return;
+    if (normalize(cols[yearIndex]) !== normalize(activeFilter.academicYear)) throw new Error('This Excel template belongs to a different assessment year.');
+    if (normalize(cols[semesterIndex]) !== normalize(activeFilter.semester)) throw new Error('This Excel template belongs to a different semester.');
+    if (normalize(cols[classIndex]) !== normalize(activeFilter.className)) throw new Error('This Excel template belongs to a different class.');
+    if (normalize(cols[subjectIndex]) !== normalize(activeFilter.subjectName)) throw new Error('This Excel template belongs to a different subject.');
+    if (expectedSubjectCode !== '-' && normalize(cols[subjectCodeIndex]) !== normalize(expectedSubjectCode)) throw new Error('This Excel template has the wrong subject code.');
+    if (ref) scoreByRef[ref] = cols[scoreIndex] === null || cols[scoreIndex] === undefined ? '' : String(cols[scoreIndex]).trim();
+    var rowOverallScore = String(cols[overallIndex] === null || cols[overallIndex] === undefined ? '' : cols[overallIndex]).trim();
+    if (!rowOverallScore) throw new Error('Overall Score is required for every student row.');
+    var enteredScore = String(cols[scoreIndex] === null || cols[scoreIndex] === undefined ? '' : cols[scoreIndex]).trim();
+    var excelRow = headerRowIndex + dataIndex + 2;
+    if (enteredScore !== '' && (!isFinite(Number(enteredScore)) || Number(enteredScore) < 0)) throw new Error('Invalid Score at cell I'+excelRow+'.');
+    if (enteredScore !== '' && Number(enteredScore) > Number(rowOverallScore)) throw new Error('Score is greater than Overall Score at cell I'+excelRow+'.');
+    if (!importedOverallScore) importedOverallScore = rowOverallScore;
+    if (rowOverallScore !== String(importedOverallScore).trim()) throw new Error('Overall Score must be the same for every student in this assessment mode.');
+  });
+  if (importedOverallScore !== '') {
+    document.getElementById('overallScore').value = importedOverallScore;
+    document.querySelectorAll('#scoreTable .score-box').forEach(function(input) { input.max = importedOverallScore; });
+  }
+  var applied = 0;
+  document.querySelectorAll('#scoreTable tbody tr').forEach(function(row) {
+    var ref = row.children[1].textContent.trim();
+    if (scoreByRef[ref] !== undefined) {
+      var input = row.querySelector('.score-box');
+      input.value = scoreByRef[ref];
+      applied++;
+    }
+  });
+  return applied;
+}
+
+populateClasses();
+document.getElementById('classSelect').value = classesAllowedForTeacher(loadClasses())[0] ? classesAllowedForTeacher(loadClasses())[0].name : '';
+populateSubjects();
+showFilterPending();
+loadAssessmentSetupFromSupabase();
+
+['academicYearSelect','yearSelect','semesterSelect','modeSelect','subjectSelect'].forEach(function(id) {
+  document.getElementById(id).addEventListener('change', showFilterPending);
+});
+document.getElementById('classSelect').addEventListener('change', function() {
+  populateSubjects();
+  showFilterPending();
+});
+document.getElementById('filterBtn').addEventListener('click', function() {
+  applyAssessmentFilter().catch(function(err) {
+    console.error(err);
+    clearCaptureRows('Could not load students for the selected assessment.');
+    setCaptureStatus(err.message || 'Could not filter assessment.', 'error');
+    Portal.toast(err.message || 'Could not filter assessment.', true);
+  });
+});
+document.getElementById('overallScore').addEventListener('input', function() {
+  var value = Number(this.value) || 100;
+  document.querySelectorAll('.score-box').forEach(function(input) {
+    input.max = value;
+  });
+});
+document.getElementById('downloadStudents').addEventListener('click', function() {
+  downloadAssessmentExcelTemplate().then(function() {
+    Portal.toast('Assessment Excel template downloaded.');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast(err.message || 'Could not create the assessment template.', true);
+  });
+});
+document.getElementById('uploadBulk').addEventListener('click', function() {
+  var file = document.getElementById('bulkScores').files[0];
+  if (!file) {
+    Portal.toast('Choose a bulk score file first.', true);
+    return;
+  }
+  if (!/\.(xlsx|xlsm)$/i.test(file.name)) {
+    Portal.toast('Upload the completed Excel .xlsx or .xlsm assessment template.', true);
+    return;
+  }
+  applyBulkExcel(file).then(function(count) {
+    if (!count) {
+      Portal.toast('No matching STD_ID and Score records were found in the Excel file.', true);
+      return;
+    }
+    return saveAssessment('Draft', true).then(function() {
+      Portal.toast(count + ' Excel scores imported and saved as Draft.');
+    });
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not read Excel scores: '+(err.message || 'Unknown error'), true);
+  });
+});
+var draftSaveTimer = null;
+document.getElementById('scoreTable').addEventListener('input', function(e) {
+  if (!e.target.classList.contains('score-box')) return;
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(function() {
+    saveAssessment('Draft', true).catch(function(err) {
+      console.error(err);
+      Portal.toast('Could not save edited marks: '+(err.message || 'Unknown error'), true);
+    });
+  }, 800);
+});
+document.getElementById('refreshBtn').addEventListener('click', function() {
+  var filters = activeFilter || selectedFilters();
+  loadSubmittedAssessment(filters).then(function(record) {
+    if (!record) {
+      document.getElementById('submittedRecordsPanel').classList.remove('show');
+      throw new Error('No submitted assessment record found for the selected mode.');
+    }
+    renderSubmittedAssessment(record, filters);
+    Portal.toast('Submitted assessment loaded below for score update.');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast(err.message || 'Could not refresh submitted assessment.', true);
+  });
+});
+document.getElementById('downloadData').addEventListener('click', function() {
+  var payload = assessmentPayload('Draft');
+  try {
+    downloadExcel('assessment-scores.xlsx', 'Assessment Scores', ['Academic Year','Year','Semester','Mode','Class','Subject','STD_ID','Candidate Name','Score'], payload.scores.map(function(row) {
+      return [payload.academicYear, payload.yearLevel, payload.semester, payload.modeName, payload.className, payload.subjectName, row.assRef, row.name, row.score];
+    }));
+    Portal.toast('Assessment Excel data downloaded.');
+  } catch (err) {
+    Portal.toast(err.message || 'Could not export assessment data.', true);
+  }
+});
+document.getElementById('submitComplete').addEventListener('click', function() {
+  saveAssessment('Submitted').then(function() {
+    clearCaptureRows('Scores have been submitted for this assessment mode.');
+    setCaptureStatus('Score submitted. Click Refresh to display the saved assessment below for updating.', 'success');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not submit assessment: ' + (err.message || 'Unknown error'), true);
+  });
+});
+document.getElementById('submittedOverallScore').addEventListener('input', function() {
+  var value = this.value;
+  document.getElementById('overallScore').value = value;
+  document.querySelectorAll('#submittedScoreTable .change-score-box').forEach(function(input) {
+    input.max = Number(value) || 100;
+  });
+});
+document.getElementById('submittedOverallScore').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  if (!submittedFilter) {
+    Portal.toast('Refresh a submitted assessment before changing its overall score.', true);
+    return;
+  }
+  var input = this;
+  input.disabled = true;
+  saveAssessment('Submitted', true, '#submittedScoreTable', submittedFilter).then(function() {
+    document.querySelectorAll('#submittedScoreTable .row-overall-score').forEach(function(cell) {
+      cell.textContent = input.value;
+    });
+    setCaptureStatus('Overall Score updated to '+input.value+'.', 'success');
+    Portal.toast('Overall Score updated successfully.');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not update Overall Score: ' + (err.message || 'Unknown error'), true);
+  }).finally(function() {
+    input.disabled = false;
+    input.focus();
+  });
+});
+document.getElementById('submittedScoreSearch').addEventListener('input', function() {
+  var query = this.value.trim().toLowerCase();
+  document.querySelectorAll('#submittedScoreTable tbody tr[data-ass-ref]').forEach(function(row) {
+    row.style.display = !query || row.textContent.toLowerCase().indexOf(query) > -1 ? '' : 'none';
+  });
+});
+document.getElementById('submittedScoreTable').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter' || !e.target.classList.contains('change-score-box')) return;
+  e.preventDefault();
+  if (!submittedFilter) {
+    Portal.toast('Refresh a submitted assessment before changing a score.', true);
+    return;
+  }
+  var input = e.target;
+  var row = input.closest('tr[data-ass-ref]');
+  if (!row || input.value === '') {
+    Portal.toast('Enter the new score before pressing Enter.', true);
+    return;
+  }
+  input.disabled = true;
+  saveAssessment('Submitted', true, '#submittedScoreTable', submittedFilter).then(function() {
+    row.dataset.currentScore = input.value;
+    var currentScore = row.querySelector('.current-score');
+    currentScore.textContent = input.value;
+    currentScore.classList.add('score-updated');
+    input.value = '';
+    setCaptureStatus('Score updated for '+row.dataset.name+'.', 'success');
+    Portal.toast('Score updated successfully.');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not update score: ' + (err.message || 'Unknown error'), true);
+  }).finally(function() {
+    input.disabled = false;
+    input.focus();
+  });
+});
+</script>
+</body>
+</html>
