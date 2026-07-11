@@ -33,6 +33,8 @@
   .super-table tr:hover td { background:#f8fafc; }
   .badge { display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; background:rgba(34,197,94,.12); color:#15803d; font-weight:800; font-size:11px; }
   .muted { color:#64748b; }
+  .admin-actions { display:flex; gap:6px; align-items:center; }
+  .admin-actions .btn { min-height:30px; padding:6px 9px; font-size:11px; border-radius:8px; }
   .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .wide { grid-column:1 / -1; }
   @media (max-width: 900px) { body { min-width:0; } .super-grid,.metric-row,.form-grid-2 { grid-template-columns:1fr; } }
@@ -92,7 +94,7 @@
 
     <div class="super-card wide" style="grid-column:1 / -1">
       <div class="super-card__head"><h2><i class="fas fa-users-gear"></i> School Administrators</h2></div>
-      <div class="super-card__body"><div class="super-table-wrap"><table class="super-table"><thead><tr><th>School</th><th>Code</th><th>Full Name</th><th>Staff ID</th><th>Email</th><th>Status</th></tr></thead><tbody id="adminsBody"></tbody></table></div></div>
+      <div class="super-card__body"><div class="super-table-wrap"><table class="super-table"><thead><tr><th>School</th><th>Code</th><th>Full Name</th><th>Staff ID</th><th>Email</th><th>Status</th><th>Action</th></tr></thead><tbody id="adminsBody"></tbody></table></div></div>
     </div>
   </section>
 </main>
@@ -162,8 +164,19 @@ function render() {
   }, 0);
   document.getElementById('adminsBody').innerHTML = admins.length ? admins.map(function(admin) {
     var school = admin.schools || {};
-    return '<tr><td>' + escapeHtml(school.name || '') + '</td><td>' + escapeHtml(school.code || '') + '</td><td>' + escapeHtml(admin.full_name || '') + '</td><td>' + escapeHtml(admin.staff_id || '') + '</td><td>' + escapeHtml(admin.email || '') + '</td><td><span class="badge">' + escapeHtml(admin.status || 'Active') + '</span></td></tr>';
-  }).join('') : '<tr><td colspan="6" class="muted">No school administrators found.</td></tr>';
+    return '<tr><td>' + escapeHtml(school.name || '') + '</td><td>' + escapeHtml(school.code || '') + '</td><td>' + escapeHtml(admin.full_name || '') + '</td><td>' + escapeHtml(admin.staff_id || '') + '</td><td>' + escapeHtml(admin.email || '') + '</td><td><span class="badge">' + escapeHtml(admin.status || 'Active') + '</span></td><td><div class="admin-actions"><button class="btn btn--primary" type="button" data-edit-admin="' + escapeHtml(admin.id) + '"><i class="fas fa-pen"></i> Edit</button><button class="btn" type="button" data-reset-admin="' + escapeHtml(admin.id) + '"><i class="fas fa-key"></i> Reset</button><button class="btn btn--danger" type="button" data-delete-admin="' + escapeHtml(admin.id) + '"><i class="fas fa-trash"></i> Delete</button></div></td></tr>';
+  }).join('') : '<tr><td colspan="7" class="muted">No school administrators found.</td></tr>';
+  setTimeout(function() {
+    document.querySelectorAll('[data-edit-admin]').forEach(function(button) {
+      button.addEventListener('click', function() { handleEditSchoolAdmin(button.dataset.editAdmin); });
+    });
+    document.querySelectorAll('[data-reset-admin]').forEach(function(button) {
+      button.addEventListener('click', function() { handleResetSchoolAdminPassword(button.dataset.resetAdmin); });
+    });
+    document.querySelectorAll('[data-delete-admin]').forEach(function(button) {
+      button.addEventListener('click', function() { handleDeleteSchoolAdmin(button.dataset.deleteAdmin); });
+    });
+  }, 0);
 }
 async function loadData() {
   schools = await AxiomDB.listSchools();
@@ -180,6 +193,68 @@ async function handleSignupApproval(requestId, approve, reason) {
   } catch (err) {
     console.error(err);
     Portal.toast('Could not update sign up request: ' + (err.message || 'Unknown error'), true);
+  }
+}
+function findSchoolAdmin(adminId) {
+  return admins.find(function(row) { return String(row.id) === String(adminId); });
+}
+async function handleEditSchoolAdmin(adminId) {
+  var admin = findSchoolAdmin(adminId);
+  if (!admin) { Portal.toast('School admin was not found.', true); return; }
+  var fullName = prompt('Full name:', admin.full_name || admin.staff_name || '');
+  if (fullName === null) return;
+  var staffId = prompt('Staff ID:', admin.staff_id || '');
+  if (staffId === null) return;
+  var email = prompt('Email:', admin.email || '');
+  if (email === null) return;
+  var phone = prompt('Phone:', admin.phone || '');
+  if (phone === null) return;
+  var status = prompt('Status: Active or Suspended', admin.status || 'Active');
+  if (status === null) return;
+  try {
+    await AxiomDB.updateSchoolAdmin(adminId, {
+      full_name: fullName.trim(),
+      staff_name: fullName.trim(),
+      staff_id: staffId.trim(),
+      username: staffId.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      status: status.trim() || 'Active'
+    });
+    Portal.toast('School admin updated.');
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not update school admin: ' + (err.message || 'Unknown error'), true);
+  }
+}
+async function handleResetSchoolAdminPassword(adminId) {
+  var admin = findSchoolAdmin(adminId);
+  if (!admin) { Portal.toast('School admin was not found.', true); return; }
+  var temporaryPassword = prompt('Enter temporary password for ' + (admin.full_name || admin.staff_id || 'this admin') + ':');
+  if (temporaryPassword === null) return;
+  temporaryPassword = temporaryPassword.trim();
+  if (temporaryPassword.length < 6) { Portal.toast('Temporary password must be at least 6 characters.', true); return; }
+  try {
+    await AxiomDB.resetSchoolAdminPassword(adminId, temporaryPassword);
+    Portal.toast('Temporary password saved for this school admin.');
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not reset password: ' + (err.message || 'Unknown error'), true);
+  }
+}
+async function handleDeleteSchoolAdmin(adminId) {
+  var admin = findSchoolAdmin(adminId);
+  if (!admin) { Portal.toast('School admin was not found.', true); return; }
+  if (!confirm('Delete school admin account for ' + (admin.full_name || admin.staff_id || 'this user') + '?')) return;
+  try {
+    await AxiomDB.deleteSchoolAdmin(adminId);
+    Portal.toast('School admin deleted.');
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not delete school admin: ' + (err.message || 'Unknown error'), true);
   }
 }
 document.getElementById('schoolForm').addEventListener('submit', function(e) {

@@ -265,6 +265,61 @@
     return result.data;
   }
 
+  async function updateSchoolAdmin(staffUserId, payload) {
+    var c = db();
+    if (!c || !staffUserId) return null;
+    payload = Object.assign({}, payload || {});
+    delete payload.id;
+    delete payload.school_id;
+    delete payload.created_at;
+    delete payload.updated_at;
+    delete payload.auth_user_id;
+    payload.category = 'School Administrator';
+    payload.role = 'School Administrator';
+    if (payload.full_name && !payload.staff_name) payload.staff_name = payload.full_name;
+    var result = await c
+      .from('staff_users')
+      .update(payload)
+      .eq('id', staffUserId)
+      .eq('category', 'School Administrator')
+      .select('*, schools(code, name, subscription_status, trial_expires_at)')
+      .single();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  async function resetSchoolAdminPassword(staffUserId, temporaryPassword) {
+    var c = db();
+    if (!c || !staffUserId) return null;
+    var result = await c
+      .from('staff_users')
+      .update({
+        account_password: String(temporaryPassword || '').trim(),
+        must_change_password: true
+      })
+      .eq('id', staffUserId)
+      .eq('category', 'School Administrator')
+      .select('*, schools(code, name, subscription_status, trial_expires_at)')
+      .single();
+    if (result.error) throw result.error;
+    if (result.data && result.data.email && c.auth && c.auth.resetPasswordForEmail) {
+      try { await c.auth.resetPasswordForEmail(result.data.email); } catch (e) { console.warn(e); }
+    }
+    return result.data;
+  }
+
+  async function deleteSchoolAdmin(staffUserId) {
+    var c = db();
+    if (!c || !staffUserId) return null;
+    var result = await c
+      .from('staff_users')
+      .delete()
+      .eq('id', staffUserId)
+      .eq('category', 'School Administrator');
+    if (result.error) throw result.error;
+    return true;
+  }
+
 
   async function submitSchoolSignup(payload) {
     var c = db();
@@ -1325,6 +1380,9 @@
     updateSchool: updateSchool,
     listSchoolAdmins: listSchoolAdmins,
     createSchoolAdmin: createSchoolAdmin,
+    updateSchoolAdmin: updateSchoolAdmin,
+    resetSchoolAdminPassword: resetSchoolAdminPassword,
+    deleteSchoolAdmin: deleteSchoolAdmin,
     submitSchoolSignup: submitSchoolSignup,
     listSchoolSignupRequests: listSchoolSignupRequests,
     approveSchoolSignup: approveSchoolSignup,
