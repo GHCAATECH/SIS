@@ -103,7 +103,7 @@ document.getElementById('superLoginForm').addEventListener('submit', function(e)
       return;
     }
     localStorage.setItem('axiom_current_user', JSON.stringify(user));
-    location.href = 'superadmin.html';
+    location.href = location.pathname.indexOf('/admin/') > -1 ? 'superadmin.html' : 'admin/superadmin.html';
   }
   signIn().catch(function(err) {
     console.error(err);

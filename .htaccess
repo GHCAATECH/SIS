@@ -6,14 +6,14 @@ RewriteEngine On
 # Route admin subdomains to their login pages when both subdomains point
 # to the same hosting document root as the main AXIOMBYTE SMS site.
 RewriteCond %{HTTP_HOST} ^superadmin\. [NC]
-RewriteRule ^$ admin/superadmin-login.html [L]
+RewriteRule ^$ /admin/superadmin-login.html [R=302,L]
 
 RewriteCond %{HTTP_HOST} ^schooladmin\. [NC]
-RewriteRule ^$ admin/schooladmin-login.html [L]
+RewriteRule ^$ /admin/schooladmin-login.html [R=302,L]
 
 # Keep direct subdomain visits to common portal paths on the correct login.
 RewriteCond %{HTTP_HOST} ^superadmin\. [NC]
-RewriteRule ^(index\.html|login\.html)?$ admin/superadmin-login.html [L]
+RewriteRule ^(index\.html|login\.html)?$ /admin/superadmin-login.html [R=302,L]
 
 RewriteCond %{HTTP_HOST} ^schooladmin\. [NC]
-RewriteRule ^(index\.html|login\.html)?$ admin/schooladmin-login.html [L]
+RewriteRule ^(index\.html|login\.html)?$ /admin/schooladmin-login.html [R=302,L]
