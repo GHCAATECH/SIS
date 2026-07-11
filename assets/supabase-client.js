@@ -291,20 +291,11 @@
   async function resetSchoolAdminPassword(staffUserId, temporaryPassword) {
     var c = db();
     if (!c || !staffUserId) return null;
-    var result = await c
-      .from('staff_users')
-      .update({
-        account_password: String(temporaryPassword || '').trim(),
-        must_change_password: true
-      })
-      .eq('id', staffUserId)
-      .eq('category', 'School Administrator')
-      .select('*, schools(code, name, subscription_status, trial_expires_at)')
-      .single();
+    var result = await c.rpc('super_admin_reset_school_admin_password', {
+      p_staff_user_id: staffUserId,
+      p_new_password: String(temporaryPassword || '').trim()
+    });
     if (result.error) throw result.error;
-    if (result.data && result.data.email && c.auth && c.auth.resetPasswordForEmail) {
-      try { await c.auth.resetPasswordForEmail(result.data.email); } catch (e) { console.warn(e); }
-    }
     return result.data;
   }
 

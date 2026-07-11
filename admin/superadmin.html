@@ -237,7 +237,7 @@ async function handleResetSchoolAdminPassword(adminId) {
   if (temporaryPassword.length < 6) { Portal.toast('Temporary password must be at least 6 characters.', true); return; }
   try {
     await AxiomDB.resetSchoolAdminPassword(adminId, temporaryPassword);
-    Portal.toast('Temporary password saved for this school admin.');
+    Portal.toast('School admin login password reset.');
     await loadData();
   } catch (err) {
     console.error(err);
