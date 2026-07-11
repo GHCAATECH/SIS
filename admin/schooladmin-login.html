@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>School Admin Login - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css" />
+<link rel="stylesheet" href="../assets/app.css" />
 <style>
   body { min-width:0 !important; background:#f8fafc; }
   .login-shell { min-height:100vh; display:grid; place-items:center; padding:34px; }
@@ -20,7 +20,7 @@
 </style>
 </head>
 <body>
-<a class="home-link" href="index.html"><i class="fas fa-house"></i> Back to Home</a>
+<a class="home-link" href="../index.html"><i class="fas fa-house"></i> Back to Home</a>
 <div class="login-shell">
   <form class="login-card" id="adminLoginForm">
     <div class="login-brand"><span class="logo"><i class="fas fa-school"></i></span><div><h1>School Admin Login</h1><small>Use Staff ID and account password</small></div></div>
@@ -28,12 +28,12 @@
       <div class="field"><label>Staff ID <span class="req">*</span></label><input class="input" id="staffId" required autocomplete="username" placeholder="e.g. ASH/STF/001" /></div>
       <div class="field"><label>Account Password <span class="req">*</span></label><input class="input" id="adminPassword" type="password" required autocomplete="current-password" /></div>
     </div>
-    <div class="login-actions"><a href="login.html"><i class="fas fa-arrow-left"></i> All portals</a><button class="btn btn--primary" type="submit"><i class="fas fa-right-to-bracket"></i> Login</button></div>
+    <div class="login-actions"><a href="../login.html"><i class="fas fa-arrow-left"></i> All portals</a><button class="btn btn--primary" type="submit"><i class="fas fa-right-to-bracket"></i> Login</button></div>
   </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js"></script>
-<script src="assets/shell.js"></script>
+<script src="../assets/supabase-client.js"></script>
+<script src="../assets/shell.js"></script>
 <script>
 document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
 document.getElementById('adminLoginForm').addEventListener('submit', function(e) {

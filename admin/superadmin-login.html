@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Super Admin Login - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css" />
+<link rel="stylesheet" href="../assets/app.css" />
 <style>
   body { min-width: 1000px; }
   .super-login-shell {
@@ -53,7 +53,7 @@
 </style>
 </head>
 <body>
-<a class="home-link" href="index.html"><i class="fas fa-house"></i> Back to Home</a>
+<a class="home-link" href="../index.html"><i class="fas fa-house"></i> Back to Home</a>
 <div class="super-login-shell">
   <form class="super-login-card" id="superLoginForm">
     <div class="super-brand">
@@ -75,14 +75,14 @@
       </div>
     </div>
     <div class="super-actions">
-      <a href="login.html"><i class="fas fa-arrow-left"></i> All portals</a>
+      <a href="../login.html"><i class="fas fa-arrow-left"></i> All portals</a>
       <button class="btn btn--primary" type="submit"><i class="fas fa-right-to-bracket"></i> Login</button>
     </div>
   </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js"></script>
-<script src="assets/shell.js"></script>
+<script src="../assets/supabase-client.js"></script>
+<script src="../assets/shell.js"></script>
 <script>
 document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
 document.getElementById('superLoginForm').addEventListener('submit', function(e) {

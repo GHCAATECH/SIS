@@ -41,7 +41,7 @@ document.getElementById('staffLoginForm').addEventListener('submit', function(e)
   async function signIn() {
     var user = await AxiomDB.loginStaff(document.getElementById('staffId').value.trim(), document.getElementById('staffPassword').value.trim());
     if (!user || user.error) { Portal.toast(user && user.error === 'auth_not_linked' ? 'Staff Auth account was not found or linked.' : 'Invalid Staff ID or account password.', true); return; }
-    if (user.category === 'School Administrator') { localStorage.setItem('axiom_current_user', JSON.stringify(user)); location.href = 'admin.html'; return; }
+    if (user.category === 'School Administrator') { localStorage.setItem('axiom_current_user', JSON.stringify(user)); location.href = 'admin/admin.html'; return; }
     localStorage.setItem('axiom_current_user', JSON.stringify(user));
     location.href = 'dashboard.html';
   }
