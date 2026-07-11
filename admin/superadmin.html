@@ -99,8 +99,8 @@
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../assets/supabase-client.js"></script>
-<script src="../assets/shell.js"></script>
+<script src="../assets/supabase-client.js?v=20260712-admin-actions"></script>
+<script src="../assets/shell.js?v=20260712-admin-actions"></script>
 <script>
 document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
 var currentUser = Portal.currentUser();
@@ -249,7 +249,14 @@ async function handleDeleteSchoolAdmin(adminId) {
   if (!admin) { Portal.toast('School admin was not found.', true); return; }
   if (!confirm('Delete school admin account for ' + (admin.full_name || admin.staff_id || 'this user') + '?')) return;
   try {
-    await AxiomDB.deleteSchoolAdmin(adminId);
+    if (AxiomDB.deleteSchoolAdmin) {
+      await AxiomDB.deleteSchoolAdmin(adminId);
+    } else {
+      var client = AxiomDB.client && AxiomDB.client();
+      if (!client) throw new Error('Supabase client is not configured.');
+      var result = await client.from('staff_users').delete().eq('id', adminId).eq('category', 'School Administrator');
+      if (result.error) throw result.error;
+    }
     Portal.toast('School admin deleted.');
     await loadData();
   } catch (err) {
