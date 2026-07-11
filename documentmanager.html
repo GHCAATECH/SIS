@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Document Uploads - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-file-arrow-up"></i></span>
+      <div><h2>Document Uploads</h2><p>Upload titled documents for students and staff from one place.</p></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
+      <div class="card">
+        <div class="card__head"><i class="fas fa-upload"></i> Upload Document</div>
+        <div class="card__body">
+          <form id="docForm" class="grid" style="gap:14px">
+            <div class="field"><label>Owner type <span class="req">*</span></label>
+              <select class="select" id="ownerType" required>
+                <option value="">Select owner type...</option>
+                <option value="student">Student</option>
+                <option value="staff">Staff</option>
+              </select></div>
+            <div class="field"><label>Owner <span class="req">*</span></label>
+              <select class="select" id="ownerId" required><option value="">Select owner type first...</option></select></div>
+            <div class="field"><label>Document title <span class="req">*</span></label><input class="input" id="docTitle" required placeholder="e.g. Birth Certificate"></div>
+            <div class="field"><label>Document file <span class="req">*</span></label><input class="input" id="docFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required></div>
+            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Upload Document</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card card--pad-0">
+        <div class="card__head"><i class="fas fa-table-list"></i> Uploaded Documents</div>
+        <div class="toolbar" style="padding:14px 16px 0; margin:0">
+          <select class="select" id="filterType" style="max-width:180px"><option value="">All Owners</option><option value="student">Students</option><option value="staff">Staff</option></select>
+          <div class="search grow"><i class="fas fa-magnifying-glass"></i><input id="search" placeholder="Search documents..."></div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl" id="docTable">
+            <thead><tr><th>Title</th><th>Owner</th><th>Owner Type</th><th>File</th><th>Type</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="empty" id="docEmpty"><i class="fas fa-file-lines"></i>No documents uploaded yet.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'documentmanager' });
+
+var students = [
+  { id: 'STP24001', name: 'Mensah Kwabena' },
+  { id: 'STP24002', name: 'Owusu Abena' },
+  { id: 'STP24003', name: 'Asante Yaw' },
+  { id: 'STP24004', name: 'Boateng Akosua' },
+  { id: 'STP24005', name: 'Adjei Kofi' }
+];
+var staff = [
+  { id: 'admin', name: 'Admin' },
+  { id: 'g.asante', name: 'Grace Asante' },
+  { id: 'k.boateng', name: 'Kojo Boateng' },
+  { id: 'm.owusu', name: 'Mary Owusu' },
+  { id: 's.adjei', name: 'Samuel Adjei' }
+];
+var STORAGE_KEY = 'axiom_documents';
+var documents = loadDocuments();
+
+async function loadOwnersFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var dbStudents = await AxiomDB.listStudents();
+    var dbStaff = await AxiomDB.listStaff();
+    if (dbStudents && dbStudents.length) {
+      students = dbStudents.map(function(row) {
+        return {
+          id: row.id,
+          name: [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ') + ' (STD_ID: ' + row.ass_ref_id + ')'
+        };
+      });
+    }
+    if (dbStaff && dbStaff.length) {
+      staff = dbStaff.map(function(row) { return { id: row.id, name: row.full_name }; });
+    }
+    populateOwners();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load owners from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+
+function loadDocuments() {
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveDocuments() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(documents)); } catch (e) {}
+}
+
+function fileType(fileName) {
+  var parts = fileName.split('.');
+  return parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+}
+
+function ownerList(type) {
+  return type === 'student' ? students : type === 'staff' ? staff : [];
+}
+
+function ownerTypeLabel(type) {
+  return type === 'student' ? 'Student' : 'Staff';
+}
+
+function populateOwners() {
+  var type = document.getElementById('ownerType').value;
+  var ownerSelect = document.getElementById('ownerId');
+  var owners = ownerList(type);
+  ownerSelect.innerHTML = '<option value="">'+(owners.length ? 'Select owner...' : 'Select owner type first...')+'</option>';
+  owners.forEach(function(owner) {
+    var option = document.createElement('option');
+    option.value = owner.id;
+    option.textContent = owner.name + ' (' + owner.id + ')';
+    option.dataset.name = owner.name;
+    ownerSelect.appendChild(option);
+  });
+}
+
+function renderDocuments() {
+  var filterType = document.getElementById('filterType').value;
+  var query = document.getElementById('search').value.toLowerCase();
+  var filtered = documents.filter(function(doc) {
+    var matchesType = !filterType || doc.ownerType === filterType;
+    var matchesQuery = !query || (doc.title + ' ' + doc.ownerName + ' ' + doc.fileName).toLowerCase().indexOf(query) > -1;
+    return matchesType && matchesQuery;
+  });
+  document.querySelector('#docTable tbody').innerHTML = filtered.map(function(doc) {
+    return '<tr><td style="font-weight:600">'+doc.title+'</td><td>'+doc.ownerName+'</td><td>'+ownerTypeLabel(doc.ownerType)+'</td><td>'+doc.fileName+'</td><td><span class="badge badge--gray">'+doc.fileType+'</span></td>'+
+      '<td><div class="row-actions"><button class="btn btn--danger" type="button" data-id="'+doc.id+'" title="Delete"><i class="fas fa-trash"></i></button></div></td></tr>';
+  }).join('');
+  document.getElementById('docEmpty').style.display = filtered.length ? 'none' : 'block';
+}
+
+document.getElementById('ownerType').addEventListener('change', populateOwners);
+document.getElementById('filterType').addEventListener('change', renderDocuments);
+document.getElementById('search').addEventListener('input', renderDocuments);
+
+document.getElementById('docForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form = this;
+  async function save() {
+    var ownerSelect = document.getElementById('ownerId');
+    var selectedOwner = ownerSelect.options[ownerSelect.selectedIndex];
+    var ownerType = document.getElementById('ownerType').value;
+    var file = document.getElementById('docFile').files[0];
+    var title = document.getElementById('docTitle').value.trim();
+
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      var saved = await AxiomDB.uploadOwnerDocument(ownerType, ownerSelect.value, title, file);
+      documents.push({
+        id: saved.id,
+        ownerType: ownerType,
+        ownerId: ownerSelect.value,
+        ownerName: selectedOwner.dataset.name,
+        title: saved.title,
+        fileName: saved.file_name,
+        fileType: saved.file_type,
+        fileSize: saved.file_size
+      });
+    } else {
+      documents.push({
+        id: 'DOC-' + Date.now(),
+        ownerType: ownerType,
+        ownerId: ownerSelect.value,
+        ownerName: selectedOwner.dataset.name,
+        title: title,
+        fileName: file.name,
+        fileType: fileType(file.name),
+        fileSize: file.size
+      });
+      saveDocuments();
+    }
+    form.reset();
+    populateOwners();
+    renderDocuments();
+    Portal.toast('Document uploaded.');
+  }
+  save().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not upload document.', true);
+  });
+});
+
+document.getElementById('docTable').addEventListener('click', function(e) {
+  var b = e.target.closest('button[data-id]');
+  if (!b) return;
+  async function deleteDoc() {
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteDocument) {
+      await AxiomDB.deleteDocument(b.dataset.id);
+    }
+    documents = documents.filter(function(doc) { return doc.id !== b.dataset.id; });
+    saveDocuments();
+    renderDocuments();
+    Portal.toast('Document deleted.');
+  }
+  if (!confirm('Delete this document?')) return;
+  deleteDoc().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not delete document: ' + (err.message || 'Unknown error'), true);
+  });
+});
+
+populateOwners();
+renderDocuments();
+loadOwnersFromSupabase();
+</script>
+</body>
+</html>

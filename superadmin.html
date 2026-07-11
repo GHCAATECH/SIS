@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Super Admin - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  body { min-width: 1180px; background:#f8fafc; }
+  .super-wrap { padding: 18px; }
+  .super-head {
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    margin-bottom:16px; padding:18px 20px; border-radius:18px;
+    background:linear-gradient(135deg,#042f2e,#0f766e); color:#fff;
+    box-shadow:0 16px 34px rgba(15,23,42,.14);
+  }
+  .super-head h1 { margin:0; font-size:24px; }
+  .super-head small { display:block; margin-top:4px; color:rgba(255,255,255,.78); }
+  .super-grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; align-items:start; }
+  .super-card { background:#fff; border:1px solid #e2e8f0; border-radius:18px; box-shadow:0 8px 30px rgba(15,23,42,.08); overflow:hidden; }
+  .super-card__head { padding:15px 18px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .super-card__head h2 { margin:0; font-size:16px; color:#0f172a; }
+  .super-card__body { padding:18px; }
+  .metric-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  .metric { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px; }
+  .metric b { display:block; font-size:24px; color:#0f766e; }
+  .metric span { color:#64748b; font-weight:700; font-size:12px; }
+  .super-table-wrap { overflow:auto; max-height:420px; border:1px solid #e2e8f0; border-radius:14px; }
+  .super-table { width:100%; border-collapse:collapse; min-width:720px; }
+  .super-table th, .super-table td { padding:10px 12px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:13px; white-space:nowrap; }
+  .super-table th { position:sticky; top:0; background:#f8fafc; color:#0f172a; z-index:1; }
+  .super-table tr:hover td { background:#f8fafc; }
+  .badge { display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; background:rgba(34,197,94,.12); color:#15803d; font-weight:800; font-size:11px; }
+  .muted { color:#64748b; }
+  .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .wide { grid-column:1 / -1; }
+  @media (max-width: 900px) { body { min-width:0; } .super-grid,.metric-row,.form-grid-2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main class="super-wrap">
+  <section class="super-head">
+    <div>
+      <h1><i class="fas fa-user-shield"></i> Super Admin Console</h1>
+      <small>Create schools and assign School Administrators for multi-school management.</small>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center"><a class="btn btn--primary" href="admin.html"><i class="fas fa-gauge-high"></i> School Admin Features</a><button class="btn" id="logoutBtn" type="button"><i class="fas fa-arrow-right-from-bracket"></i> Logout</button></div>
+  </section>
+
+  <div class="metric-row">
+    <div class="metric"><b id="schoolCount">0</b><span>Total Schools</span></div>
+    <div class="metric"><b id="adminCount">0</b><span>School Admins</span></div>
+    <div class="metric"><b id="activeAdminCount">0</b><span>Active Admins</span></div>
+    <div class="metric"><b id="trialRequestCount">0</b><span>Trial Requests</span></div>
+  </div>
+
+  <section class="super-grid">
+    <div class="super-card">
+      <div class="super-card__head"><h2><i class="fas fa-school"></i> Schools</h2><button class="btn btn--primary" id="refreshBtn" type="button"><i class="fas fa-rotate"></i> Refresh</button></div>
+      <div class="super-card__body">
+        <form id="schoolForm" class="form-grid-2" style="margin-bottom:14px">
+          <div class="field"><label>School Code <span class="req">*</span></label><input class="input" id="schoolCode" required placeholder="e.g. 0021101" /></div>
+          <div class="field"><label>School Name <span class="req">*</span></label><input class="input" id="schoolName" required placeholder="School name" /></div>
+          <div class="wide"><button class="btn btn--primary" type="submit"><i class="fas fa-plus"></i> Create School</button></div>
+        </form>
+        <div class="super-table-wrap"><table class="super-table"><thead><tr><th>Code</th><th>School Name</th><th>Created</th><th>Action</th></tr></thead><tbody id="schoolsBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="super-card">
+      <div class="super-card__head"><h2><i class="fas fa-user-tie"></i> Create School Administrator</h2></div>
+      <div class="super-card__body">
+        <form id="adminForm" class="form-grid-2">
+          <div class="field wide"><label>School <span class="req">*</span></label><select class="input" id="adminSchool" required></select></div>
+          <div class="field wide"><label>Full Name <span class="req">*</span></label><input class="input" id="adminName" required placeholder="Administrator full name" /></div>
+          <div class="field"><label>Staff ID <span class="req">*</span></label><input class="input" id="adminStaffId" required placeholder="e.g. ADM/001" /></div>
+          <div class="field"><label>Date of Birth <span class="req">*</span></label><input class="input" id="adminDob" type="date" required /></div>
+          <div class="field"><label>Email</label><input class="input" id="adminEmail" type="email" placeholder="email@example.com" /></div>
+          <div class="field"><label>Phone</label><input class="input" id="adminPhone" placeholder="Phone number" /></div>
+          <div class="wide"><button class="btn btn--primary" type="submit"><i class="fas fa-user-plus"></i> Create School Admin</button></div>
+        </form>
+      </div>
+    </div>
+
+
+
+    <div class="super-card wide" style="grid-column:1 / -1">
+      <div class="super-card__head"><h2><i class="fas fa-user-plus"></i> School Sign Up Requests</h2><button class="btn btn--primary" id="refreshSignupBtn" type="button"><i class="fas fa-rotate"></i> Refresh</button></div>
+      <div class="super-card__body"><div class="super-table-wrap"><table class="super-table"><thead><tr><th>School Code</th><th>School Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>Status</th><th>Trial Expires</th><th>Action</th></tr></thead><tbody id="signupRequestsBody"></tbody></table></div></div>
+    </div>
+
+    <div class="super-card wide" style="grid-column:1 / -1">
+      <div class="super-card__head"><h2><i class="fas fa-users-gear"></i> School Administrators</h2></div>
+      <div class="super-card__body"><div class="super-table-wrap"><table class="super-table"><thead><tr><th>School</th><th>Code</th><th>Full Name</th><th>Staff ID</th><th>Email</th><th>Status</th></tr></thead><tbody id="adminsBody"></tbody></table></div></div>
+    </div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
+var currentUser = Portal.currentUser();
+if (!currentUser || !currentUser.isSuperAdmin) location.href = 'superadmin-login.html';
+var schools = [];
+var admins = [];
+var signupRequests = [];
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>'"]/g, function(ch) {
+    return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[ch];
+  });
+}
+function signupStatus(row) {
+  if (!row) return 'Trial';
+  if (row.status === 'Trial' && row.trial_expires_at && new Date(row.trial_expires_at).getTime() < Date.now()) return 'Expired';
+  return row.status || 'Trial';
+}
+function render() {
+  document.getElementById('schoolCount').textContent = schools.length;
+  document.getElementById('adminCount').textContent = admins.length;
+  document.getElementById('activeAdminCount').textContent = admins.filter(function(row) { return row.status !== 'Suspended'; }).length;
+  document.getElementById('trialRequestCount').textContent = signupRequests.filter(function(row) { return signupStatus(row) === 'Trial'; }).length;
+  document.getElementById('schoolsBody').innerHTML = schools.length ? schools.map(function(school) {
+    var active = localStorage.getItem('axiom_active_school_code') === school.code;
+    return '<tr><td>' + escapeHtml(school.code) + '</td><td>' + escapeHtml(school.name) + (active ? ' <span class="badge">Active</span>' : '') + '</td><td>' + escapeHtml(String(school.created_at || '').slice(0,10)) + '</td><td><button class="btn btn--primary" type="button" data-school-code="' + escapeHtml(school.code) + '" data-school-id="' + escapeHtml(school.id) + '" data-school-name="' + escapeHtml(school.name) + '"><i class="fas fa-arrow-right"></i> Manage</button></td></tr>';
+  }).join('') : '<tr><td colspan="4" class="muted">No schools found.</td></tr>';
+  document.getElementById('adminSchool').innerHTML = '<option value="">Select school...</option>' + schools.map(function(school) {
+    return '<option value="' + escapeHtml(school.id) + '">' + escapeHtml(school.code + ' - ' + school.name) + '</option>';
+  }).join('');
+  setTimeout(function() {
+    document.querySelectorAll('[data-school-code]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        if (window.AxiomDB && AxiomDB.setActiveSchool) AxiomDB.setActiveSchool(button.dataset.schoolCode, button.dataset.schoolId, button.dataset.schoolName);
+        else {
+          localStorage.setItem('axiom_active_school_code', button.dataset.schoolCode);
+          localStorage.setItem('axiom_active_school_id', button.dataset.schoolId);
+          localStorage.setItem('axiom_active_school_name', button.dataset.schoolName);
+        }
+        Portal.toast('Active school set to ' + button.dataset.schoolName + '.');
+        render();
+      });
+    });
+  }, 0);
+  document.getElementById('signupRequestsBody').innerHTML = signupRequests.length ? signupRequests.map(function(row) {
+    var status = signupStatus(row);
+    var action = status === 'Approved'
+      ? '<span class="badge">Permanent</span>'
+      : '<button class="btn btn--primary" type="button" data-approve-signup="' + escapeHtml(row.id) + '"><i class="fas fa-check"></i> Approve Permanent</button> <button class="btn btn--danger" type="button" data-decline-signup="' + escapeHtml(row.id) + '"><i class="fas fa-xmark"></i> Decline</button>';
+    return '<tr><td>' + escapeHtml(row.school_code || '') + '</td><td>' + escapeHtml(row.school_name || '') + '</td><td>' + escapeHtml(row.contact_name || '') + '</td><td>' + escapeHtml(row.contact_email || '') + '</td><td>' + escapeHtml(row.contact_phone || '') + '</td><td><span class="badge">' + escapeHtml(status) + '</span></td><td>' + escapeHtml(String(row.trial_expires_at || '').slice(0,10)) + '</td><td>' + action + '</td></tr>';
+  }).join('') : '<tr><td colspan="8" class="muted">No sign up requests found.</td></tr>';
+  setTimeout(function() {
+    document.querySelectorAll('[data-approve-signup]').forEach(function(button) {
+      button.addEventListener('click', function() { handleSignupApproval(button.dataset.approveSignup, true); });
+    });
+    document.querySelectorAll('[data-decline-signup]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var reason = prompt('Reason for declining this request:') || 'Declined by Super Admin';
+        handleSignupApproval(button.dataset.declineSignup, false, reason);
+      });
+    });
+  }, 0);
+  document.getElementById('adminsBody').innerHTML = admins.length ? admins.map(function(admin) {
+    var school = admin.schools || {};
+    return '<tr><td>' + escapeHtml(school.name || '') + '</td><td>' + escapeHtml(school.code || '') + '</td><td>' + escapeHtml(admin.full_name || '') + '</td><td>' + escapeHtml(admin.staff_id || '') + '</td><td>' + escapeHtml(admin.email || '') + '</td><td><span class="badge">' + escapeHtml(admin.status || 'Active') + '</span></td></tr>';
+  }).join('') : '<tr><td colspan="6" class="muted">No school administrators found.</td></tr>';
+}
+async function loadData() {
+  schools = await AxiomDB.listSchools();
+  admins = await AxiomDB.listSchoolAdmins();
+  signupRequests = AxiomDB.listSchoolSignupRequests ? await AxiomDB.listSchoolSignupRequests() : [];
+  render();
+}
+
+async function handleSignupApproval(requestId, approve, reason) {
+  try {
+    await AxiomDB.approveSchoolSignup(requestId, approve, reason || null);
+    Portal.toast(approve ? 'School approved for permanent usage.' : 'Signup request declined.');
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not update sign up request: ' + (err.message || 'Unknown error'), true);
+  }
+}
+document.getElementById('schoolForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  async function save() {
+    await AxiomDB.createSchool({ code: document.getElementById('schoolCode').value, name: document.getElementById('schoolName').value });
+    e.target.reset();
+    Portal.toast('School created.');
+    await loadData();
+  }
+  save().catch(function(err) { console.error(err); Portal.toast('Could not create school: ' + (err.message || 'Unknown error'), true); });
+});
+document.getElementById('adminForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  async function save() {
+    var schoolId = document.getElementById('adminSchool').value;
+    await AxiomDB.createSchoolAdmin(schoolId, {
+      full_name: document.getElementById('adminName').value.trim(),
+      username: document.getElementById('adminStaffId').value.trim(),
+      staff_id: document.getElementById('adminStaffId').value.trim(),
+      date_of_birth: document.getElementById('adminDob').value,
+      email: document.getElementById('adminEmail').value.trim() || (document.getElementById('adminStaffId').value.trim().replace(/[^a-z0-9]/gi, '').toLowerCase() + '@schooladmin.local'),
+      phone: document.getElementById('adminPhone').value.trim()
+    });
+    e.target.reset();
+    Portal.toast('School administrator created. Login uses Staff ID and DOB.');
+    await loadData();
+  }
+  save().catch(function(err) { console.error(err); Portal.toast('Could not create school admin: ' + (err.message || 'Unknown error'), true); });
+});
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+document.getElementById('refreshSignupBtn').addEventListener('click', loadData);
+document.getElementById('logoutBtn').addEventListener('click', function() { localStorage.removeItem('axiom_current_user'); location.href = 'superadmin-login.html'; });
+loadData().catch(function(err) { console.error(err); Portal.toast('Could not load super admin data: ' + (err.message || 'Unknown error'), true); });
+</script>
+</body>
+</html>
+
+

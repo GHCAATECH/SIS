@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>School Sign Up - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  body { min-width:0 !important; min-height:100vh; background:#f8fafc; display:grid; place-items:center; padding:22px; }
+  .signup-shell { width:min(980px,100%); }
+  .signup-top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+  .brand { display:flex; align-items:center; gap:12px; font-weight:900; color:#042f2e; font-size:20px; }
+  .brand i { width:44px; height:44px; border-radius:14px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#042f2e,#0f766e); }
+  .signup-card { background:#fff; border:1px solid #e2e8f0; border-radius:22px; box-shadow:0 24px 70px rgba(15,23,42,.12); overflow:hidden; }
+  .signup-hero { padding:26px 28px; background:linear-gradient(135deg,#042f2e,#0f766e); color:#fff; }
+  .signup-hero h1 { margin:0 0 8px; font-size:28px; }
+  .signup-hero p { margin:0; color:rgba(255,255,255,.82); font-weight:700; }
+  .signup-body { padding:24px 28px 28px; }
+  .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .wide { grid-column:1 / -1; }
+  .trial-note { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:14px; background:rgba(20,184,166,.1); color:#0f766e; font-weight:800; margin-bottom:18px; }
+  .trial-note i { margin-top:2px; }
+  .actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+  .success-box { display:none; margin-top:16px; border:1px solid rgba(34,197,94,.35); background:rgba(34,197,94,.1); color:#166534; border-radius:14px; padding:14px; font-weight:800; }
+  @media (max-width:720px) { .form-grid { grid-template-columns:1fr; } .wide { grid-column:auto; } .signup-top { flex-direction:column; align-items:flex-start; } .actions { flex-direction:column; } .actions .btn { width:100%; } }
+</style>
+</head>
+<body>
+<main class="signup-shell">
+  <div class="signup-top">
+    <a class="brand" href="index.html"><i class="fas fa-graduation-cap"></i><span>AXIOMBYTE SMS</span></a>
+    <a class="btn" href="index.html"><i class="fas fa-arrow-left"></i> Back to Home</a>
+  </div>
+
+  <section class="signup-card">
+    <div class="signup-hero">
+      <h1>Register a School Account</h1>
+      <p>New school sign-ups start with 30 days of access. A Super Admin must approve the school for permanent usage.</p>
+    </div>
+    <div class="signup-body">
+      <div class="trial-note"><i class="fas fa-clock"></i><span>Your trial expires after 30 days unless a Super Admin approves permanent usage.</span></div>
+      <form id="signupForm" class="form-grid">
+        <div class="field"><label>School Code <span class="req">*</span></label><input class="input" id="schoolCode" required placeholder="e.g. 0021101" /></div>
+        <div class="field"><label>School Name <span class="req">*</span></label><input class="input" id="schoolName" required placeholder="Official school name" /></div>
+        <div class="field"><label>Contact Name <span class="req">*</span></label><input class="input" id="contactName" required placeholder="Full name" /></div>
+        <div class="field"><label>Contact Email <span class="req">*</span></label><input class="input" id="contactEmail" type="email" required placeholder="email@example.com" /></div>
+        <div class="field"><label>Contact Phone</label><input class="input" id="contactPhone" placeholder="Phone number" /></div>
+        <div class="field"><label>Requested Admin Staff ID</label><input class="input" id="requestedStaffId" placeholder="e.g. ADM/001" /></div>
+        <div class="field wide"><label>Requested Username</label><input class="input" id="requestedUsername" placeholder="Preferred admin username" /></div>
+        <div class="wide actions">
+          <a class="btn" href="index.html">Cancel</a>
+          <button class="btn btn--primary" id="submitBtn" type="submit"><i class="fas fa-paper-plane"></i> Submit Sign Up</button>
+        </div>
+      </form>
+      <div class="success-box" id="successBox"></div>
+    </div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
+var form = document.getElementById('signupForm');
+var submitBtn = document.getElementById('submitBtn');
+var successBox = document.getElementById('successBox');
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+  async function save() {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    var row = await AxiomDB.submitSchoolSignup({
+      school_code: document.getElementById('schoolCode').value.trim(),
+      school_name: document.getElementById('schoolName').value.trim(),
+      contact_name: document.getElementById('contactName').value.trim(),
+      contact_email: document.getElementById('contactEmail').value.trim(),
+      contact_phone: document.getElementById('contactPhone').value.trim(),
+      requested_staff_id: document.getElementById('requestedStaffId').value.trim(),
+      requested_username: document.getElementById('requestedUsername').value.trim()
+    });
+    var expiry = row && row.trial_expires_at ? String(row.trial_expires_at).slice(0, 10) : '30 days';
+    successBox.style.display = 'block';
+    successBox.textContent = 'Sign up submitted. Trial access is active until ' + expiry + '. Super Admin approval is required for permanent usage.';
+    form.reset();
+    Portal.toast('School sign up submitted.');
+  }
+  save().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not submit sign up: ' + (err.message || 'Unknown error'), true);
+  }).finally(function() {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Sign Up';
+  });
+});
+</script>
+</body>
+</html>

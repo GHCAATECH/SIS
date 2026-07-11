@@ -1,0 +1,13 @@
+.agents/
+.codex/
+.codex_build/
+.tmp/
+node_modules/
+output/
+outputs/
+tmp/
+
+*.log
+*.tmp
+Thumbs.db
+.DS_Store

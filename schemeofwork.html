@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scheme of Work - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .scheme-layout { display:grid; grid-template-columns:minmax(320px, .72fr) minmax(560px, 1.6fr); gap:16px; align-items:start; }
+  .scheme-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .scheme-form .wide { grid-column:1 / -1; }
+  .role-note { display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text-soft); font-size:13px; }
+  .role-note i { color:var(--brand); }
+  .workflow-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .workflow-tabs button { min-height:36px; padding:7px 12px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--text-soft); font:inherit; font-weight:700; cursor:pointer; }
+  .workflow-tabs button.active { color:#fff; border-color:var(--brand); background:var(--brand); }
+  .workflow-panel { display:none; }
+  .workflow-panel.active { display:block; }
+  .table-scroll { width:100%; overflow:auto; border:1px solid var(--border); border-radius:8px; }
+  .table-scroll table { min-width:980px; margin:0; }
+  .table-scroll th, .table-scroll td { white-space:nowrap; vertical-align:middle; }
+  .table-scroll td.wrap { white-space:normal; min-width:180px; }
+  .status-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; font-size:11px; font-weight:800; white-space:nowrap; }
+  .status-pending { color:#92400e; background:#fef3c7; }
+  .status-approved { color:#166534; background:#dcfce7; }
+  .status-declined { color:#991b1b; background:#fee2e2; }
+  .progress-track { display:flex; align-items:center; min-width:230px; }
+  .progress-step { display:flex; align-items:center; flex:1; color:#94a3b8; }
+  .progress-step:last-child { flex:0; }
+  .progress-step::after { content:""; height:2px; flex:1; min-width:20px; background:#dbe3ea; }
+  .progress-step:last-child::after { display:none; }
+  .progress-step span { width:24px; height:24px; display:grid; place-items:center; border:2px solid #cbd5e1; border-radius:50%; background:#fff; font-size:10px; font-weight:800; }
+  .progress-step.done span { color:#fff; border-color:var(--brand); background:var(--brand); }
+  .progress-step.done::after { background:var(--brand); }
+  .progress-step.failed span { color:#fff; border-color:#ef4444; background:#ef4444; }
+  .empty-state { padding:34px 18px; text-align:center; color:var(--text-faint); }
+  .empty-state i { display:block; margin-bottom:9px; font-size:25px; color:var(--brand); }
+  .review-actions { display:flex; gap:6px; justify-content:flex-start; }
+  .review-section-title { display:flex; align-items:center; gap:8px; margin:14px 0 8px; font-size:13px; color:var(--text); }
+  .review-section-title:first-child { margin-top:0; }
+  .review-section-title i { color:var(--brand); }
+  .summary-strip { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:12px; }
+  .summary-item { padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); }
+  .summary-item b { display:block; font-size:20px; color:var(--brand); }
+  .summary-item span { color:var(--text-faint); font-size:11px; font-weight:700; }
+  @media (max-width:1100px) { .scheme-layout { grid-template-columns:1fr; } }
+  @media (max-width:640px) { .scheme-form, .summary-strip { grid-template-columns:1fr; } .scheme-form .wide { grid-column:auto; } }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <div><h2>Scheme of Work</h2><p>Submit, review, and track departmental schemes of work.</p></div>
+    </div>
+
+    <div class="scheme-layout">
+      <section class="card">
+        <div class="card__head"><h3><i class="fas fa-file-circle-plus"></i> New Submission</h3></div>
+        <div class="card__body">
+          <div class="role-note" id="departmentNote"><i class="fas fa-building"></i><span>Loading staff department...</span></div>
+          <form id="schemeForm" class="scheme-form" style="margin-top:14px">
+            <div class="field"><label for="academicYear">Academic Year *</label><select class="select" id="academicYear" required></select></div>
+            <div class="field"><label for="term">Semester *</label><select class="select" id="term" required><option value="Semester 1">Semester 1</option><option value="Semester 2">Semester 2</option></select></div>
+            <div class="field"><label for="className">Class *</label><select class="select" id="className" required><option value="">Select class</option></select></div>
+            <div class="field"><label for="subjectName">Subject *</label><select class="select" id="subjectName" required><option value="">Select subject</option></select></div>
+            <div class="field wide"><label for="schemeTitle">Scheme Title *</label><input class="input" id="schemeTitle" maxlength="160" placeholder="e.g. Semester 1 Mathematics Scheme" required /></div>
+            <div class="field wide"><label for="fileTitle">Document Title *</label><input class="input" id="fileTitle" maxlength="160" placeholder="Title shown to reviewers" required /></div>
+            <div class="field wide"><label for="schemeFile">Scheme Document *</label><input class="input" id="schemeFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" required /><small>PDF, Word, or Excel document.</small></div>
+            <div class="wide" style="display:flex;justify-content:flex-end"><button class="btn btn--primary" id="submitScheme" type="submit"><i class="fas fa-paper-plane"></i> Submit Scheme</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__head"><h3><i class="fas fa-list-check"></i> Workflow</h3><button class="btn btn--sm" id="reloadScheme" type="button"><i class="fas fa-rotate"></i> Refresh</button></div>
+        <div class="card__body">
+          <div class="summary-strip">
+            <div class="summary-item"><b id="countHod">0</b><span>Pending HOD</span></div>
+            <div class="summary-item"><b id="countFinal">0</b><span>Pending Final Review</span></div>
+            <div class="summary-item"><b id="countApproved">0</b><span>Final Approved</span></div>
+            <div class="summary-item"><b id="countDeclined">0</b><span>Declined</span></div>
+          </div>
+          <div class="workflow-tabs" id="workflowTabs">
+            <button class="active" type="button" data-tab="mine">My Submissions</button>
+            <button type="button" data-tab="hod" id="hodTab" hidden>HOD Review <span id="hodBadge"></span></button>
+            <button type="button" data-tab="final" id="finalTab" hidden>Final Review <span id="finalBadge"></span></button>
+          </div>
+
+          <div class="workflow-panel active" data-panel="mine"><div class="table-scroll"><table><thead><tr><th>Submitted</th><th>Scheme</th><th>Class / Subject</th><th>Progress</th><th>Status</th><th>Review Reason</th><th>Document</th><th>History</th></tr></thead><tbody id="mineRows"></tbody></table></div></div>
+          <div class="workflow-panel" data-panel="hod">
+            <h4 class="review-section-title"><i class="fas fa-hourglass-half"></i> Pending Department Review</h4>
+            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Submitted</th><th>Scheme</th><th>Class / Subject</th><th>Document</th><th>Decision</th></tr></thead><tbody id="hodRows"></tbody></table></div>
+            <h4 class="review-section-title"><i class="fas fa-clock-rotate-left"></i> HOD Review History</h4>
+            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Scheme</th><th>Decision</th><th>Reason / Outcome</th><th>Reviewed On</th><th>Current Status</th><th>History</th></tr></thead><tbody id="hodHistoryRows"></tbody></table></div>
+          </div>
+          <div class="workflow-panel" data-panel="final">
+            <h4 class="review-section-title"><i class="fas fa-hourglass-half"></i> Pending Final Review</h4>
+            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Department</th><th>HOD Route</th><th>Scheme</th><th>Class / Subject</th><th>Document</th><th>Decision</th></tr></thead><tbody id="finalRows"></tbody></table></div>
+            <h4 class="review-section-title"><i class="fas fa-clock-rotate-left"></i> Head Academic Review History</h4>
+            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Department</th><th>Scheme</th><th>Final Decision</th><th>Reason / Outcome</th><th>Reviewed On</th><th>History</th></tr></thead><tbody id="finalHistoryRows"></tbody></table></div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="footer">&copy; <span id="yr"></span> AXIOMBYTE SMS. All rights reserved.</div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
+(function () {
+  'use strict';
+  var user = Portal.currentUser();
+  var profile = null, assignments = [], allRows = [];
+  var form = document.getElementById('schemeForm');
+
+  function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function positions(value) { return String(value || '').replace(/_/g, ' ').split(/[;,]/).map(function (v) { return v.trim().toLowerCase().replace(/\s+/g, ' '); }).filter(Boolean); }
+  function normalizedDepartment(value) { return String(value || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+  function isHod() { return positions(profile && profile.position_responsibility).some(function (p) { return p === 'hod' || p === 'head of department' || p === 'head of department (hod)'; }); }
+  function isHeadAcademic() {
+    var list = positions(profile && profile.position_responsibility);
+    return list.some(function (p) { return p === 'assistant headmaster (academics)' || p === 'head academic' || p === 'head academics' || p === 'head of academic' || p === 'head of academics' || p === 'academic head'; });
+  }
+  function dateText(value) { return value ? new Date(value).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '-'; }
+  function emptyRow(cols, message) { return '<tr><td colspan="'+cols+'"><div class="empty-state"><i class="fas fa-inbox"></i>'+esc(message)+'</div></td></tr>'; }
+  function statusClass(status) { return status.indexOf('Declined') > -1 ? 'status-declined' : status === 'Final Approved' ? 'status-approved' : 'status-pending'; }
+  function statusPill(status) { return '<span class="status-pill '+statusClass(status)+'"><i class="fas '+(status === 'Final Approved' ? 'fa-circle-check' : status.indexOf('Declined') > -1 ? 'fa-circle-xmark' : 'fa-clock')+'"></i>'+esc(status)+'</span>'; }
+  function decisionPill(label, approved) { return '<span class="status-pill '+(approved ? 'status-approved' : 'status-declined')+'"><i class="fas '+(approved ? 'fa-circle-check' : 'fa-circle-xmark')+'"></i>'+esc(label)+'</span>'; }
+  function progress(status) {
+    var hodDone = ['Pending Head Academic','Declined by Head Academic','Final Approved'].indexOf(status) > -1;
+    var finalDone = status === 'Final Approved';
+    var hodFailed = status === 'Declined by HOD';
+    var finalFailed = status === 'Declined by Head Academic';
+    return '<div class="progress-track" title="Teacher submission, HOD review, final review">'+
+      '<div class="progress-step done"><span>1</span></div>'+
+      '<div class="progress-step '+(hodFailed ? 'failed' : hodDone ? 'done' : '')+'"><span>2</span></div>'+
+      '<div class="progress-step '+(finalFailed ? 'failed' : finalDone ? 'done' : '')+'"><span>3</span></div></div>';
+  }
+  function documentLink(row) { return '<a class="btn btn--sm" href="'+esc(row.file_url)+'" target="_blank" rel="noopener"><i class="fas fa-file-arrow-down"></i> Open</a>'; }
+
+  function populateYears() {
+    var year = new Date().getFullYear(), html = '';
+    for (var i = -1; i <= 2; i++) html += '<option value="'+(year+i)+'/'+(year+i+1)+'">'+(year+i)+'/'+(year+i+1)+'</option>';
+    document.getElementById('academicYear').innerHTML = html;
+  }
+  function populateClasses() {
+    var seen = {}, options = ['<option value="">Select class</option>'];
+    assignments.forEach(function (a) { if (a.className && !seen[a.className]) { seen[a.className] = true; options.push('<option value="'+esc(a.className)+'">'+esc(a.className)+'</option>'); } });
+    document.getElementById('className').innerHTML = options.join('');
+    document.getElementById('subjectName').innerHTML = '<option value="">Select subject</option>';
+  }
+  function populateSubjects() {
+    var selected = document.getElementById('className').value, seen = {}, options = ['<option value="">Select subject</option>'];
+    assignments.forEach(function (a) { if (a.className === selected && a.subjectName && !seen[a.subjectName]) { seen[a.subjectName] = true; options.push('<option value="'+esc(a.subjectName)+'">'+esc(a.subjectName)+'</option>'); } });
+    document.getElementById('subjectName').innerHTML = options.join('');
+  }
+
+  function renderMine() {
+    var rows = allRows.filter(function (row) { return row.teacher_id === profile.id; });
+    document.getElementById('countHod').textContent = rows.filter(function (r) { return r.status === 'Pending HOD'; }).length;
+    document.getElementById('countFinal').textContent = rows.filter(function (r) { return r.status === 'Pending Head Academic'; }).length;
+    document.getElementById('countApproved').textContent = rows.filter(function (r) { return r.status === 'Final Approved'; }).length;
+    document.getElementById('countDeclined').textContent = rows.filter(function (r) { return r.status.indexOf('Declined') > -1; }).length;
+    document.getElementById('mineRows').innerHTML = rows.length ? rows.map(function (row) {
+      var reason = row.hod_reason || row.head_academic_reason || '-';
+      return '<tr><td>'+dateText(row.submitted_at)+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.academic_year)+' | '+esc(row.term)+'</small></td><td>'+esc(row.class_name)+'<br><small>'+esc(row.subject_name)+'</small></td><td>'+progress(row.status)+'</td><td>'+statusPill(row.status)+'</td><td class="wrap">'+esc(reason)+'</td><td>'+documentLink(row)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
+    }).join('') : emptyRow(8, 'No scheme of work has been submitted yet.');
+  }
+  function renderQueues() {
+    var hodRows = isHod() && profile.department ? allRows.filter(function (r) {
+      return r.teacher_id !== profile.id &&
+        normalizedDepartment(r.department) === normalizedDepartment(profile.department) &&
+        r.status === 'Pending HOD';
+    }) : [];
+    var finalRows = isHeadAcademic() ? allRows.filter(function (r) { return r.status === 'Pending Head Academic'; }) : [];
+    document.getElementById('hodBadge').textContent = hodRows.length ? '('+hodRows.length+')' : '';
+    document.getElementById('finalBadge').textContent = finalRows.length ? '('+finalRows.length+')' : '';
+    document.getElementById('hodRows').innerHTML = hodRows.length ? hodRows.map(function (row) {
+      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td>'+dateText(row.submitted_at)+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.academic_year)+' | '+esc(row.term)+'</small></td><td>'+esc(row.class_name)+'<br><small>'+esc(row.subject_name)+'</small></td><td>'+documentLink(row)+'</td><td><div class="review-actions"><button class="btn btn--success btn--sm" data-review="hod" data-id="'+row.id+'" data-approved="1"><i class="fas fa-check"></i> Approve</button><button class="btn btn--danger btn--sm" data-review="hod" data-id="'+row.id+'" data-approved="0"><i class="fas fa-xmark"></i> Reject</button></div></td></tr>';
+    }).join('') : emptyRow(6, 'No schemes are waiting for HOD review in your department.');
+    document.getElementById('finalRows').innerHTML = finalRows.length ? finalRows.map(function (row) {
+      var hodRoute = row.hod_reviewer_id ? 'HOD approved '+dateText(row.hod_decision_at) : 'Direct HOD submission';
+      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td>'+esc(row.department)+'</td><td>'+hodRoute+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.academic_year)+' | '+esc(row.term)+'</small></td><td>'+esc(row.class_name)+'<br><small>'+esc(row.subject_name)+'</small></td><td>'+documentLink(row)+'</td><td><div class="review-actions"><button class="btn btn--success btn--sm" data-review="head" data-id="'+row.id+'" data-approved="1"><i class="fas fa-check"></i> Final Approve</button><button class="btn btn--danger btn--sm" data-review="head" data-id="'+row.id+'" data-approved="0"><i class="fas fa-xmark"></i> Reject</button></div></td></tr>';
+    }).join('') : emptyRow(7, 'No schemes are waiting for final review.');
+
+    var hodHistory = isHod() ? allRows.filter(function (row) { return row.hod_reviewer_id === profile.id; }) : [];
+    document.getElementById('hodHistoryRows').innerHTML = hodHistory.length ? hodHistory.map(function (row) {
+      var rejected = !!row.hod_reason;
+      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+decisionPill(rejected ? 'Rejected by HOD' : 'Approved by HOD', !rejected)+'</td><td class="wrap">'+esc(rejected ? row.hod_reason : 'Approved and forwarded to Head Academic')+'</td><td>'+dateText(row.hod_decision_at)+'</td><td>'+statusPill(row.status)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
+    }).join('') : emptyRow(7, 'No HOD review decisions have been recorded yet.');
+
+    var finalHistory = isHeadAcademic() ? allRows.filter(function (row) { return row.head_academic_reviewer_id === profile.id; }) : [];
+    document.getElementById('finalHistoryRows').innerHTML = finalHistory.length ? finalHistory.map(function (row) {
+      var rejected = !!row.head_academic_reason;
+      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td>'+esc(row.department)+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+statusPill(rejected ? 'Declined by Head Academic' : 'Final Approved')+'</td><td class="wrap">'+esc(rejected ? row.head_academic_reason : 'Final approval granted')+'</td><td>'+dateText(row.head_academic_decision_at)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
+    }).join('') : emptyRow(7, 'No Head Academic review decisions have been recorded yet.');
+  }
+  function renderAll() { renderMine(); renderQueues(); }
+
+  async function loadRows() {
+    try { allRows = await AxiomDB.listSchemeOfWork() || []; renderAll(); }
+    catch (err) { console.error(err); Portal.toast('Could not load scheme of work: '+err.message, true); }
+  }
+  async function loadProfile() {
+    if (!user || user.type === 'student') return;
+    profile = await AxiomDB.getStaffUser(user.id);
+    if (!profile || profile.category !== 'Teaching Staff') return;
+    user.department = profile.department || '';
+    user.position_responsibility = profile.position_responsibility || '';
+    localStorage.setItem('axiom_current_user', JSON.stringify(user));
+    document.getElementById('departmentNote').innerHTML = '<i class="fas fa-building"></i><span>Department: <b>'+esc(profile.department || 'Not assigned')+'</b></span>';
+    document.getElementById('departmentNote').innerHTML += '<span style="margin-left:auto"><b>Route:</b> '+(isHod() ? 'HOD to Head Academic' : 'Teaching Staff to HOD to Head Academic')+'</span>';
+    document.getElementById('submitScheme').innerHTML = '<i class="fas fa-paper-plane"></i> '+(isHod() ? 'Submit to Head Academic' : 'Submit to HOD');
+    document.getElementById('hodTab').hidden = !(isHod() && profile.department);
+    document.getElementById('finalTab').hidden = !isHeadAcademic();
+    if (!profile.department) { form.querySelectorAll('input, select, button').forEach(function (el) { el.disabled = true; }); Portal.toast('Your department must be assigned before submitting a scheme of work.', true); }
+    assignments = await AxiomDB.listStaffSubjectClasses(profile.id) || [];
+    if (!assignments.length) {
+      var classes = await AxiomDB.listClasses() || [], subjects = await AxiomDB.listSubjects() || [];
+      classes.forEach(function (cls) { subjects.forEach(function (subject) { assignments.push({ className: cls.name, subjectName: subject.name }); }); });
+    }
+    populateClasses();
+    await loadRows();
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var file = document.getElementById('schemeFile').files[0], button = document.getElementById('submitScheme');
+    if (!file || !profile || !profile.department) return;
+    button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    try {
+      await AxiomDB.submitSchemeOfWork({ teacher_id: profile.id, department: profile.department, academic_year: document.getElementById('academicYear').value, term: document.getElementById('term').value, class_name: document.getElementById('className').value, subject_name: document.getElementById('subjectName').value, title: document.getElementById('schemeTitle').value.trim(), file_title: document.getElementById('fileTitle').value.trim() }, file);
+      form.reset(); populateYears(); populateClasses(); Portal.toast(isHod() ? 'Scheme of work submitted directly to Head Academic.' : 'Scheme of work submitted to your department HOD.'); await loadRows();
+    } catch (err) { console.error(err); Portal.toast('Could not submit scheme of work: '+err.message, true); }
+    finally { button.disabled = false; button.innerHTML = '<i class="fas fa-paper-plane"></i> '+(isHod() ? 'Submit to Head Academic' : 'Submit to HOD'); }
+  });
+
+  document.getElementById('className').addEventListener('change', populateSubjects);
+  document.getElementById('reloadScheme').addEventListener('click', loadRows);
+  document.getElementById('workflowTabs').addEventListener('click', function (event) {
+    var button = event.target.closest('button[data-tab]'); if (!button) return;
+    document.querySelectorAll('#workflowTabs button').forEach(function (b) { b.classList.toggle('active', b === button); });
+    document.querySelectorAll('.workflow-panel').forEach(function (panel) { panel.classList.toggle('active', panel.dataset.panel === button.dataset.tab); });
+  });
+  document.addEventListener('click', async function (event) {
+    var review = event.target.closest('[data-review]');
+    if (review) {
+      if (review.dataset.review === 'hod' && !isHod()) { Portal.toast('Only a staff member with the HOD position can review this scheme.', true); return; }
+      if (review.dataset.review === 'head' && !isHeadAcademic()) { Portal.toast('Only the Head Academic can complete final review.', true); return; }
+      var approved = review.dataset.approved === '1', reason = '';
+      if (!approved) { reason = prompt('Enter the reason for declining this scheme of work:') || ''; if (!reason.trim()) { Portal.toast('A decline reason is required.', true); return; } }
+      if (!confirm(approved ? 'Approve this scheme of work?' : 'Decline this scheme of work?')) return;
+      review.disabled = true;
+      try { await AxiomDB.reviewSchemeOfWork(review.dataset.id, review.dataset.review === 'hod' ? 'hod' : 'head', approved, reason, profile.id); Portal.toast(approved ? 'Scheme approved and workflow updated.' : 'Scheme declined with reason.'); await loadRows(); }
+      catch (err) { console.error(err); Portal.toast('Review failed: '+err.message, true); review.disabled = false; }
+      return;
+    }
+    var historyButton = event.target.closest('[data-history]');
+    if (historyButton) {
+      try {
+        var items = await AxiomDB.listSchemeOfWorkHistory(historyButton.dataset.history) || [];
+        alert(items.length ? items.map(function (item) { return dateText(item.created_at)+' - '+item.action+(item.actor && item.actor.full_name ? ' by '+item.actor.full_name : '')+(item.reason ? '\nReason: '+item.reason : ''); }).join('\n\n') : 'No workflow history is available.');
+      } catch (err) { Portal.toast('Could not load history: '+err.message, true); }
+    }
+  });
+
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  populateYears();
+  loadProfile().catch(function (err) { console.error(err); Portal.toast('Could not open Scheme of Work: '+err.message, true); });
+})();
+</script>
+</body>
+</html>

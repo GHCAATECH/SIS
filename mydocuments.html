@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Documents - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .student-profile-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .profile-mini {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    background: var(--surface-2);
+  }
+  .profile-mini .k {
+    color: var(--text-faint);
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+  .profile-mini .v {
+    margin-top: 4px;
+    font-weight: 800;
+  }
+  @media (max-width: 900px) {
+    .student-profile-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-file-shield"></i></span>
+      <div><h2>My Documents</h2><p id="docSubtitle">View documents uploaded to your account.</p></div>
+    </div>
+
+    <div class="card card--pad-0">
+      <div class="card__head"><i class="fas fa-folder-open"></i> <span id="docHeadTitle">My Documents</span></div>
+      <div class="table-wrap">
+        <table class="tbl" id="docTable">
+          <thead><tr><th>Title</th><th>File Name</th><th>Type</th><th>Uploaded</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="docEmpty"><i class="fas fa-file-lines"></i>No documents found for your account.</div>
+    </div>
+
+    <div class="card card--pad-0" id="studentTranscriptCard" style="margin-top:18px;display:none">
+      <div class="card__head"><i class="fas fa-file-lines"></i> Student Transcript</div>
+      <div class="card__body">
+        <div class="student-profile-strip">
+          <div class="profile-mini"><div class="k">Student</div><div class="v" id="trStudent">-</div></div>
+          <div class="profile-mini"><div class="k">STD_ID</div><div class="v" id="trRef">-</div></div>
+          <div class="profile-mini"><div class="k">Programme</div><div class="v" id="trProgramme">-</div></div>
+          <div class="profile-mini"><div class="k">Class</div><div class="v" id="trClass">-</div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl" id="transcriptTable">
+            <thead><tr><th>#</th><th>Year</th><th>Semester</th><th>Subject</th><th>Score</th><th>Grade</th><th>Remark</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="grid cols-4" style="margin-top:14px">
+          <div class="card stat"><div class="num" id="trAverage">-</div><div class="cap">Average</div></div>
+          <div class="card stat"><div class="num" id="trBest">-</div><div class="cap">Best Grade</div></div>
+          <div class="card stat"><div class="num" id="trPasses">-</div><div class="cap">Passes</div></div>
+          <div class="card stat"><div class="num" id="trSubjects">-</div><div class="cap">Subjects</div></div>
+        </div>
+        <div class="empty" id="transcriptEmpty" style="display:none"><i class="fas fa-clipboard-list"></i>No transcript records found yet.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'mydocuments' });
+
+var currentUser = Portal.currentUser();
+if (!currentUser || !currentUser.id) {
+  location.href = 'login.html';
+}
+var ownerType = currentUser.type === 'student' ? 'student' : 'staff';
+document.getElementById('docSubtitle').textContent = ownerType === 'student' ? 'View documents uploaded to your student account.' : 'View documents uploaded to your staff account.';
+document.getElementById('docHeadTitle').textContent = ownerType === 'student' ? 'Student Documents' : 'Staff Documents';
+document.getElementById('studentTranscriptCard').style.display = 'none';
+
+function renderDocuments(docs) {
+  docs = docs || [];
+  document.querySelector('#docTable tbody').innerHTML = docs.map(function(doc) {
+    var date = doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : '-';
+    var action = doc.file_url ? '<a class="btn btn--sm btn--primary" href="'+doc.file_url+'" target="_blank"><i class="fas fa-eye"></i> View</a>' : '<span class="badge badge--gray">Stored</span>';
+    return '<tr><td style="font-weight:700">'+doc.title+'</td><td>'+doc.file_name+'</td><td><span class="badge badge--gray">'+(doc.file_type || 'FILE')+'</span></td><td>'+date+'</td><td>'+action+'</td></tr>';
+  }).join('');
+  document.getElementById('docEmpty').style.display = docs.length ? 'none' : 'block';
+}
+
+async function loadMyDocuments() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listDocuments) {
+    var localDocs = [];
+    try { localDocs = JSON.parse(localStorage.getItem('axiom_documents') || '[]'); } catch (e) {}
+    renderDocuments(localDocs.filter(function(doc) {
+      return doc.ownerType === ownerType && (doc.ownerId === currentUser.id || doc.ownerId === currentUser.ass_ref_id);
+    }).map(function(doc) {
+      return {
+        title: doc.title,
+        file_name: doc.fileName,
+        file_type: doc.fileType,
+        uploaded_at: doc.uploaded_at || doc.created_at || '',
+        file_url: doc.fileUrl || doc.file_url || ''
+      };
+    }));
+    return;
+  }
+  try {
+    var docs = await AxiomDB.listDocuments(ownerType, currentUser.id);
+    renderDocuments(docs);
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load your documents: ' + (err.message || 'Unknown error'), true);
+  }
+}
+
+function renderTranscript(profile, rows) {
+  rows = rows || [];
+  document.getElementById('trStudent').textContent = profile.full_name || currentUser.full_name || '-';
+  document.getElementById('trRef').textContent = profile.ass_ref_id || currentUser.ass_ref_id || '-';
+  document.getElementById('trProgramme').textContent = profile.programme || '-';
+  document.getElementById('trClass').textContent = profile.class_name || currentUser.class_name || '-';
+  document.querySelector('#transcriptTable tbody').innerHTML = rows.map(function(row, index) {
+    var grade = row.grade || Portal.grade(row.score).g;
+    var cls = Portal.grade(row.score).cls;
+    return '<tr><td>'+(index + 1)+'</td><td>'+row.year+'</td><td>'+row.semester+'</td><td style="font-weight:700">'+row.subject+'</td><td>'+row.score+'</td><td><span class="badge badge--'+cls+'">'+grade+'</span></td><td>'+row.remark+'</td></tr>';
+  }).join('');
+  document.getElementById('transcriptEmpty').style.display = rows.length ? 'none' : 'block';
+  if (!rows.length) {
+    document.getElementById('trAverage').textContent = '-';
+    document.getElementById('trBest').textContent = '-';
+    document.getElementById('trPasses').textContent = '-';
+    document.getElementById('trSubjects').textContent = '0';
+    return;
+  }
+  var sum = 0, bestScore = -1, bestGrade = '-', passes = 0;
+  rows.forEach(function(row) {
+    var score = Number(row.score) || 0;
+    sum += score;
+    if (score > bestScore) {
+      bestScore = score;
+      bestGrade = row.grade || Portal.grade(score).g;
+    }
+    if (score >= 50) passes++;
+  });
+  document.getElementById('trAverage').textContent = (sum / rows.length).toFixed(1);
+  document.getElementById('trBest').textContent = bestGrade;
+  document.getElementById('trPasses').textContent = passes + '/' + rows.length;
+  document.getElementById('trSubjects').textContent = rows.length;
+}
+
+function loadLocalTranscript() {
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('axiom_assessment_records') || '[]'); } catch (e) {}
+  var rows = [];
+  records.forEach(function(record) {
+    (record.scores || []).forEach(function(score) {
+      if (score.assRef !== currentUser.ass_ref_id) return;
+      rows.push({
+        year: record.yearLevel || '-',
+        semester: record.semester || '-',
+        subject: record.subjectName || score.subject || '-',
+        score: score.score || '',
+        grade: score.grade || '',
+        remark: score.remark || ''
+      });
+    });
+  });
+  renderTranscript({
+    full_name: currentUser.full_name,
+    ass_ref_id: currentUser.ass_ref_id,
+    programme: '-',
+    class_name: currentUser.class_name
+  }, rows);
+}
+
+async function loadStudentTranscript() {
+  if (ownerType !== 'student') return;
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listStudentTranscript) {
+    loadLocalTranscript();
+    return;
+  }
+  try {
+    var data = await AxiomDB.listStudentTranscript(currentUser.id);
+    var student = data.student || {};
+    var rows = (data.scores || []).map(function(row) {
+      var assessment = row.assessments || {};
+      return {
+        year: assessment.year_level || '-',
+        semester: assessment.semester || '-',
+        subject: assessment.subjects && assessment.subjects.name ? assessment.subjects.name : '-',
+        score: row.score === null || row.score === undefined ? '' : row.score,
+        grade: row.grade || '',
+        remark: row.remark || ''
+      };
+    });
+    renderTranscript({
+      full_name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase(),
+      ass_ref_id: student.ass_ref_id,
+      programme: student.classes && student.classes.programmes ? student.classes.programmes.name : '-',
+      class_name: student.classes && student.classes.name ? student.classes.name : '-'
+    }, rows);
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load transcript: ' + (err.message || 'Unknown error'), true);
+    loadLocalTranscript();
+  }
+}
+
+renderDocuments([]);
+loadMyDocuments();
+</script>
+</body>
+</html>

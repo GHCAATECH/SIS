@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Add User - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  body.user-registration-page { overflow: hidden; }
+  .user-registration-page .content { height: calc(100dvh - var(--header-h)); padding: 10px 14px !important; overflow: hidden; display: flex; flex-direction: column; }
+  .user-registration-page .page-head { margin-bottom: 8px; flex: none; }
+  .staff-form { width: 100%; max-width: 1260px; min-height: 0; flex: 1; display: flex; flex-direction: column; }
+  .staff-section + .staff-section { margin-top: 18px; }
+  .staff-section .card__head { background: #f8fafc; }
+  .staff-form .form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; }
+  .staff-form .field { gap: 4px; }
+  .staff-form .input, .staff-form .select { min-height: 34px; padding-top: 7px; padding-bottom: 7px; }
+  .user-reg-stage[data-stage="0"] .personal-info-body {
+    padding: 20px;
+    padding-bottom: 10px;
+  }
+  .photo-input,
+  .photo-upload {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 10px;
+  }
+  .photo-preview {
+    width: 160px;
+    height: 200px;
+    flex: 0 0 160px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: var(--surface-2);
+    display: grid;
+    place-items: center;
+    color: var(--text-faint);
+    overflow: hidden;
+  }
+  .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-upload .input { flex: 1; min-width: 0; }
+  .user-reg-stage[data-stage="0"] .form-grid > .field { margin-bottom: 10px; }
+  .user-reg-stage[data-stage="0"] .form-grid > .field:last-child { margin-bottom: 0 !important; }
+  .section-note { color: var(--text-faint); font-size: 12px; margin-top: 4px; }
+  .input:disabled,
+  .select:disabled {
+    background: #eef2f7;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+  .bulk-card {
+    width: 100%; max-width: 1260px; min-height: 54px; margin-bottom: 6px; padding: 0 !important;
+    flex: none; display: grid; grid-template-columns: 210px minmax(0, 1fr); align-items: stretch; overflow: hidden;
+  }
+  .bulk-card .card__head {
+    padding: 0 14px; border-right: 1px solid var(--border); border-bottom: 0;
+    align-items: center; white-space: nowrap;
+  }
+  .bulk-card .card__body { min-width: 0; padding: 6px 10px; }
+  .bulk-actions { display: grid; grid-template-columns: auto minmax(220px, 1fr) auto; gap: 10px; align-items: center; }
+  .bulk-actions .field { display: block; }
+  .bulk-actions .field label { display: none; }
+  .bulk-actions .btn, .bulk-actions .input { min-height: 40px !important; }
+  .bulk-status { display: none; }
+  .user-registration-progress {
+    width: 100%; max-width: 1260px;
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px;
+    margin-bottom: 8px; flex: none;
+  }
+  .user-reg-step {
+    display: flex; align-items: center; gap: 7px; min-width: 0;
+    padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-soft); background: #fff; font-size: 10px; font-weight: 700;
+  }
+  .user-reg-step span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none; color: var(--brand); background: var(--brand-soft); }
+  .user-reg-step.active { color: #fff; border-color: var(--brand); background: var(--brand); }
+  .user-reg-step.active span { color: var(--brand); background: #fff; }
+  .user-reg-step.complete { color: var(--brand); border-color: #99d5cf; background: #f0fdfa; }
+  .user-reg-stage { display: none; min-height: 0; margin: 0 !important; overflow: hidden; animation: fadeIn .2s ease both; }
+  .user-reg-stage.active { display: block; flex: 1; }
+  .user-registration-page .personal-info-panel {
+    height: auto !important;
+    min-height: unset !important;
+    flex: 0 1 auto !important;
+  }
+  .user-final-actions { display: none; margin-top: 8px !important; }
+  .user-final-actions.active { display: flex; }
+  .user-wizard-actions {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border); flex: none;
+  }
+  .user-wizard-actions .btn[hidden] { display: none !important; }
+  .user-stage-count { color: var(--text-soft); font-size: 11px; font-weight: 700; }
+  @media (max-width: 900px) {
+    .staff-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .user-reg-stage { overflow-y: auto; }
+    .user-reg-step { justify-content: center; padding: 6px 3px; }
+    .user-reg-step strong { display: none; }
+  }
+  @media (max-width: 620px) {
+    .bulk-card { grid-template-columns: 150px minmax(0, 1fr); }
+    .bulk-card .card__head { padding: 0 8px; font-size: 11px; }
+    .bulk-actions { grid-template-columns: repeat(3, minmax(170px, 1fr)); overflow-x: auto; }
+    .staff-form .form-grid { grid-template-columns: 1fr; }
+    .user-registration-progress { grid-template-columns: repeat(6, minmax(38px, 1fr)); }
+  }
+
+  /* Add User wizard layout based on the supplied reference. */
+  .user-registration-page .content {
+    height: calc(100dvh - var(--header-h));
+    padding: 10px 16px 12px !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+  }
+  .user-registration-progress {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 12px;
+  }
+  .user-reg-step {
+    min-height: 58px;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid #dbe4ee;
+    border-radius: 8px;
+    color: #475569;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .user-reg-step span {
+    width: 34px;
+    height: 34px;
+    color: #0f766e;
+    background: #ccfbf1;
+    font-size: 13px;
+  }
+  .user-reg-step.active {
+    color: #fff;
+    border-color: #0f766e;
+    background: linear-gradient(135deg, #0f766e, #0d9488);
+    box-shadow: 0 8px 20px rgba(15, 118, 110, .18);
+  }
+  .user-reg-step.active span { color: #0f766e; background: #fff; }
+  .user-reg-step.complete { color: #0f766e; border-color: #99d5cf; background: #f0fdfa; }
+  .staff-form {
+    position: relative;
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    flex: 1;
+  }
+  .staff-section,
+  .user-registration-page .personal-info-panel {
+    width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden;
+    border: 1px solid #dbe4ee !important;
+    border-radius: 8px !important;
+    background: #fff;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, .05) !important;
+  }
+  .user-reg-stage.active {
+    display: flex;
+    flex-direction: column;
+  }
+  .staff-section:hover { transform: none !important; }
+  .staff-section .card__head {
+    min-height: 58px;
+    margin: 20px 28px 0;
+    padding: 16px 20px;
+    border: 0;
+    border-radius: 0;
+    color: #0f315f;
+    background: #eff6ff !important;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .staff-section .card__head i { color: #0f766e !important; }
+  .staff-section .card__body,
+  .user-reg-stage[data-stage="0"] .personal-info-body {
+    flex: 1;
+    min-height: 0;
+    padding: 22px 28px 100px;
+    overflow-y: auto;
+  }
+  .staff-form .form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px 24px;
+  }
+  .staff-form .field,
+  .user-reg-stage[data-stage="0"] .form-grid > .field {
+    gap: 7px;
+    margin-bottom: 0;
+  }
+  .staff-form .field label {
+    color: #475569;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .staff-form .input,
+  .staff-form .select {
+    width: 100%;
+    min-height: 46px !important;
+    padding: 10px 14px !important;
+    border: 1px solid #d6e0ea !important;
+    border-radius: 8px !important;
+    color: #1e293b !important;
+    background: #fff !important;
+    font-size: 14px !important;
+  }
+  .staff-form .input:focus,
+  .staff-form .select:focus {
+    border-color: #14b8a6 !important;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, .14) !important;
+  }
+  .staff-form .col-span { grid-column: 1 / -1; }
+  .photo-input,
+  .photo-upload {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    align-items: start;
+    gap: 28px;
+    margin-bottom: 0;
+  }
+  .photo-preview {
+    width: 160px;
+    height: 200px;
+    border: 1px solid #d6e0ea;
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+  .photo-upload .input { margin-top: 0; }
+  .user-wizard-actions {
+    min-height: 58px;
+    margin-top: 10px;
+    padding: 0;
+    border: 0;
+  }
+  .user-stage-count { color: #475569; font-size: 13px; font-weight: 700; }
+  .user-wizard-actions .btn { min-width: 112px !important; }
+  .user-final-actions { justify-content: flex-end; margin: 8px 0 0 !important; }
+  .bulk-card {
+    position: absolute;
+    left: 50%;
+    bottom: 68px;
+    z-index: 5;
+    width: calc(100% - 56px);
+    max-width: 960px;
+    min-height: 0;
+    margin: 0;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+    border: 1px solid #dbe4ee;
+    border-radius: 8px;
+    background: #f8fafc;
+    transform: translateX(-50%);
+  }
+  .staff-form:has(.user-final-actions.active) .bulk-card { bottom: 118px; }
+  .bulk-card__title { color: #0f315f; font-size: 13px; font-weight: 700; }
+  .bulk-card__title i { color: #0f766e; margin-right: 6px; }
+  .bulk-card .bulk-actions { grid-template-columns: auto minmax(220px, 1fr) auto; }
+  .bulk-card .bulk-status { display: none; }
+  .multi-dropdown { position:relative; width:100%; }
+  .multi-dropdown__trigger { width:100%; min-height:40px; padding:8px 36px 8px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text); text-align:left; cursor:pointer; position:relative; }
+  .multi-dropdown__trigger::after { content:'\25BC'; position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:10px; }
+  .multi-dropdown.open .multi-dropdown__trigger::after { transform:translateY(-50%) rotate(180deg); }
+  .multi-dropdown__panel { display:none; position:absolute; z-index:60; left:0; right:0; top:calc(100% + 4px); max-height:240px; overflow-y:auto; padding:6px; border:1px solid var(--border); border-radius:8px; background:#fff; box-shadow:0 12px 28px rgba(15,23,42,.16); }
+  .multi-dropdown.open .multi-dropdown__panel { display:block; }
+  .multi-dropdown__option { display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:5px; cursor:pointer; font-size:12px; }
+  .multi-dropdown__option:hover { background:#f0fdfa; }
+  .multi-dropdown__option input { width:16px; height:16px; accent-color:var(--brand); }
+
+  @media (max-width: 1050px) {
+    .user-reg-step { justify-content: center; padding: 8px 5px; }
+    .user-reg-step strong { display: none; }
+    .staff-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .staff-section .card__head { margin: 14px 18px 0; }
+    .staff-section .card__body,
+    .user-reg-stage[data-stage="0"] .personal-info-body { padding: 18px 18px 100px; }
+  }
+  @media (max-width: 680px) {
+    body.user-registration-page { overflow: auto; }
+    .user-registration-page .content { height: auto; min-height: calc(100dvh - var(--header-h)); overflow: visible; }
+    .user-registration-progress { gap: 6px; }
+    .user-reg-step { min-height: 48px; }
+    .user-reg-step span { width: 28px; height: 28px; }
+    .staff-form .form-grid { grid-template-columns: 1fr; }
+    .staff-section .card__head { margin: 10px 10px 0; padding: 13px 14px; font-size: 17px; }
+    .staff-section .card__body,
+    .user-reg-stage[data-stage="0"] .personal-info-body { padding: 14px 10px; }
+    .photo-input,
+    .photo-upload { grid-template-columns: 1fr; gap: 12px; }
+    .bulk-card {
+      position: static;
+      width: 100%;
+      max-width: none;
+      margin: 12px auto 0;
+      grid-template-columns: 1fr;
+      transform: none;
+    }
+    .bulk-card .bulk-actions { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body class="user-registration-page">
+<div class="main">
+  <main class="content">
+    <div class="user-registration-progress" aria-label="User registration progress">
+      <div class="user-reg-step active" data-step="0"><span>1</span><strong>Personal</strong></div>
+      <div class="user-reg-step" data-step="1"><span>2</span><strong>Employment</strong></div>
+      <div class="user-reg-step" data-step="2"><span>3</span><strong>Qualifications</strong></div>
+      <div class="user-reg-step" data-step="3"><span>4</span><strong>Contact</strong></div>
+      <div class="user-reg-step" data-step="4"><span>5</span><strong>Bank</strong></div>
+      <div class="user-reg-step" data-step="5"><span>6</span><strong>Account</strong></div>
+    </div>
+
+    <form id="userForm" class="staff-form">
+      <div class="card staff-section user-reg-stage personal-info-panel active" data-stage="0">
+        <div class="card__head"><i class="fas fa-user"></i> Personal Information</div>
+        <div class="card__body personal-info-body">
+          <div class="form-grid">
+            <div class="field"><label>Staff Name <span class="req">*</span></label><input class="input" id="staffName" required placeholder="Full staff name"></div>
+            <div class="field"><label>Staff ID <span class="req">*</span></label><input class="input" id="staffId" required placeholder="e.g. ASH/STF/001"></div>
+            <div class="field"><label>Gender</label><select class="select" id="gender"><option value="">Select gender...</option><option>Male</option><option>Female</option></select></div>
+            <div class="field"><label>Date of Birth</label><input class="input" id="dateOfBirth" type="date"></div>
+            <div class="field"><label>Nationality</label><input class="input" id="nationality" placeholder="e.g. Ghanaian"></div>
+            <div class="field"><label>Marital Status</label><select class="select" id="maritalStatus"><option value="">Select status...</option><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option></select></div>
+            <div class="field"><label>Ghana Card Number</label><input class="input" id="ghanaCardNumber" placeholder="GHA-XXXXXXXXX-X"></div>
+            <div class="field"><label>Social Security Number (SSNIT)</label><input class="input" id="socialSecurityNumber" placeholder="SSNIT number"></div>
+            <div class="field"><label>NTC Number <span class="section-note">(Teaching staff)</span></label><input class="input" id="ntcNumber" placeholder="NTC number"></div>
+            <div class="field col-span">
+              <label>Profile Photo</label>
+              <div class="photo-input photo-upload">
+                <div class="photo-preview" id="photoPreview"><i class="fas fa-user"></i></div>
+                <input class="input" id="profilePhoto" type="file" accept=".jpg,.jpeg,.png">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card staff-section user-reg-stage" data-stage="1">
+        <div class="card__head"><i class="fas fa-briefcase"></i> Employment Information</div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="field"><label>Category of User <span class="req">*</span></label>
+              <select class="select" id="userCategory" required>
+                <option value="">Select category...</option>
+                <option>School Administrator</option>
+                <option>Teaching Staff</option>
+                <option>Non-Teaching Staff</option>
+              </select></div>
+            <div class="field"><label>Role <span class="req">*</span></label><select class="select" id="userRole" required><option value="">Select category first...</option></select></div>
+            <div class="field"><label>First Appointment Date</label><input class="input" id="firstAppointmentDate" type="date"></div>
+            <div class="field"><label>Date Posted To Station</label><input class="input" id="datePostedToStation" type="date"></div>
+            <div class="field"><label>Rank</label><select class="select" id="rank"><option value="">Select category first...</option></select></div>
+            <div class="field"><label>Date Placed On Rank</label><input class="input" id="datePlacedOnRank" type="date"></div>
+            <div class="field"><label>Employment Status</label><select class="select" id="employmentStatus"><option value="">Select status...</option><option>Permanent</option><option>Contract</option><option>National Service</option><option>Temporary</option></select></div>
+            <div class="field"><label>Trained Status <span class="section-note">(Teaching staff)</span></label><select class="select" id="trainedStatus"><option value="">Select status...</option><option>Professional</option><option>Non-Professional</option></select></div>
+            <div class="field"><label>Position / Responsibility</label>
+              <div class="multi-dropdown" id="positionDropdown">
+                <button class="multi-dropdown__trigger" id="positionDropdownTrigger" type="button" aria-expanded="false">Select positions...</button>
+                <div class="multi-dropdown__panel" id="positionDropdownPanel"></div>
+                <select id="positionResponsibility" multiple hidden aria-hidden="true"></select>
+              </div>
+            </div>
+            <div class="field"><label>Department <span class="section-note">(Teaching staff)</span></label><select class="select" id="department"><option value="">Select department...</option></select></div>
+            <div class="field"><label>House Assigned</label><select class="select" id="houseAssigned"><option value="">Select role House Staff first...</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card staff-section user-reg-stage" data-stage="2">
+        <div class="card__head"><i class="fas fa-graduation-cap"></i> Qualifications</div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="field"><label>Professional Qualification</label><input class="input" id="professionalQualification" placeholder="e.g. Diploma in Education"></div>
+            <div class="field"><label>Academic Qualification</label><input class="input" id="academicQualification" placeholder="e.g. BSc Mathematics"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card staff-section user-reg-stage" data-stage="3">
+        <div class="card__head"><i class="fas fa-address-book"></i> Contact Information</div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="field"><label>Phone</label><input class="input" id="phone" type="tel" placeholder="02XX XXX XXX"></div>
+            <div class="field"><label>Alternate Phone</label><input class="input" id="alternatePhone" type="tel"></div>
+            <div class="field"><label>Email <span class="req">*</span></label><input class="input" id="email" type="email" required placeholder="name@asuomshs.edu.gh"></div>
+            <div class="field"><label>Digital Address</label><input class="input" id="digitalAddress" placeholder="e.g. ER-000-0000"></div>
+            <div class="field col-span"><label>Residential Address</label><input class="input" id="residentialAddress"></div>
+            <div class="field"><label>Emergency Contact Name</label><input class="input" id="emergencyContactName"></div>
+            <div class="field"><label>Emergency Contact Phone</label><input class="input" id="emergencyContactPhone" type="tel"></div>
+            <div class="field"><label>Emergency Contact Relationship</label><input class="input" id="emergencyContactRelationship" placeholder="e.g. Spouse"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card staff-section user-reg-stage" data-stage="4">
+        <div class="card__head"><i class="fas fa-building-columns"></i> Bank &amp; Payroll Information</div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="field"><label>Bank Name</label><input class="input" id="bankName"></div>
+            <div class="field"><label>Branch Name</label><input class="input" id="branchName"></div>
+            <div class="field"><label>Account Number</label><input class="input" id="accountNumber"></div>
+            <div class="field"><label>Account Name</label><input class="input" id="accountName"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card staff-section user-reg-stage" data-stage="5">
+        <div class="card__head"><i class="fas fa-key"></i> Account Access</div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="field"><label>Username <span class="req">*</span></label><input class="input" id="username" required placeholder="e.g. g.asante"></div>
+            <div class="field"><label>Temporary Password <span class="req">*</span></label><input class="input" id="accountPassword" type="text" required placeholder="Give this to the user"></div>
+            <div class="field"><label>Status</label><select class="select" id="status"><option>Active</option><option>Suspended</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bulk-card">
+        <div class="bulk-card__title"><i class="fas fa-file-arrow-up"></i> Bulk Upload Staff Users</div>
+        <div class="bulk-actions">
+          <button type="button" class="btn btn--success" id="downloadTemplate"><i class="fas fa-download"></i> Download Excel Template</button>
+          <input class="input" id="bulkFile" type="file" accept=".xlsx,.xlsm" aria-label="Upload completed staff template">
+          <button type="button" class="btn btn--primary" id="uploadBulk"><i class="fas fa-cloud-arrow-up"></i> Upload Users</button>
+        </div>
+        <div class="bulk-status" id="bulkStatus">Template must keep the same column headers. Use one staff member per row. Accepted files: .xlsm, .xlsx.</div>
+      </div>
+
+      <div class="btn-row user-final-actions" id="userFinalActions">
+        <button type="submit" class="btn btn--primary"><i class="fas fa-user-plus"></i> Create User</button>
+        <button type="reset" class="btn btn--ghost">Clear</button>
+      </div>
+      <div class="user-wizard-actions">
+        <button type="button" class="btn btn--ghost" id="userStagePrevious" hidden><i class="fas fa-arrow-left"></i> Previous</button>
+        <span class="user-stage-count" id="userStageCount">Step 1 of 6</span>
+        <button type="button" class="btn btn--primary" id="userStageNext">Next <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </form>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script src="assets/staff-ranks.js"></script>
+<script>
+Portal.init({ active: 'registeruser' });
+
+var roleOptionsByCategory = {
+  'School Administrator': ['School Administrator'],
+  'Teaching Staff': ['Management Staff', 'House Staff', 'Teaching Staff'],
+  'Non-Teaching Staff': ['Non-Teaching Staff']
+};
+
+var bulkFields = [
+  'staff_name',
+  'staff_id',
+  'gender',
+  'date_of_birth',
+  'nationality',
+  'marital_status',
+  'profile_photo',
+  'ghana_card_number',
+  'social_security_number',
+  'ntc_number',
+  'category',
+  'role',
+  'first_appointment_date',
+  'date_posted_to_station',
+  'rank',
+  'date_placed_on_rank',
+  'employment_status',
+  'trained_status',
+  'position_responsibility',
+  'department',
+  'house_assigned',
+  'professional_qualification',
+  'academic_qualification',
+  'phone',
+  'alternate_phone',
+  'email',
+  'residential_address',
+  'digital_address',
+  'emergency_contact_name',
+  'emergency_contact_phone',
+  'emergency_contact_relationship',
+  'bank_name',
+  'branch_name',
+  'account_number',
+  'account_name',
+  'username',
+  'account_password',
+  'status'
+];
+
+var bulkSample = [
+  'Ama Owusu',
+  'ASH/STF/001',
+  'Female',
+  '1988-05-12',
+  'Ghanaian',
+  'Married',
+  '',
+  'GHA-123456789-1',
+  'SSNIT12345',
+  'NTC12345',
+  'Teaching Staff',
+  'Teaching Staff',
+  '2014-09-01',
+  '2020-01-10',
+  'Principal Superintendent',
+  '2022-09-01',
+  'Permanent',
+  'Professional',
+  'Form Master',
+  'Science Department',
+  '',
+  'PGDE',
+  'BSc Biology',
+  '0240000000',
+  '0200000000',
+  'ama.owusu@asuomshs.edu.gh',
+  'Asuom',
+  'ER-000-0000',
+  'Kofi Owusu',
+  '0241111111',
+  'Spouse',
+  'GCB Bank',
+  'Koforidua',
+  '1234567890',
+  'Ama Owusu',
+  'a.owusu',
+  'Teacher@123',
+  'Active'
+];
+
+var categorySelect = document.getElementById('userCategory');
+var roleSelect = document.getElementById('userRole');
+var rankSelect = document.getElementById('rank');
+var positionSelect = document.getElementById('positionResponsibility');
+var houseOptions = [
+  { id: 'Unity House', name: 'Unity House' },
+  { id: 'Liberty House', name: 'Liberty House' },
+  { id: 'Day Students', name: 'Day Students' }
+];
+var departmentOptions = [];
+
+function loadLocalDepartments() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('axiom_departments') || '[]');
+    var legacy = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
+    saved = saved.filter(function(department) { return legacy.indexOf(department.name) === -1; });
+    localStorage.setItem('axiom_departments', JSON.stringify(saved));
+    departmentOptions = saved;
+  } catch (err) {}
+}
+
+function populateDepartmentOptions(preferredValue) {
+  var select = document.getElementById('department');
+  var current = preferredValue === undefined ? select.value : preferredValue;
+  select.innerHTML = '<option value="">Select department...</option>' + departmentOptions.map(function(department) {
+    var name = department.name || department;
+    return '<option value="'+String(name).replace(/"/g, '&quot;')+'">'+name+'</option>';
+  }).join('');
+  if (current) {
+    if (!Array.from(select.options).some(function(option) { return option.value === current; })) select.add(new Option(current, current));
+    select.value = current;
+  }
+}
+
+async function loadDepartmentsFromSupabase() {
+  loadLocalDepartments();
+  populateDepartmentOptions();
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listDepartments) return;
+  try {
+    var legacy = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
+    var rows = (await AxiomDB.listDepartments() || []).filter(function(department) { return legacy.indexOf(department.name) === -1; });
+    if (rows && rows.length) {
+      departmentOptions = rows;
+      localStorage.setItem('axiom_departments', JSON.stringify(rows));
+      populateDepartmentOptions();
+    }
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load departments for staff assignment.', true);
+  }
+}
+
+function loadLocalHouses() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('axiom_houses') || '[]');
+    if (saved.length) {
+      houseOptions = saved.map(function(house) {
+        return { id: house.id || house.name, name: house.name };
+      });
+    }
+  } catch (err) {}
+}
+
+function populateHouseOptions() {
+  var houseSelect = document.getElementById('houseAssigned');
+  var isHouseStaff = roleSelect.value === 'House Staff';
+  houseSelect.disabled = !isHouseStaff;
+  houseSelect.required = isHouseStaff;
+  houseSelect.innerHTML = '<option value="">' + (isHouseStaff ? 'Select house...' : 'Select role House Staff first...') + '</option>';
+  if (!isHouseStaff) return;
+  houseOptions.forEach(function(house) {
+    var option = document.createElement('option');
+    option.value = house.id || house.name;
+    option.textContent = house.name;
+    houseSelect.appendChild(option);
+  });
+}
+
+async function loadHousesFromSupabase() {
+  loadLocalHouses();
+  populateHouseOptions();
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listHouses) return;
+  try {
+    var dbHouses = await AxiomDB.listHouses();
+    if (dbHouses && dbHouses.length) {
+      houseOptions = dbHouses.map(function(house) {
+        return { id: house.id || house.name, name: house.name };
+      });
+      populateHouseOptions();
+    }
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load houses for staff assignment.', true);
+  }
+}
+
+function updateRoleOptions() {
+  var category = categorySelect.value;
+  var roles = roleOptionsByCategory[category] || [];
+  var isTeachingStaff = category === 'Teaching Staff';
+  var trainedStatus = document.getElementById('trainedStatus');
+  var department = document.getElementById('department');
+  var currentRank = rankSelect.value;
+
+  roleSelect.innerHTML = '<option value="">' + (roles.length ? 'Select role...' : 'Select category first...') + '</option>';
+  roles.forEach(function(role) {
+    var option = document.createElement('option');
+    option.textContent = role;
+    option.value = role;
+    roleSelect.appendChild(option);
+  });
+
+  var ranks = window.AxiomStaffRanks ? window.AxiomStaffRanks.forCategory(category) : [];
+  rankSelect.innerHTML = '<option value="">' + (ranks.length ? 'Select rank...' : 'Select category first...') + '</option>' + ranks.map(function(rank) {
+    return '<option value="'+rank.replace(/"/g, '&quot;')+'">'+rank+'</option>';
+  }).join('');
+  rankSelect.value = ranks.indexOf(currentRank) > -1 ? currentRank : '';
+
+  trainedStatus.disabled = !isTeachingStaff;
+  department.disabled = !isTeachingStaff;
+  trainedStatus.required = isTeachingStaff;
+  department.required = isTeachingStaff;
+  if (!isTeachingStaff) {
+    trainedStatus.value = '';
+    department.value = '';
+  }
+  populateHouseOptions();
+}
+
+function populatePositionOptions(selectedPositions) {
+  var selected = Array.isArray(selectedPositions)
+    ? selectedPositions
+    : String(selectedPositions || '').split(/\s*[;,]\s*/).filter(Boolean);
+  var positions = window.AxiomStaffRanks ? window.AxiomStaffRanks.positions.slice() : [];
+  selected.forEach(function(position) {
+    if (positions.indexOf(position) === -1) positions.unshift(position);
+  });
+  positionSelect.innerHTML = positions.map(function(position) {
+    return '<option value="'+position.replace(/"/g, '&quot;')+'"'+(selected.indexOf(position) > -1 ? ' selected' : '')+'>'+position+'</option>';
+  }).join('');
+  document.getElementById('positionDropdownPanel').innerHTML = positions.map(function(position, index) {
+    return '<label class="multi-dropdown__option"><input type="checkbox" data-position-index="'+index+'"'+(selected.indexOf(position) > -1 ? ' checked' : '')+'><span>'+position+'</span></label>';
+  }).join('');
+  updatePositionDropdownLabel();
+}
+
+function updatePositionDropdownLabel() {
+  var selected = selectedValues('positionResponsibility');
+  document.getElementById('positionDropdownTrigger').textContent = !selected.length
+    ? 'Select positions...'
+    : (selected.length <= 2 ? selected.join(', ') : selected.length+' positions selected');
+}
+
+document.getElementById('positionDropdownTrigger').addEventListener('click', function() {
+  var dropdown = document.getElementById('positionDropdown');
+  var open = dropdown.classList.toggle('open');
+  this.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+document.getElementById('positionDropdownPanel').addEventListener('change', function(e) {
+  if (!e.target.matches('input[data-position-index]')) return;
+  var option = positionSelect.options[Number(e.target.dataset.positionIndex)];
+  if (option) option.selected = e.target.checked;
+  updatePositionDropdownLabel();
+});
+document.addEventListener('click', function(e) {
+  var dropdown = document.getElementById('positionDropdown');
+  if (!dropdown.contains(e.target)) {
+    dropdown.classList.remove('open');
+    document.getElementById('positionDropdownTrigger').setAttribute('aria-expanded', 'false');
+  }
+});
+
+function selectedValues(id) {
+  var select = document.getElementById(id);
+  return select ? Array.from(select.selectedOptions).map(function(option) { return option.value; }) : [];
+}
+
+function value(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+async function parseBulkFile(file) {
+  var name = file.name.toLowerCase();
+  if (!name.endsWith('.xlsx') && !name.endsWith('.xlsm')) throw new Error('Upload an Excel .xlsm or .xlsx file.');
+  if (!window.XLSX) throw new Error('Excel reader could not load. Check internet connection and reload.');
+  var buffer = await file.arrayBuffer();
+  var workbook = XLSX.read(buffer, { type: 'array' });
+  var sheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+}
+
+function normalizeDate(value) {
+  value = (value || '').trim();
+  return value || null;
+}
+
+function normalizeBulkPayload(row) {
+  var payload = {
+    staff_name: row.staff_name || '',
+    full_name: row.staff_name || '',
+    staff_id: row.staff_id || '',
+    gender: row.gender || '',
+    date_of_birth: normalizeDate(row.date_of_birth),
+    nationality: row.nationality || '',
+    marital_status: row.marital_status || '',
+    profile_photo: row.profile_photo || '',
+    ghana_card_number: row.ghana_card_number || '',
+    social_security_number: row.social_security_number || '',
+    ntc_number: row.ntc_number || '',
+    category: row.category || '',
+    role: row.role || '',
+    first_appointment_date: normalizeDate(row.first_appointment_date),
+    date_posted_to_station: normalizeDate(row.date_posted_to_station),
+    rank: row.rank || '',
+    date_placed_on_rank: normalizeDate(row.date_placed_on_rank),
+    employment_status: row.employment_status || '',
+    trained_status: row.category === 'Teaching Staff' ? (row.trained_status || '') : '',
+    position_responsibility: row.position_responsibility || '',
+    department: row.category === 'Teaching Staff' ? (row.department || '') : '',
+    house_assigned: row.role === 'House Staff' ? (row.house_assigned || '') : '',
+    professional_qualification: row.professional_qualification || '',
+    academic_qualification: row.academic_qualification || '',
+    phone: row.phone || '',
+    alternate_phone: row.alternate_phone || '',
+    email: row.email || '',
+    residential_address: row.residential_address || '',
+    digital_address: row.digital_address || '',
+    emergency_contact_name: row.emergency_contact_name || '',
+    emergency_contact_phone: row.emergency_contact_phone || '',
+    emergency_contact_relationship: row.emergency_contact_relationship || '',
+    bank_name: row.bank_name || '',
+    branch_name: row.branch_name || '',
+    account_number: row.account_number || '',
+    account_name: row.account_name || '',
+    username: row.username || '',
+    account_password: row.account_password || '',
+    status: row.status || 'Active'
+  };
+  if (!payload.staff_name || !payload.staff_id || !payload.category || !payload.role || !payload.email || !payload.username || !payload.account_password) {
+    throw new Error('Missing required fields for ' + (payload.staff_name || payload.username || 'one row'));
+  }
+  return payload;
+}
+
+function staffPayload() {
+  var photo = document.getElementById('profilePhoto').files[0];
+  return {
+    staff_name: value('staffName'),
+    full_name: value('staffName'),
+    staff_id: value('staffId'),
+    gender: value('gender'),
+    date_of_birth: value('dateOfBirth') || null,
+    nationality: value('nationality'),
+    marital_status: value('maritalStatus'),
+    profile_photo: photo ? photo.name : '',
+    ghana_card_number: value('ghanaCardNumber'),
+    social_security_number: value('socialSecurityNumber'),
+    ntc_number: value('ntcNumber'),
+    first_appointment_date: value('firstAppointmentDate') || null,
+    date_posted_to_station: value('datePostedToStation') || null,
+    rank: value('rank'),
+    date_placed_on_rank: value('datePlacedOnRank') || null,
+    employment_status: value('employmentStatus'),
+    trained_status: value('userCategory') === 'Teaching Staff' ? value('trainedStatus') : '',
+    position_responsibility: selectedValues('positionResponsibility').join('; '),
+    department: value('userCategory') === 'Teaching Staff' ? value('department') : '',
+    house_assigned: value('userRole') === 'House Staff' ? value('houseAssigned') : '',
+    professional_qualification: value('professionalQualification'),
+    academic_qualification: value('academicQualification'),
+    phone: value('phone'),
+    alternate_phone: value('alternatePhone'),
+    email: value('email'),
+    residential_address: value('residentialAddress'),
+    digital_address: value('digitalAddress'),
+    emergency_contact_name: value('emergencyContactName'),
+    emergency_contact_phone: value('emergencyContactPhone'),
+    emergency_contact_relationship: value('emergencyContactRelationship'),
+    bank_name: value('bankName'),
+    branch_name: value('branchName'),
+    account_number: value('accountNumber'),
+    account_name: value('accountName'),
+    username: value('username'),
+    category: value('userCategory'),
+    role: value('userRole'),
+    account_password: value('accountPassword'),
+    status: value('status')
+  };
+}
+
+var userRegistrationStage = 0;
+var userRegistrationStageTotal = 6;
+
+function showUserRegistrationStage(stage) {
+  userRegistrationStage = Math.max(0, Math.min(userRegistrationStageTotal - 1, stage));
+  document.querySelectorAll('.user-reg-stage').forEach(function(section, index) {
+    section.classList.toggle('active', index === userRegistrationStage);
+  });
+  document.querySelectorAll('.user-reg-step').forEach(function(step, index) {
+    step.classList.toggle('active', index === userRegistrationStage);
+    step.classList.toggle('complete', index < userRegistrationStage);
+  });
+  document.getElementById('userStagePrevious').hidden = userRegistrationStage === 0;
+  document.getElementById('userStageNext').hidden = userRegistrationStage === userRegistrationStageTotal - 1;
+  document.getElementById('userFinalActions').classList.toggle('active', userRegistrationStage === userRegistrationStageTotal - 1);
+  document.getElementById('userStageCount').textContent = 'Step ' + (userRegistrationStage + 1) + ' of ' + userRegistrationStageTotal;
+}
+
+function validateUserRegistrationStage() {
+  var activeStage = document.querySelector('.user-reg-stage.active');
+  if (!activeStage) return true;
+  var fields = Array.from(activeStage.querySelectorAll('input, select, textarea'));
+  for (var i = 0; i < fields.length; i++) {
+    if (!fields[i].checkValidity()) {
+      fields[i].reportValidity();
+      return false;
+    }
+  }
+  return true;
+}
+
+document.getElementById('userStageNext').addEventListener('click', function() {
+  if (!validateUserRegistrationStage()) return;
+  showUserRegistrationStage(userRegistrationStage + 1);
+});
+document.getElementById('userStagePrevious').addEventListener('click', function() {
+  showUserRegistrationStage(userRegistrationStage - 1);
+});
+
+categorySelect.addEventListener('change', updateRoleOptions);
+roleSelect.addEventListener('change', populateHouseOptions);
+updateRoleOptions();
+populatePositionOptions();
+loadHousesFromSupabase();
+loadDepartmentsFromSupabase();
+showUserRegistrationStage(0);
+
+document.getElementById('downloadTemplate').addEventListener('click', function() {
+  if (!window.XLSX) {
+    Portal.toast('Excel template engine could not load. Check internet connection and reload.', true);
+    return;
+  }
+  var worksheet = XLSX.utils.aoa_to_sheet([bulkFields, bulkSample]);
+  var workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Staff Users');
+  XLSX.writeFile(workbook, 'staff_users_template.xlsm', { bookType: 'xlsm' });
+  Portal.toast('Staff upload template downloaded.');
+});
+
+document.getElementById('uploadBulk').addEventListener('click', function() {
+  var file = document.getElementById('bulkFile').files[0];
+  if (!file) {
+    Portal.toast('Choose a completed Excel template first.', true);
+    return;
+  }
+
+  async function importUsers() {
+    var rows = await parseBulkFile(file);
+    if (rows.length < 2) throw new Error('The uploaded template has no staff rows.');
+    var headers = rows[0].map(function(header) { return header.trim(); });
+    var missing = bulkFields.filter(function(field) { return headers.indexOf(field) === -1; });
+    if (missing.length) throw new Error('Template is missing columns: ' + missing.join(', '));
+
+    var payloads = rows.slice(1).map(function(row) {
+      var record = {};
+      headers.forEach(function(header, idx) { record[header] = (row[idx] || '').trim(); });
+      return normalizeBulkPayload(record);
+    });
+
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createStaffUser) {
+      for (var i = 0; i < payloads.length; i++) await AxiomDB.createStaffUser(payloads[i]);
+    } else {
+      var localUsers = JSON.parse(localStorage.getItem('axiom_local_staff_users') || '[]');
+      payloads.forEach(function(payload, idx) {
+        payload.id = 'STAFF-BULK-' + Date.now() + '-' + idx;
+        payload.privileges = [];
+        localUsers.push(payload);
+      });
+      localStorage.setItem('axiom_local_staff_users', JSON.stringify(localUsers));
+    }
+
+    document.getElementById('bulkStatus').textContent = payloads.length + ' staff users uploaded successfully.';
+    document.getElementById('bulkFile').value = '';
+    Portal.toast(payloads.length + ' staff users uploaded.');
+  }
+
+  importUsers().catch(function(err) {
+    console.error(err);
+    document.getElementById('bulkStatus').textContent = 'Upload failed: ' + (err.message || 'Unknown error');
+    Portal.toast('Bulk upload failed: ' + (err.message || 'Unknown error'), true);
+  });
+});
+
+document.getElementById('profilePhoto').addEventListener('change', function() {
+  var file = this.files[0];
+  var box = document.getElementById('photoPreview');
+  if (!file) {
+    box.innerHTML = '<i class="fas fa-user"></i>';
+    return;
+  }
+  var url = URL.createObjectURL(file);
+  box.innerHTML = '<img src="'+url+'" alt="Profile photo">';
+});
+
+function fileToDataUrl(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(reader.result); };
+    reader.onerror = function() { reject(new Error('Could not read the selected profile photo.')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('userForm').addEventListener('reset', function() {
+  window.setTimeout(function() {
+    updateRoleOptions();
+    populatePositionOptions();
+    document.getElementById('positionDropdown').classList.remove('open');
+    document.getElementById('positionDropdownTrigger').setAttribute('aria-expanded', 'false');
+    document.getElementById('photoPreview').innerHTML = '<i class="fas fa-user"></i>';
+    showUserRegistrationStage(0);
+  }, 0);
+});
+
+document.getElementById('userForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var form = this;
+
+  async function saveUser() {
+    var payload = staffPayload();
+    var photoFile = document.getElementById('profilePhoto').files[0];
+    var privileges = [];
+
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createStaffUser) {
+      payload.profile_photo = '';
+      var savedUser = await AxiomDB.createStaffUser(payload);
+      if (photoFile && savedUser && savedUser.id && AxiomDB.uploadStaffProfilePhoto) {
+        payload.profile_photo = await AxiomDB.uploadStaffProfilePhoto(savedUser.id, photoFile);
+      }
+      Portal.toast('User account created. Give the user their username and temporary password.');
+    } else {
+      var localUsers = JSON.parse(localStorage.getItem('axiom_local_staff_users') || '[]');
+      payload.profile_photo = photoFile ? await fileToDataUrl(photoFile) : '';
+      payload.id = 'STAFF-' + Date.now();
+      payload.privileges = privileges;
+      localUsers.push(payload);
+      localStorage.setItem('axiom_local_staff_users', JSON.stringify(localUsers));
+      Portal.toast('User account created locally.');
+    }
+
+    form.reset();
+    updateRoleOptions();
+  }
+
+  saveUser().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not create user account: ' + (err.message || 'Unknown error'), true);
+  });
+});
+
+</script>
+</body>
+</html>

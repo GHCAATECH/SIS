@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Update School Info — AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="main">
+  <main class="content">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-school"></i></span>
+      <div><h2>Update School Info</h2><p>Maintain the school profile shown on transcripts and reports.</p></div>
+      <div class="ph-actions"><button class="btn btn--success" form="schoolForm"><i class="fas fa-floppy-disk"></i> Save Changes</button></div>
+    </div>
+
+    <form id="schoolForm">
+      <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
+        <div class="card">
+          <div class="card__head"><i class="fas fa-shield-halved"></i> School Crest</div>
+          <div class="card__body" style="text-align:center">
+            <div class="photo-box" id="crestBox" style="width:130px;height:130px;border-radius:50%;margin:0 auto 14px"><i class="fas fa-shield-halved" style="font-size:40px"></i></div>
+            <label class="btn btn--sm" style="cursor:pointer"><i class="fas fa-upload"></i> Upload Crest<input type="file" accept="image/*" id="crest" hidden></label>
+            <div class="hint" style="margin-top:8px">PNG, square, transparent background</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head"><i class="fas fa-circle-info"></i> School Details</div>
+          <div class="card__body">
+            <div class="form-grid">
+              <div class="field"><label>School code</label><input class="input" id="schoolCode" value="0021101" readonly></div>
+              <div class="field"><label>School name <span class="req">*</span></label><input class="input" id="schoolName" value="ASUOM SENIOR HIGH SCHOOL" required></div>
+              <div class="field"><label>Category</label><select class="select" id="schoolCategory"><option>Senior High School</option><option>Senior High Technical School</option></select></div>
+              <div class="field"><label>Ownership</label><select class="select" id="schoolOwnership"><option>Public</option><option>Private</option></select></div>
+              <div class="field"><label>Region</label><select class="select" id="schoolRegion"><option>Eastern</option><option>Greater Accra</option><option>Ashanti</option><option>Central</option><option>Western</option><option>Volta</option><option>Northern</option></select></div>
+              <div class="field"><label>District</label><input class="input" id="schoolDistrict" value="Kwaebibirem"></div>
+              <div class="field"><label>Phone</label><input class="input" id="schoolPhone" type="tel" value="030 000 0000"></div>
+              <div class="field"><label>Email</label><input class="input" id="schoolEmail" type="email" value="info@asuomshs.edu.gh"></div>
+              <div class="field col-span"><label>Postal address</label><input class="input" id="schoolAddress" value="P.O. Box 21, Asuom, Eastern Region"></div>
+              <div class="field col-span"><label>Motto</label><input class="input" id="schoolMotto" value="Knowledge, Discipline, Excellence"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'schoolupdate' });
+var SCHOOL_INFO_KEY = 'axiom_school_info';
+
+function schoolPayload() {
+  return {
+    code: document.getElementById('schoolCode').value,
+    name: document.getElementById('schoolName').value.trim(),
+    category: document.getElementById('schoolCategory').value,
+    ownership: document.getElementById('schoolOwnership').value,
+    region: document.getElementById('schoolRegion').value,
+    district: document.getElementById('schoolDistrict').value.trim(),
+    phone: document.getElementById('schoolPhone').value.trim(),
+    email: document.getElementById('schoolEmail').value.trim(),
+    postal_address: document.getElementById('schoolAddress').value.trim(),
+    motto: document.getElementById('schoolMotto').value.trim()
+  };
+}
+
+function applySchoolInfo(info) {
+  if (!info) return;
+  document.getElementById('schoolCode').value = info.code || document.getElementById('schoolCode').value;
+  document.getElementById('schoolName').value = info.name || document.getElementById('schoolName').value;
+  document.getElementById('schoolCategory').value = info.category || document.getElementById('schoolCategory').value;
+  document.getElementById('schoolOwnership').value = info.ownership || document.getElementById('schoolOwnership').value;
+  document.getElementById('schoolRegion').value = info.region || document.getElementById('schoolRegion').value;
+  document.getElementById('schoolDistrict').value = info.district || document.getElementById('schoolDistrict').value;
+  document.getElementById('schoolPhone').value = info.phone || document.getElementById('schoolPhone').value;
+  document.getElementById('schoolEmail').value = info.email || document.getElementById('schoolEmail').value;
+  document.getElementById('schoolAddress').value = info.postal_address || document.getElementById('schoolAddress').value;
+  document.getElementById('schoolMotto').value = info.motto || document.getElementById('schoolMotto').value;
+}
+
+function loadSchoolInfo() {
+  try { applySchoolInfo(JSON.parse(localStorage.getItem(SCHOOL_INFO_KEY) || 'null')); } catch (e) {}
+}
+loadSchoolInfo();
+
+async function refreshSchoolInfoFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var school = await AxiomDB.currentSchool();
+    if (school) {
+      var local = {};
+      try { local = JSON.parse(localStorage.getItem(SCHOOL_INFO_KEY) || '{}'); } catch (e) {}
+      applySchoolInfo(Object.assign({}, local, { code: school.code, name: school.name }));
+    }
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load school info from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+refreshSchoolInfoFromSupabase();
+
+document.getElementById('crest').addEventListener('change', function(e){
+  var f=e.target.files[0]; if(!f) return;
+  document.getElementById('crestBox').innerHTML='<img src="'+URL.createObjectURL(f)+'" alt="crest">';
+});
+document.getElementById('schoolForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  async function saveSchoolInfo() {
+    var payload = schoolPayload();
+    localStorage.setItem(SCHOOL_INFO_KEY, JSON.stringify(payload));
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.updateSchoolInfo) {
+      await AxiomDB.updateSchoolInfo(payload);
+    }
+    Portal.toast('School information updated.');
+  }
+  saveSchoolInfo().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not save school information: ' + (err.message || 'Unknown error'), true);
+  });
+});
+</script>
+</body>
+</html>

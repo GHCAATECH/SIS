@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>School Admin Login - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  body { min-width:0 !important; background:#f8fafc; }
+  .login-shell { min-height:100vh; display:grid; place-items:center; padding:34px; }
+  .login-card { width:480px; max-width:100%; background:#fff; border:1px solid #e2e8f0; border-radius:18px; box-shadow:0 18px 45px rgba(15,23,42,.12); padding:28px; }
+  .login-brand { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .login-brand .logo { width:50px; height:50px; border-radius:15px; display:grid; place-items:center; background:linear-gradient(135deg,#0b3d91,#1d63c8); color:#fff; font-size:21px; }
+  .login-brand h1 { font-size:22px; margin:0; }
+  .login-brand small { color:#64748b; font-weight:700; }
+  .login-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:18px; }
+  .login-actions a { color:#0f766e; font-weight:900; }
+  .home-link { position:fixed; top:18px; left:18px; z-index:20; display:inline-flex; align-items:center; gap:8px; padding:9px 12px; border-radius:10px; background:#fff; border:1px solid #e2e8f0; color:#0f766e; font-weight:900; box-shadow:0 8px 22px rgba(15,23,42,.08); }
+</style>
+</head>
+<body>
+<a class="home-link" href="index.html"><i class="fas fa-house"></i> Back to Home</a>
+<div class="login-shell">
+  <form class="login-card" id="adminLoginForm">
+    <div class="login-brand"><span class="logo"><i class="fas fa-school"></i></span><div><h1>School Admin Login</h1><small>Use Staff ID and account password</small></div></div>
+    <div class="grid" style="gap:14px">
+      <div class="field"><label>Staff ID <span class="req">*</span></label><input class="input" id="staffId" required autocomplete="username" placeholder="e.g. ASH/STF/001" /></div>
+      <div class="field"><label>Account Password <span class="req">*</span></label><input class="input" id="adminPassword" type="password" required autocomplete="current-password" /></div>
+    </div>
+    <div class="login-actions"><a href="login.html"><i class="fas fa-arrow-left"></i> All portals</a><button class="btn btn--primary" type="submit"><i class="fas fa-right-to-bracket"></i> Login</button></div>
+  </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
+document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  async function signIn() {
+    var user = await AxiomDB.loginStaff(document.getElementById('staffId').value.trim(), document.getElementById('adminPassword').value.trim());
+    if (!user || user.error) { Portal.toast(user && user.error === 'auth_not_linked' ? 'School admin Auth account was not found or linked.' : 'Invalid Staff ID or account password.', true); return; }
+    if (user.category !== 'School Administrator' && !user.isAdmin) { await AxiomDB.signOut(); Portal.toast('This login page is for School Administrators only.', true); return; }
+    localStorage.setItem('axiom_current_user', JSON.stringify(user));
+    location.href = 'admin.html';
+  }
+  signIn().catch(function(err) { console.error(err); Portal.toast('Could not login: ' + (err.message || 'Unknown error'), true); });
+});
+</script>
+</body>
+</html>
+
+

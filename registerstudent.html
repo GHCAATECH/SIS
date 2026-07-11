@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Register Student - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  body.registration-page { overflow: hidden; }
+  .registration-page .content { height: calc(100dvh - var(--header-h)); padding: 12px 14px !important; overflow: hidden; }
+  .profile-card {
+    height: 100%;
+    min-height: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .profile-title {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 16px; border-bottom: 1px solid #cfcfcf;
+    background: linear-gradient(#f8f8f8, #e8e8e8);
+    color: #1770ad; font-size: 12px; font-weight: 800; text-transform: uppercase;
+  }
+  .profile-title a { color: #2297ed; font-weight: 800; text-transform: none; }
+  .import-strip {
+    display: grid; grid-template-columns: 1fr 1fr 330px 1fr 1fr;
+    gap: 20px; align-items: center;
+    padding: 9px 12px; border-bottom: 1px solid #ededed; background: #fff;
+  }
+  .import-strip .select, .import-strip .input {
+    border-radius: 3px; min-height: 28px; font-size: 11px; color: #374151;
+    padding: 4px 8px;
+  }
+  .template-link {
+    text-align: center; color: #0b8cff; font-size: 14px; font-weight: 800;
+  }
+  .upload-btn {
+    min-height: 30px; border: 0; border-radius: 3px;
+    background: #10b5ea; color: #fff; font-size: 12px; font-weight: 800;
+  }
+  .student-form-shell {
+    width: min(900px, 100%);
+    min-height: 0;
+    margin: 0 auto;
+    padding: 10px 20px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .required-note {
+    color: #1688ff; text-align: center; font-size: 13px; margin: 0 0 8px;
+  }
+  .legacy-form {
+    display: grid;
+    grid-template-columns: 1fr 138px;
+    gap: 0 26px;
+    align-items: start;
+    min-height: 0;
+    flex: 1;
+  }
+  .bio-fields { min-width: 0; min-height: 0; }
+  .photo-column { padding-top: 4px; }
+  .legacy-field { margin-bottom: 9px; }
+  .legacy-field label {
+    display: block; color: #000; font-size: 10px; font-weight: 800;
+    margin-bottom: 5px;
+  }
+  .legacy-field .req { color: #ef4444; }
+  .legacy-input, .legacy-select {
+    width: 100%; min-height: 27px; border: 1px solid #cfcfcf; border-radius: 3px;
+    background: #fff; color: #374151; font: inherit; font-size: 11px; padding: 5px 7px;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.04);
+  }
+  .legacy-select { padding-right: 24px; }
+  .three-grid { display: grid; grid-template-columns: 1fr 120px 120px; gap: 20px; }
+  .two-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .section-rule {
+    height: 1px; background: #e5e7eb; margin: 28px 0 14px;
+  }
+  .passport-preview {
+    width: 106px; height: 106px; border: 1px solid #cfcfcf; border-radius: 2px;
+    margin: 0 auto 0; display: grid; place-items: center; overflow: hidden; background: #fff;
+    color: #9ca3af;
+  }
+  .passport-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-file { width: 168px; max-width: 100%; margin-top: 0; font-size: 10px; }
+  .photo-column.stage-hidden { display: none; }
+  .legacy-form.no-photo { grid-template-columns: 1fr; }
+  .form-actions {
+    display: flex; gap: 8px; justify-content: flex-start;
+    margin-top: 26px; padding-bottom: 22px; border-bottom: 1px solid #e5e7eb;
+  }
+  .form-actions .btn { border-radius: 4px; border: 0; min-width: 80px; height: 34px; font-size: 12px; font-weight: 800; }
+  .btn-refresh { background: #f3f4f6; color: #000; }
+  .registration-progress {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 0 0 10px;
+  }
+  .reg-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-soft);
+    background: #fff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .reg-step span {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex: none;
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+  .reg-step.active { color: #fff; border-color: var(--brand); background: var(--brand); }
+  .reg-step.active span { color: var(--brand); background: #fff; }
+  .reg-step.complete { color: var(--brand); border-color: #99d5cf; background: #f0fdfa; }
+  .reg-stage { display: none; animation: fadeIn .2s ease both; }
+  .reg-stage.active { display: block; }
+  .stage-title { margin: 0 0 10px; color: var(--text); font-size: 14px; font-weight: 700; }
+  .wizard-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 10px;
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+  }
+  .wizard-count { color: var(--text-soft); font-size: 11px; font-weight: 700; }
+  .wizard-actions .btn[hidden] { display: none !important; }
+
+  @media (max-width: 1100px) {
+    .import-strip { grid-template-columns: 1fr 1fr; }
+    .template-link { text-align: left; }
+  }
+  @media (max-width: 720px) {
+    .profile-card { height: 100%; min-height: 0; }
+    .student-form-shell { max-width: none; }
+    .legacy-form { grid-template-columns: 1fr; }
+    .photo-column { order: -1; margin-bottom: 10px; }
+    .three-grid, .two-grid { grid-template-columns: 1fr; gap: 0; }
+    .import-strip { grid-template-columns: repeat(5, minmax(180px, 1fr)); overflow-x: auto; }
+    .registration-progress { grid-template-columns: repeat(4, minmax(42px, 1fr)); }
+    .reg-step { justify-content: center; padding: 7px 4px; }
+    .reg-step strong { display: none; }
+    .legacy-form { overflow-y: auto; padding-right: 4px; }
+  }
+</style>
+</head>
+<body class="registration-page">
+<div class="main">
+  <main class="content">
+    <div class="card card--pad-0 profile-card">
+      <div class="profile-title">
+        <span>Student Profile (Bio Data)</span>
+        <a href="#"><i class="fas fa-circle-question"></i>Need Help?</a>
+      </div>
+
+      <div class="import-strip">
+        <select class="select" id="topLearningArea"><option value="">***SELECT LEARNING AREA***</option></select>
+        <select class="select" id="topClass"><option value="">***SELECT CLASS***</option></select>
+        <a class="template-link" href="templates/AXIOMBYTE_SMS_student_registration_import_template.xlsx" download>Download Excel Template</a>
+        <input class="input" id="bulkFile" type="file" accept=".xlsx,.xlsm" />
+        <button class="upload-btn" type="button" id="uploadTemplate">Upload</button>
+      </div>
+
+      <div class="student-form-shell">
+        <p class="required-note">All Fields Marked * Are Mandatory</p>
+        <div class="registration-progress" aria-label="Registration progress">
+          <div class="reg-step active" data-step="0"><span>1</span><strong>Student Bio</strong></div>
+          <div class="reg-step" data-step="1"><span>2</span><strong>Guardian</strong></div>
+          <div class="reg-step" data-step="2"><span>3</span><strong>Placement</strong></div>
+          <div class="reg-step" data-step="3"><span>4</span><strong>Review</strong></div>
+        </div>
+
+        <form id="regForm" class="legacy-form">
+          <div class="bio-fields">
+            <section class="reg-stage active" data-stage="0">
+              <h3 class="stage-title">Student Bio Data</h3>
+            <div class="legacy-field">
+              <label>Surname: <span class="req">*</span></label>
+              <input class="legacy-input" id="surname" required>
+            </div>
+            <div class="legacy-field">
+              <label>First Name: <span class="req">*</span></label>
+              <input class="legacy-input" id="firstName" required>
+            </div>
+            <div class="legacy-field">
+              <label>Other Names:</label>
+              <input class="legacy-input" id="otherNames">
+            </div>
+
+            <div class="three-grid">
+              <div class="legacy-field">
+                <label>Ghana Card Number:</label>
+                <input class="legacy-input" id="ghanaCard">
+              </div>
+              <div class="legacy-field">
+                <label>Gender: <span class="req">*</span></label>
+                <select class="legacy-select" id="studentGender" required>
+                  <option value=""></option>
+                  <option>Male</option>
+                  <option>Female</option>
+                </select>
+              </div>
+              <div class="legacy-field">
+                <label>Disability Status: <span class="req">*</span></label>
+                <select class="legacy-select" id="disabilityStatus" required>
+                  <option value=""></option>
+                  <option>No</option>
+                  <option>Yes</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="legacy-field">
+              <label>Date of Birth: <span class="req">*</span></label>
+              <input class="legacy-input" id="dob" type="date" required>
+            </div>
+            </section>
+
+            <section class="reg-stage" data-stage="1">
+              <h3 class="stage-title">Guardian and Contact Information</h3>
+            <div class="section-rule"></div>
+
+            <div class="two-grid">
+              <div class="legacy-field">
+                <label>Guardian Name: <span class="req">*</span></label>
+                <input class="legacy-input" id="guardianName" required>
+              </div>
+              <div class="legacy-field">
+                <label>Relationship: <span class="req">*</span></label>
+                <select class="legacy-select" id="relationship" required>
+                  <option value="">RELATIONSHIP TO STUDENT</option>
+                  <option>Father</option>
+                  <option>Mother</option>
+                  <option>Guardian</option>
+                  <option>Other Relative</option>
+                </select>
+              </div>
+            </div>
+            <div class="legacy-field">
+              <label>Phone Number: <span class="req">*</span></label>
+              <input class="legacy-input" id="phone" type="tel" required>
+            </div>
+            <div class="legacy-field">
+              <label>Profession:</label>
+              <input class="legacy-input" id="profession">
+            </div>
+            <div class="legacy-field">
+              <label>Residential Address:</label>
+              <input class="legacy-input" id="residentialAddress">
+            </div>
+            </section>
+
+            <section class="reg-stage" data-stage="2">
+              <h3 class="stage-title">Academic Placement</h3>
+            <div class="legacy-field" style="margin-top:28px">
+              <label>Admission Year: <span class="req">*</span></label>
+              <select class="legacy-select" id="yearAdmitted" required></select>
+            </div>
+            <div class="legacy-field">
+              <label>Student Level:</label>
+              <input class="legacy-input" id="studentLevel" readonly>
+            </div>
+            <div class="legacy-field">
+              <label>Learning Area: <span class="req">*</span></label>
+              <select class="legacy-select" id="studentProgramme" required>
+                <option value="">***SELECT LEARNING AREA***</option>
+              </select>
+            </div>
+            <div class="legacy-field">
+              <label>Select Class: <span class="req">*</span></label>
+              <select class="legacy-select" id="studentClass" required>
+                <option value="">***SELECT CLASS***</option>
+              </select>
+            </div>
+
+            <div class="two-grid">
+              <div class="legacy-field">
+                <label>Residential Status: <span class="req">*</span></label>
+                <select class="legacy-select" id="residentialStatus" required>
+                  <option value="">***SELECT STATUS***</option>
+                  <option>Boarding</option>
+                  <option>Day</option>
+                </select>
+              </div>
+              <div class="legacy-field">
+                <label>House:</label>
+                <select class="legacy-select" id="studentHouse">
+                  <option value="">Select residential status first...</option>
+                </select>
+              </div>
+            </div>
+            </section>
+
+            <section class="reg-stage" data-stage="3">
+              <h3 class="stage-title">Subjects and Submission</h3>
+            <div style="margin-top:10px">
+              <label style="font-size:10px;font-weight:800;color:#000">Subjects linked to class:</label>
+              <div class="check-grid" style="margin-top:8px" id="subjects"></div>
+              <div class="hint" id="subjectHint" style="margin-top:8px"></div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary">Submit</button>
+              <button type="reset" class="btn btn-refresh">Refresh</button>
+            </div>
+            </section>
+          </div>
+
+          <div class="photo-column">
+            <div class="passport-preview" id="photoBox"><i class="fas fa-image"></i></div>
+            <input class="photo-file" type="file" accept="image/*" id="photo" />
+          </div>
+
+          <div class="wizard-actions">
+            <button type="button" class="btn btn--ghost" id="registrationPrevious" hidden><i class="fas fa-arrow-left"></i> Previous</button>
+            <span class="wizard-count" id="registrationStageCount">Step 1 of 4</span>
+            <button type="button" class="btn btn--primary" id="registrationNext">Next <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+Portal.init({ active: 'registerstudent' });
+
+var defaultProgrammes = [
+  { name: 'General Science' },
+  { name: 'General Arts' },
+  { name: 'Business' },
+  { name: 'Visual Arts' },
+  { name: 'Home Economics' },
+  { name: 'Agricultural Science' }
+];
+var defaultClasses = [
+  { name: 'SCI_24', programme: 'General Science', subjects: ['Core Mathematics', 'English Language', 'Integrated Science', 'Social Studies', 'Physics', 'Chemistry'] },
+  { name: 'BUS_24', programme: 'Business', subjects: ['Core Mathematics', 'English Language', 'Social Studies', 'Financial Accounting', 'Cost Accounting', 'Business Management'] }
+];
+var houseDefaults = [
+  { name: 'Unity House', residentialStatus: 'Boarding' },
+  { name: 'Liberty House', residentialStatus: 'Boarding' },
+  { name: 'Day Students', residentialStatus: 'Day' }
+];
+var REGISTERED_STUDENTS_KEY = 'axiom_registered_students';
+
+function loadList(key, fallback) {
+  try {
+    var saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback.slice();
+  } catch (e) {
+    return fallback.slice();
+  }
+}
+
+function itemName(item) {
+  return typeof item === 'string' ? item : item.name;
+}
+
+function classesForProgramme(programme) {
+  if (window.liveClasses) {
+    return window.liveClasses.filter(function(cls) { return cls.programme === programme; });
+  }
+  return loadList('axiom_classes', defaultClasses).filter(function(cls) {
+    return cls.programme === programme;
+  });
+}
+
+function loadHousesList() {
+  if (window.liveHouses) return window.liveHouses.map(function(house) {
+    return { id: house.id, name: house.name, residentialStatus: house.residential_status || house.residentialStatus };
+  });
+  return loadList('axiom_houses', houseDefaults);
+}
+
+function populateProgrammeSelect(select) {
+  var current = select.value;
+  select.innerHTML = '<option value="">***SELECT LEARNING AREA***</option>';
+  (window.liveProgrammes || loadList('axiom_programmes', defaultProgrammes)).forEach(function(programme) {
+    var name = itemName(programme);
+    if (!name) return;
+    var option = document.createElement('option');
+    option.value = name;
+    option.textContent = name.toUpperCase();
+    if (name === current) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
+function populateClassSelect(programme, select) {
+  var current = select.value;
+  select.innerHTML = '<option value="">***SELECT CLASS***</option>';
+  classesForProgramme(programme).forEach(function(cls) {
+    var option = document.createElement('option');
+    option.value = cls.name;
+    option.textContent = cls.name;
+    if (cls.name === current) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
+function selectedClassRecord() {
+  var programme = document.getElementById('studentProgramme').value;
+  var className = document.getElementById('studentClass').value;
+  return classesForProgramme(programme).find(function(cls) { return cls.name === className; });
+}
+
+function getStudentLevel(admissionYear, currentYear) {
+  var difference = currentYear - admissionYear;
+  if (difference === 0) return 'Year 1';
+  if (difference === 1) return 'Year 2';
+  if (difference === 2) return 'Year 3';
+  return '';
+}
+
+function promoteStudent(currentLevel) {
+  if (currentLevel === 'Year 1') return 'Year 2';
+  if (currentLevel === 'Year 2') return 'Year 3';
+  if (currentLevel === 'Year 3') return 'Completed';
+  return currentLevel;
+}
+
+function updateStudentLevel() {
+  var admissionYear = parseInt(document.getElementById('yearAdmitted').value, 10);
+  var currentYear = new Date().getFullYear();
+  document.getElementById('studentLevel').value = admissionYear ? getStudentLevel(admissionYear, currentYear) : '';
+}
+
+function populateAdmissionYears() {
+  var select = document.getElementById('yearAdmitted');
+  var currentYear = new Date().getFullYear();
+  var options = [currentYear, currentYear - 1, currentYear - 2];
+  for (var offset = 0; offset < 100; offset++) {
+    var year = currentYear + offset;
+    if (options.indexOf(year) === -1) options.push(year);
+  }
+  select.innerHTML = options.map(function(year) {
+    return '<option value="'+year+'">'+year+'</option>';
+  }).join('');
+  select.value = String(currentYear);
+}
+
+function saveLocalRegisteredStudent(payload) {
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem(REGISTERED_STUDENTS_KEY) || '[]'); } catch (e) {}
+  list.push(Object.assign({
+    id: 'LOCAL-STUDENT-' + Date.now(),
+    name: [payload.first_name, payload.surname, payload.other_names].filter(Boolean).join(' '),
+    class_name: document.getElementById('studentClass').value,
+    programme: document.getElementById('studentProgramme').value,
+    created_at: new Date().toISOString()
+  }, payload));
+  localStorage.setItem(REGISTERED_STUDENTS_KEY, JSON.stringify(list));
+}
+
+function renderSubjects() {
+  var subjectBox = document.getElementById('subjects');
+  var hint = document.getElementById('subjectHint');
+  var cls = selectedClassRecord();
+  if (!document.getElementById('studentProgramme').value) {
+    subjectBox.innerHTML = '';
+    hint.textContent = 'Select a learning area to load classes and subjects.';
+    return;
+  }
+  if (!cls) {
+    subjectBox.innerHTML = '';
+    hint.textContent = 'Select a class to show linked subjects.';
+    return;
+  }
+  subjectBox.innerHTML = cls.subjects.map(function(subject) {
+    return '<label class="check"><input type="checkbox" checked disabled> '+subject+'</label>';
+  }).join('');
+  hint.textContent = '';
+}
+
+function syncProgramme(source) {
+  var value = source.value;
+  document.getElementById('topLearningArea').value = value;
+  document.getElementById('studentProgramme').value = value;
+  populateClassSelect(value, document.getElementById('topClass'));
+  populateClassSelect(value, document.getElementById('studentClass'));
+  renderSubjects();
+}
+
+function syncClass(source) {
+  document.getElementById('topClass').value = source.value;
+  document.getElementById('studentClass').value = source.value;
+  renderSubjects();
+}
+
+function updateHouseOptions() {
+  var residential = document.getElementById('residentialStatus').value;
+  var houseSelect = document.getElementById('studentHouse');
+  var houses = loadHousesList().filter(function(h) {
+    return (h.residentialStatus || h.status || (h.gender ? 'Boarding' : '')) === residential;
+  });
+  houseSelect.innerHTML = '';
+  var placeholder = document.createElement('option');
+  placeholder.value = '';
+  if (!residential) {
+    placeholder.textContent = 'Select residential status first...';
+    houseSelect.disabled = true;
+    houseSelect.required = false;
+  } else {
+    placeholder.textContent = houses.length ? '***SELECT HOUSE***' : 'No '+residential.toLowerCase()+' houses created yet';
+    houseSelect.disabled = false;
+    houseSelect.required = true;
+  }
+  houseSelect.appendChild(placeholder);
+  houses.forEach(function(house) {
+    var option = document.createElement('option');
+    option.value = house.id || house.name;
+    option.textContent = house.name;
+    houseSelect.appendChild(option);
+  });
+}
+
+async function loadRegistrationDataFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+  try {
+    var dbProgrammes = await AxiomDB.listProgrammes();
+    var dbClasses = await AxiomDB.listClasses();
+    var dbHouses = await AxiomDB.listHouses();
+    if (dbProgrammes && dbProgrammes.length) {
+      window.liveProgrammes = dbProgrammes;
+      defaultProgrammes = dbProgrammes.map(function(p) { return { name: p.name }; });
+      try { localStorage.setItem('axiom_programmes', JSON.stringify(defaultProgrammes)); } catch (e) {}
+    }
+    if (dbClasses && dbClasses.length) {
+      window.liveClasses = dbClasses;
+      try { localStorage.setItem('axiom_classes', JSON.stringify(dbClasses)); } catch (e) {}
+    }
+    if (dbHouses && dbHouses.length) window.liveHouses = dbHouses;
+    populateProgrammeSelect(document.getElementById('topLearningArea'));
+    populateProgrammeSelect(document.getElementById('studentProgramme'));
+    syncProgramme(document.getElementById('studentProgramme'));
+    updateHouseOptions();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load registration data from Supabase: ' + (err.message || 'Unknown error'), true);
+  }
+}
+
+var registrationStage = 0;
+var registrationStageTotal = 4;
+
+function showRegistrationStage(stage) {
+  registrationStage = Math.max(0, Math.min(registrationStageTotal - 1, stage));
+  document.querySelectorAll('.reg-stage').forEach(function(section, index) {
+    section.classList.toggle('active', index === registrationStage);
+  });
+  document.querySelectorAll('.reg-step').forEach(function(step, index) {
+    step.classList.toggle('active', index === registrationStage);
+    step.classList.toggle('complete', index < registrationStage);
+  });
+  document.getElementById('registrationPrevious').hidden = registrationStage === 0;
+  document.getElementById('registrationNext').hidden = registrationStage === registrationStageTotal - 1;
+  document.getElementById('registrationStageCount').textContent = 'Step ' + (registrationStage + 1) + ' of ' + registrationStageTotal;
+  document.querySelector('.photo-column').classList.toggle('stage-hidden', registrationStage !== 0);
+  document.getElementById('regForm').classList.toggle('no-photo', registrationStage !== 0);
+}
+
+function validateRegistrationStage() {
+  var activeStage = document.querySelector('.reg-stage.active');
+  if (!activeStage) return true;
+  var fields = Array.from(activeStage.querySelectorAll('input, select, textarea'));
+  for (var i = 0; i < fields.length; i++) {
+    if (!fields[i].checkValidity()) {
+      fields[i].reportValidity();
+      return false;
+    }
+  }
+  return true;
+}
+
+document.getElementById('registrationNext').addEventListener('click', function() {
+  if (!validateRegistrationStage()) return;
+  showRegistrationStage(registrationStage + 1);
+});
+document.getElementById('registrationPrevious').addEventListener('click', function() {
+  showRegistrationStage(registrationStage - 1);
+});
+
+populateProgrammeSelect(document.getElementById('topLearningArea'));
+populateProgrammeSelect(document.getElementById('studentProgramme'));
+populateClassSelect('', document.getElementById('topClass'));
+populateClassSelect('', document.getElementById('studentClass'));
+populateAdmissionYears();
+renderSubjects();
+updateHouseOptions();
+updateStudentLevel();
+loadRegistrationDataFromSupabase();
+showRegistrationStage(0);
+
+document.getElementById('topLearningArea').addEventListener('change', function() { syncProgramme(this); });
+document.getElementById('studentProgramme').addEventListener('change', function() { syncProgramme(this); });
+document.getElementById('topClass').addEventListener('change', function() { syncClass(this); });
+document.getElementById('studentClass').addEventListener('change', function() { syncClass(this); });
+document.getElementById('residentialStatus').addEventListener('change', updateHouseOptions);
+document.getElementById('yearAdmitted').addEventListener('change', updateStudentLevel);
+
+document.getElementById('photo').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var url = URL.createObjectURL(file);
+  document.getElementById('photoBox').innerHTML = '<img src="'+url+'" alt="Student photo">';
+});
+
+function fileToDataUrl(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(reader.result); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('uploadTemplate').addEventListener('click', function() {
+  var file = document.getElementById('bulkFile').files[0];
+  if (!file) {
+    Portal.toast('Choose a completed Excel template first.', true);
+    return;
+  }
+  if (!/\.xlsx$|\.xlsm$/i.test(file.name)) {
+    Portal.toast('Upload an Excel .xlsx or .xlsm file. CSV is not accepted.', true);
+    document.getElementById('bulkFile').value = '';
+    return;
+  }
+  Portal.toast('Excel template uploaded: ' + file.name);
+});
+
+document.getElementById('regForm').addEventListener('reset', function() {
+  window.setTimeout(function() {
+    populateProgrammeSelect(document.getElementById('topLearningArea'));
+    populateProgrammeSelect(document.getElementById('studentProgramme'));
+    populateClassSelect('', document.getElementById('topClass'));
+    populateClassSelect('', document.getElementById('studentClass'));
+    document.getElementById('photoBox').innerHTML = '<i class="fas fa-image"></i>';
+    renderSubjects();
+    updateHouseOptions();
+    updateStudentLevel();
+    showRegistrationStage(0);
+  }, 0);
+});
+
+document.getElementById('regForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form = this;
+  async function save() {
+    var photoFile = document.getElementById('photo').files[0] || null;
+    if (!window.AxiomDB || !AxiomDB.isConfigured()) {
+      var localPayload = {
+        ass_ref_id: 'STD-' + Date.now(),
+        surname: document.getElementById('surname').value.trim(),
+        first_name: document.getElementById('firstName').value.trim(),
+        other_names: document.getElementById('otherNames').value.trim(),
+        ghana_card_number: document.getElementById('ghanaCard').value.trim(),
+        gender: document.getElementById('studentGender').value,
+        disability_status: document.getElementById('disabilityStatus').value,
+        date_of_birth: document.getElementById('dob').value,
+        guardian_name: document.getElementById('guardianName').value.trim(),
+        relationship: document.getElementById('relationship').value,
+        phone_number: document.getElementById('phone').value.trim(),
+        profession: document.getElementById('profession').value.trim(),
+        residential_address: document.getElementById('residentialAddress').value.trim(),
+        residential_status: document.getElementById('residentialStatus').value,
+        year_admitted: Number(document.getElementById('yearAdmitted').value),
+        student_level: document.getElementById('studentLevel').value,
+        passport_url: photoFile ? await fileToDataUrl(photoFile) : null,
+        status: 'Active',
+        inserted_by: 'Admin'
+      };
+      saveLocalRegisteredStudent(localPayload);
+      Portal.toast('Student registered locally.');
+      form.reset();
+      return;
+    }
+    var cls = selectedClassRecord();
+    var payload = {
+      class_id: cls && cls.id ? cls.id : null,
+      house_id: document.getElementById('studentHouse').value || null,
+      ass_ref_id: 'STD-' + Date.now(),
+      surname: document.getElementById('surname').value.trim(),
+      first_name: document.getElementById('firstName').value.trim(),
+      other_names: document.getElementById('otherNames').value.trim(),
+      ghana_card_number: document.getElementById('ghanaCard').value.trim(),
+      gender: document.getElementById('studentGender').value,
+      disability_status: document.getElementById('disabilityStatus').value,
+      date_of_birth: document.getElementById('dob').value,
+      guardian_name: document.getElementById('guardianName').value.trim(),
+      relationship: document.getElementById('relationship').value,
+      phone_number: document.getElementById('phone').value.trim(),
+      profession: document.getElementById('profession').value.trim(),
+      residential_address: document.getElementById('residentialAddress').value.trim(),
+      residential_status: document.getElementById('residentialStatus').value,
+      year_admitted: Number(document.getElementById('yearAdmitted').value),
+      student_level: document.getElementById('studentLevel').value,
+      status: 'Active',
+      inserted_by: 'Admin'
+    };
+    var saved = await AxiomDB.createStudent(payload);
+    if (photoFile && AxiomDB.uploadStudentPassport) {
+      var passportUrl = await AxiomDB.uploadStudentPassport(payload.ass_ref_id, photoFile);
+      payload.passport_url = passportUrl;
+      if (saved) saved.passport_url = passportUrl;
+    }
+    saveLocalRegisteredStudent(Object.assign({}, payload, saved || {}));
+    Portal.toast('Student saved to Supabase.');
+    form.reset();
+  }
+  save().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not save student to Supabase.', true);
+  });
+});
+</script>
+</body>
+</html>
