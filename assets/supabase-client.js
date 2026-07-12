@@ -1103,14 +1103,7 @@
     if (!signedInfo.error && signedInfo.data && signedInfo.data.signedUrl) {
       publicUrl = signedInfo.data.signedUrl;
     }
-    var updated = await c
-      .from('students')
-      .update({ passport_url: publicUrl, updated_at: new Date().toISOString() })
-      .eq('school_id', school.id)
-      .eq('ass_ref_id', assRefId)
-      .select('id, ass_ref_id, passport_url')
-      .single();
-    if (updated.error) throw updated.error;
+    await updateStudentByAssRef(assRefId, { passport_url: publicUrl });
     return publicUrl;
   }
 
