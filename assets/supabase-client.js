@@ -1131,27 +1131,33 @@
   async function uploadStaffProfilePhoto(staffUserId, file) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !staffUserId || !file) return null;
+    function readStaffPhotoDataUrl() {
+      return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
     var safeName = String(file.name || 'profile.jpg').replace(/[^a-zA-Z0-9._-]+/g, '-');
     var path = school.code + '/profile-photos/' + staffUserId + '/' + Date.now() + '-' + safeName;
     var uploaded = await c.storage.from('staff-documents').upload(path, file, {
       upsert: false,
       contentType: file.type || undefined
     });
-    if (uploaded.error) throw uploaded.error;
+    if (uploaded.error) {
+      console.warn('Staff profile photo storage upload failed; saving profile photo data on staff record instead.', uploaded.error);
+      var fallbackUrl = await readStaffPhotoDataUrl();
+      await updateStaffUser(staffUserId, { profile_photo: fallbackUrl });
+      return fallbackUrl;
+    }
     var publicInfo = c.storage.from('staff-documents').getPublicUrl(path);
     var photoUrl = publicInfo && publicInfo.data ? publicInfo.data.publicUrl : path;
     var signedInfo = await c.storage.from('staff-documents').createSignedUrl(path, 315360000);
     if (!signedInfo.error && signedInfo.data && signedInfo.data.signedUrl) {
       photoUrl = signedInfo.data.signedUrl;
     }
-    var updated = await c
-      .from('staff_users')
-      .update({ profile_photo: photoUrl })
-      .eq('school_id', school.id)
-      .eq('id', staffUserId)
-      .select('id, profile_photo')
-      .single();
-    if (updated.error) throw updated.error;
+    await updateStaffUser(staffUserId, { profile_photo: photoUrl });
     return photoUrl;
   }
 
