@@ -2,22 +2,27 @@ Options -Indexes
 DirectoryIndex index.html
 
 RewriteEngine On
-# Allow clean URLs without .html
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}.html -f
-RewriteRule ^(.+)$ $1.html [L]
+
+# Redirect visible .html URLs to clean URLs.
+RewriteCond %{THE_REQUEST} \s/+(.+?)\.html[\s?] [NC]
+RewriteRule ^(.+)\.html$ /$1 [R=301,L]
 
 # Route admin subdomains to their login pages when both subdomains point
 # to the same hosting document root as the main AXIOMBYTE SMS site.
 RewriteCond %{HTTP_HOST} ^superadmin\. [NC]
-RewriteRule ^$ /admin/superadmin-login.html [R=302,L]
+RewriteRule ^$ /admin/superadmin-login [R=302,L]
 
 RewriteCond %{HTTP_HOST} ^schooladmin\. [NC]
-RewriteRule ^$ /admin/schooladmin-login.html [R=302,L]
+RewriteRule ^$ /admin/schooladmin-login [R=302,L]
 
 # Keep direct subdomain visits to common portal paths on the correct login.
 RewriteCond %{HTTP_HOST} ^superadmin\. [NC]
-RewriteRule ^(index\.html|login\.html)?$ /admin/superadmin-login.html [R=302,L]
+RewriteRule ^(index|index\.html|login|login\.html)?$ /admin/superadmin-login [R=302,L]
 
 RewriteCond %{HTTP_HOST} ^schooladmin\. [NC]
-RewriteRule ^(index\.html|login\.html)?$ /admin/schooladmin-login.html [R=302,L]
+RewriteRule ^(index|index\.html|login|login\.html)?$ /admin/schooladmin-login [R=302,L]
+
+# Allow clean URLs without .html
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+)$ $1.html [L]

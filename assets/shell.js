@@ -123,12 +123,21 @@
     return location.pathname.replace(/\\/g, '/').indexOf('/admin/') > -1 ? '../' : '';
   }
 
+  function cleanUrl(path) {
+    if (location.protocol === 'file:') return path;
+    return String(path || '').replace(/\.html($|[?#])/i, '$1');
+  }
+
+  function route(path) {
+    return cleanUrl(pageBase() + path);
+  }
+
   function pageHref(item) {
     var base = pageBase();
     if (item.href) {
-      return base ? item.href.replace(/^admin\//, '') : item.href;
+      return cleanUrl(base ? item.href.replace(/^admin\//, '') : item.href);
     }
-    return base + item.key + '.html';
+    return cleanUrl(base + item.key + '.html');
   }
 
   function buildSidebar(active) {
@@ -146,7 +155,7 @@
 
     return el(
       '<aside class="sidebar" id="sidebar">' +
-        '<a class="sidebar__brand" href="' + pageBase() + 'dashboard.html">' +
+        '<a class="sidebar__brand" href="' + route('dashboard.html') + '">' +
           '<span class="logo"><i class="fas fa-graduation-cap"></i></span>' +
           '<span>AXIOMBYTE SMS<small>AXIOMBYTE SMS</small></span>' +
         '</a>' +
@@ -167,8 +176,7 @@
     var user = currentUser();
     var displayName = user && user.full_name ? user.full_name : SCHOOL.user;
     var myDocumentsLabel = user && user.type === 'student' ? 'Student Documents' : 'My Documents';
-    var base = pageBase();
-    var addUserLink = (!user || user.isAdmin) ? '<a href="' + base + 'registeruser.html"><i class="fas fa-user-plus" style="width:16px"></i> Add New User</a>' : '';
+    var addUserLink = (!user || user.isAdmin) ? '<a href="' + route('registeruser.html') + '"><i class="fas fa-user-plus" style="width:16px"></i> Add New User</a>' : '';
     return el(
       '<header class="topbar">' +
         '<button class="icon-btn hamburger" id="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>' +
@@ -181,7 +189,7 @@
             '<i class="fas fa-chevron-down" style="font-size:11px;color:var(--text-faint)"></i>' +
           '</button>' +
           '<div class="usermenu__list">' +
-            '<a href="' + base + 'mydocuments.html"><i class="fas fa-file-shield" style="width:16px"></i> ' + myDocumentsLabel + '</a>' +
+            '<a href="' + route('mydocuments.html') + '"><i class="fas fa-file-shield" style="width:16px"></i> ' + myDocumentsLabel + '</a>' +
             addUserLink +
             '<hr/>' +
             '<a href="#" class="danger" id="logoutLink"><i class="fas fa-arrow-right-from-bracket" style="width:16px"></i> Logout</a>' +
@@ -215,7 +223,7 @@
       document.body.classList.toggle('nav-open');
     });
     overlay.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
-    document.querySelectorAll('.sidebar a[href$=".html"]').forEach(function (link) {
+    document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
         setSidebarCollapsed(true);
         document.body.classList.remove('nav-open');
@@ -236,7 +244,7 @@
       if (confirm('Log out of the portal?')) {
         if (window.AxiomDB && AxiomDB.signOut) { AxiomDB.signOut(); }
         else localStorage.removeItem('axiom_current_user');
-        location.href = pageBase() + 'login.html';
+        location.href = route('login.html');
       }
     });
 
@@ -259,7 +267,7 @@
         var pageKey = active || (location.pathname.split('/').pop() || '').replace('.html', '');
         if (!user && ['login', 'superadmin-login', 'index'].indexOf(pageKey) === -1) {
           Portal.toast('Please login to continue.', true);
-          setTimeout(function () { location.href = pageBase() + 'login.html'; }, 700);
+          setTimeout(function () { location.href = route('login.html'); }, 700);
           return;
         }
         if (user && user.isSuperAdmin) {
@@ -276,7 +284,7 @@
         }
         if (user && user.category !== 'Teaching Staff' && active === 'cass') {
           Portal.toast('Capture Assessment is for Teaching Staff only.', true);
-          setTimeout(function () { location.href = pageBase() + 'mydocuments.html'; }, 900);
+          setTimeout(function () { location.href = route('mydocuments.html'); }, 900);
           return;
         }
         if (user && user.category === 'Teaching Staff' && active === 'cass') {
@@ -285,7 +293,7 @@
         }
         if (active === 'schemeofwork' && (!user || user.category !== 'Teaching Staff')) {
           Portal.toast('Scheme of Work is for Teaching Staff only.', true);
-          setTimeout(function () { location.href = user ? pageBase() + 'dashboard.html' : pageBase() + 'login.html'; }, 900);
+          setTimeout(function () { location.href = user ? route('dashboard.html') : route('login.html'); }, 900);
           return;
         }
         if (user && user.category === 'Teaching Staff' && active === 'schemeofwork') {
@@ -294,7 +302,7 @@
         }
         if (user && !user.isAdmin && active && active !== 'mydocuments' && (user.privileges || []).indexOf(active) === -1) {
           Portal.toast('You do not have access to this module.', true);
-          setTimeout(function () { location.href = 'mydocuments.html'; }, 900);
+          setTimeout(function () { location.href = route('mydocuments.html'); }, 900);
           return;
         }
         if (opts.onReady) opts.onReady();
