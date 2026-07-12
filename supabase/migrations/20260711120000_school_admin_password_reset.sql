@@ -100,7 +100,7 @@ begin
         created_at,
         updated_at
       ) values (
-        target_auth_user_id::text,
+        target_auth_user_id,
         target_auth_user_id,
         target_email,
         jsonb_build_object('sub', target_auth_user_id::text, 'email', target_email, 'email_verified', true),
