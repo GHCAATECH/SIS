@@ -182,7 +182,13 @@
   async function loginWithAuth(accountType, identifier, password) {
     var c = db();
     if (!c) return null;
-    var email = await resolveAuthEmail(identifier, accountType);
+    var email = null;
+    try {
+      email = await resolveAuthEmail(identifier, accountType);
+    } catch (err) {
+      if (accountType === 'staff') return loginStaffWithAccountPassword(identifier, password);
+      throw err;
+    }
     if (!email) {
       if (accountType === 'staff') return loginStaffWithAccountPassword(identifier, password);
       return { error: 'auth_not_linked' };
@@ -283,6 +289,15 @@
     });
     if (result.error) throw result.error;
     if (payload.account_password && result.data && result.data.id) {
+      var passwordResult = await c
+        .from('staff_users')
+        .update({ account_password: payload.account_password, must_change_password: true })
+        .eq('id', result.data.id)
+        .eq('category', 'School Administrator')
+        .select('*')
+        .single();
+      if (passwordResult.error) throw passwordResult.error;
+      result.data = Object.assign({}, result.data, passwordResult.data || {});
       try {
         await resetSchoolAdminPassword(result.data.id, payload.account_password);
       } catch (err) {

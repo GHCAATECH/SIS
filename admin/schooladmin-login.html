@@ -32,15 +32,20 @@
   </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../assets/supabase-client.js?v=20260712-account-password-login"></script>
-<script src="../assets/shell.js?v=20260712-account-password-login"></script>
+<script src="../assets/supabase-client.js?v=20260712-schooladmin-login-fix"></script>
+<script src="../assets/shell.js?v=20260712-schooladmin-login-fix"></script>
 <script>
 document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
 document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
   e.preventDefault();
   async function signIn() {
     var user = await AxiomDB.loginStaff(document.getElementById('staffId').value.trim(), document.getElementById('adminPassword').value.trim());
-    if (!user || user.error) { Portal.toast(user && user.error === 'auth_not_linked' ? 'School admin Auth account was not found or linked.' : 'Invalid Staff ID or account password.', true); return; }
+    if (!user || user.error) {
+      var message = 'Invalid Staff ID or account password.';
+      if (user && user.error === 'account_password_login_failed') message = 'School admin password login SQL has not been installed or failed.';
+      Portal.toast(message, true);
+      return;
+    }
     if (user.category !== 'School Administrator' && !user.isAdmin) { await AxiomDB.signOut(); Portal.toast('This login page is for School Administrators only.', true); return; }
     localStorage.setItem('axiom_current_user', JSON.stringify(user));
     location.href = location.pathname.indexOf('/admin/') > -1 ? 'admin.html' : 'admin/admin.html';
