@@ -217,6 +217,20 @@
     if (result.error) return { error: 'account_password_login_failed', message: result.error.message };
     if (!result.data) return { error: 'auth_failed' };
     var profile = result.data;
+    if (profile.email) {
+      try {
+        var authLogin = await c.auth.signInWithPassword({
+          email: profile.email,
+          password: String(password || '').trim()
+        });
+        if (!authLogin.error && authLogin.data && authLogin.data.user) {
+          var authProfile = await loadAuthProfile(authLogin.data.user, 'staff');
+          if (authProfile) return authProfile;
+        }
+      } catch (e) {
+        console.warn('Account password fallback could not establish Auth session.', e);
+      }
+    }
     if (profile.school_code) setActiveSchool(profile.school_code, profile.school_id, profile.school_name);
     return profile;
   }
@@ -1080,6 +1094,10 @@
   async function uploadStudentPassport(assRefId, file) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !assRefId || !file) return null;
+    var session = c.auth && c.auth.getSession ? await c.auth.getSession() : null;
+    if (!session || !session.data || !session.data.session) {
+      throw new Error('Please reset this School Admin password from Super Admin, log out, then log in again before uploading student pictures.');
+    }
     var safeName = String(file.name || 'passport.jpg').replace(/[^a-zA-Z0-9._-]+/g, '-');
     var path = school.code + '/' + assRefId + '/' + Date.now() + '-' + safeName;
     var uploaded = await c.storage.from('student-passports').upload(path, file, {
