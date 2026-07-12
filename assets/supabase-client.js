@@ -1098,13 +1098,26 @@
     if (!session || !session.data || !session.data.session) {
       throw new Error('Please reset this School Admin password from Super Admin, log out, then log in again before uploading student pictures.');
     }
+    function readPassportDataUrl() {
+      return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
     var safeName = String(file.name || 'passport.jpg').replace(/[^a-zA-Z0-9._-]+/g, '-');
     var path = school.code + '/' + assRefId + '/' + Date.now() + '-' + safeName;
     var uploaded = await c.storage.from('student-passports').upload(path, file, {
       upsert: false,
       contentType: file.type || undefined
     });
-    if (uploaded.error) throw uploaded.error;
+    if (uploaded.error) {
+      console.warn('Student passport storage upload failed; saving passport data on student record instead.', uploaded.error);
+      var fallbackUrl = await readPassportDataUrl();
+      await updateStudentByAssRef(assRefId, { passport_url: fallbackUrl });
+      return fallbackUrl;
+    }
     var publicInfo = c.storage.from('student-passports').getPublicUrl(path);
     var publicUrl = publicInfo && publicInfo.data ? publicInfo.data.publicUrl : path;
     var signedInfo = await c.storage.from('student-passports').createSignedUrl(path, 315360000);
