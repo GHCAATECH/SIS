@@ -2,7 +2,7 @@
 -- If the School Admin has no linked Auth account yet, this creates and links one.
 -- Run this in Supabase SQL Editor before using the Reset button in the Super Admin portal.
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 create or replace function public.super_admin_reset_school_admin_password(
   p_staff_user_id uuid,
@@ -78,7 +78,7 @@ begin
         'authenticated',
         'authenticated',
         target_email,
-        crypt(p_new_password, gen_salt('bf')),
+        extensions.crypt(p_new_password, extensions.gen_salt('bf')),
         now(),
         '{"provider":"email","providers":["email"]}'::jsonb,
         jsonb_build_object('account_type', 'staff', 'staff_user_id', target_staff.id, 'school_id', target_staff.school_id),
@@ -121,7 +121,7 @@ begin
   end if;
 
   update auth.users
-  set encrypted_password = crypt(p_new_password, gen_salt('bf')),
+  set encrypted_password = extensions.crypt(p_new_password, extensions.gen_salt('bf')),
       email_confirmed_at = coalesce(email_confirmed_at, now()),
       updated_at = now()
   where id = target_staff.auth_user_id;
