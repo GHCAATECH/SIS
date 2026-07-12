@@ -183,15 +183,35 @@
     var c = db();
     if (!c) return null;
     var email = await resolveAuthEmail(identifier, accountType);
-    if (!email) return { error: 'auth_not_linked' };
+    if (!email) {
+      if (accountType === 'staff') return loginStaffWithAccountPassword(identifier, password);
+      return { error: 'auth_not_linked' };
+    }
     var signedIn = await c.auth.signInWithPassword({ email: email, password: String(password || '').trim() });
-    if (signedIn.error) return { error: 'auth_failed', message: signedIn.error.message };
+    if (signedIn.error) {
+      if (accountType === 'staff') return loginStaffWithAccountPassword(identifier, password);
+      return { error: 'auth_failed', message: signedIn.error.message };
+    }
     var user = signedIn.data && signedIn.data.user;
     var profile = await loadAuthProfile(user, accountType);
     if (!profile) {
       await c.auth.signOut();
       return { error: 'profile_not_found' };
     }
+    return profile;
+  }
+
+  async function loginStaffWithAccountPassword(identifier, password) {
+    var c = db();
+    if (!c) return null;
+    var result = await c.rpc('resolve_staff_password_login', {
+      p_identifier: String(identifier || '').trim(),
+      p_password: String(password || '').trim()
+    });
+    if (result.error) return { error: 'account_password_login_failed', message: result.error.message };
+    if (!result.data) return { error: 'auth_failed' };
+    var profile = result.data;
+    if (profile.school_code) setActiveSchool(profile.school_code, profile.school_id, profile.school_name);
     return profile;
   }
   async function loginSuperAdmin(username, password) {
@@ -263,7 +283,11 @@
     });
     if (result.error) throw result.error;
     if (payload.account_password && result.data && result.data.id) {
-      await resetSchoolAdminPassword(result.data.id, payload.account_password);
+      try {
+        await resetSchoolAdminPassword(result.data.id, payload.account_password);
+      } catch (err) {
+        console.warn('School admin Auth link/reset failed; account_password login fallback can still be used after SQL setup.', err);
+      }
     }
     return result.data;
   }
