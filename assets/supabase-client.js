@@ -692,12 +692,10 @@
       p_payload: row
     });
     if (!rpcResult.error) return rpcResult.data;
-    if (!String(rpcResult.error.message || '').toLowerCase().includes('secure_create_student')) {
-      throw rpcResult.error;
+    if (String(rpcResult.error.message || '').toLowerCase().includes('secure_create_student')) {
+      throw new Error('Run the secure student registration SQL in Supabase, then refresh this page.');
     }
-    var result = await c.from('students').insert(row).select('*').single();
-    if (result.error) throw result.error;
-    return result.data;
+    throw rpcResult.error;
   }
 
   async function updateStudentByAssRef(assRefId, payload) {
@@ -714,18 +712,10 @@
       p_payload: payload
     });
     if (!rpcResult.error) return rpcResult.data;
-    if (!String(rpcResult.error.message || '').toLowerCase().includes('secure_update_student_by_ass_ref')) {
-      throw rpcResult.error;
+    if (String(rpcResult.error.message || '').toLowerCase().includes('secure_update_student_by_ass_ref')) {
+      throw new Error('Run the secure student update SQL in Supabase, then refresh this page.');
     }
-    var result = await c
-      .from('students')
-      .update(payload)
-      .eq('school_id', school.id)
-      .eq('ass_ref_id', assRefId)
-      .select('*')
-      .single();
-    if (result.error) throw result.error;
-    return result.data;
+    throw rpcResult.error;
   }
 
   async function progressStudents(assRefIds) {
