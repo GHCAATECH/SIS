@@ -262,6 +262,9 @@
       p_payload: row
     });
     if (result.error) throw result.error;
+    if (payload.account_password && result.data && result.data.id) {
+      await resetSchoolAdminPassword(result.data.id, payload.account_password);
+    }
     return result.data;
   }
 

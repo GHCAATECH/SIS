@@ -77,7 +77,8 @@
           <div class="field wide"><label>School <span class="req">*</span></label><select class="input" id="adminSchool" required></select></div>
           <div class="field wide"><label>Full Name <span class="req">*</span></label><input class="input" id="adminName" required placeholder="Administrator full name" /></div>
           <div class="field"><label>Staff ID <span class="req">*</span></label><input class="input" id="adminStaffId" required placeholder="e.g. ADM/001" /></div>
-          <div class="field"><label>Date of Birth <span class="req">*</span></label><input class="input" id="adminDob" type="date" required /></div>
+          <div class="field"><label>Date of Birth</label><input class="input" id="adminDob" type="date" /></div>
+          <div class="field"><label>Account Password <span class="req">*</span></label><input class="input" id="adminAccountPassword" type="text" required placeholder="Temporary login password" /></div>
           <div class="field"><label>Email</label><input class="input" id="adminEmail" type="email" placeholder="email@example.com" /></div>
           <div class="field"><label>Phone</label><input class="input" id="adminPhone" placeholder="Phone number" /></div>
           <div class="wide"><button class="btn btn--primary" type="submit"><i class="fas fa-user-plus"></i> Create School Admin</button></div>
@@ -99,8 +100,8 @@
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../assets/supabase-client.js?v=20260712-admin-actions"></script>
-<script src="../assets/shell.js?v=20260712-admin-actions"></script>
+<script src="../assets/supabase-client.js?v=20260712-admin-passwords"></script>
+<script src="../assets/shell.js?v=20260712-admin-passwords"></script>
 <script>
 document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';
 var currentUser = Portal.currentUser();
@@ -278,16 +279,22 @@ document.getElementById('adminForm').addEventListener('submit', function(e) {
   e.preventDefault();
   async function save() {
     var schoolId = document.getElementById('adminSchool').value;
+    var accountPassword = document.getElementById('adminAccountPassword').value.trim();
+    if (accountPassword.length < 6) {
+      Portal.toast('Account password must be at least 6 characters.', true);
+      return;
+    }
     await AxiomDB.createSchoolAdmin(schoolId, {
       full_name: document.getElementById('adminName').value.trim(),
       username: document.getElementById('adminStaffId').value.trim(),
       staff_id: document.getElementById('adminStaffId').value.trim(),
       date_of_birth: document.getElementById('adminDob').value,
       email: document.getElementById('adminEmail').value.trim() || (document.getElementById('adminStaffId').value.trim().replace(/[^a-z0-9]/gi, '').toLowerCase() + '@schooladmin.local'),
-      phone: document.getElementById('adminPhone').value.trim()
+      phone: document.getElementById('adminPhone').value.trim(),
+      account_password: accountPassword
     });
     e.target.reset();
-    Portal.toast('School administrator created. Login uses Staff ID and DOB.');
+    Portal.toast('School administrator created. Login uses Staff ID and account password.');
     await loadData();
   }
   save().catch(function(err) { console.error(err); Portal.toast('Could not create school admin: ' + (err.message || 'Unknown error'), true); });
