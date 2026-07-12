@@ -2,6 +2,10 @@ Options -Indexes
 DirectoryIndex index.html
 
 RewriteEngine On
+# Allow clean URLs without .html
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+)$ $1.html [L]
 
 # Route admin subdomains to their login pages when both subdomains point
 # to the same hosting document root as the main AXIOMBYTE SMS site.
