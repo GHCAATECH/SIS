@@ -686,8 +686,16 @@
   async function createStudent(payload) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
-    payload.school_id = school.id;
-    var result = await c.from('students').insert(payload).select('*').single();
+    var row = Object.assign({}, payload, { school_id: school.id });
+    var rpcResult = await c.rpc('secure_create_student', {
+      p_school_id: school.id,
+      p_payload: row
+    });
+    if (!rpcResult.error) return rpcResult.data;
+    if (!String(rpcResult.error.message || '').toLowerCase().includes('secure_create_student')) {
+      throw rpcResult.error;
+    }
+    var result = await c.from('students').insert(row).select('*').single();
     if (result.error) throw result.error;
     return result.data;
   }

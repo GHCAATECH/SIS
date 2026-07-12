@@ -340,8 +340,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js"></script>
-<script src="assets/shell.js"></script>
+<script src="assets/supabase-client.js?v=20260712-secure-student-create"></script>
+<script src="assets/shell.js?v=20260712-secure-student-create"></script>
 <script>
 Portal.init({ active: 'registerstudent' });
 
@@ -730,7 +730,7 @@ document.getElementById('regForm').addEventListener('submit', function(e) {
   }
   save().catch(function(err) {
     console.error(err);
-    Portal.toast('Could not save student to Supabase.', true);
+    Portal.toast('Could not save student to Supabase: ' + (err.message || 'Unknown error'), true);
   });
 });
 </script>
