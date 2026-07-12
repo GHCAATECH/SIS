@@ -703,10 +703,20 @@
   async function updateStudentByAssRef(assRefId, payload) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !assRefId) return null;
+    payload = Object.assign({}, payload || {});
     delete payload.id;
     delete payload.school_id;
     delete payload.created_at;
     delete payload.updated_at;
+    var rpcResult = await c.rpc('secure_update_student_by_ass_ref', {
+      p_school_id: school.id,
+      p_ass_ref_id: assRefId,
+      p_payload: payload
+    });
+    if (!rpcResult.error) return rpcResult.data;
+    if (!String(rpcResult.error.message || '').toLowerCase().includes('secure_update_student_by_ass_ref')) {
+      throw rpcResult.error;
+    }
     var result = await c
       .from('students')
       .update(payload)
