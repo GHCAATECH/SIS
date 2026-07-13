@@ -419,6 +419,52 @@ body {
   min-height: 100%;
 }
 
+/* Responsive safety net for portal pages */
+@media (max-width: 900px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body.portal-shell > .main,
+  body.footer-shell > .main,
+  body.sidebar-collapsed > .main {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .card,
+  .manage-card,
+  .users-card,
+  .panel,
+  .super-card,
+  .article-card {
+    max-width: 100% !important;
+  }
+
+  :where(.table-wrap, .student-table-wrapper, .users-table-wrap, .legacy-table-wrap, .records-table-wrap, .score-table-wrap, .super-table-wrap) {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :where(table, .tbl, .student-table, .users-table, .legacy-table, .records-table, .score-table, .super-table) {
+    max-width: none;
+  }
+
+  :where(.form-grid, .edit-grid, .edit-two-grid, .grid.cols-2, .grid.cols-3, .grid.cols-4) {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 body.portal-shell {
   min-height: 100vh;
   display: flex;

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Manage Students - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260713-footerfix" />
+<link rel="stylesheet" href="assets/app.css?v=20260713-responsivefix" />
 <style>
   .manage-card { width: 100%; min-width: 0; border-radius: 4px; overflow: hidden; }
   .manage-title {
@@ -238,7 +238,9 @@
     object-fit: contain;
   }
   .student-table .action-column {
-    min-width: 330px;
+    width: 282px;
+    min-width: 282px;
+    max-width: 282px;
     text-align: center;
     position: sticky;
     right: 0;
@@ -251,19 +253,22 @@
     z-index: 3;
   }
   .action-buttons {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-wrap: nowrap;
+    gap: 7px;
+    width: 100%;
   }
   .action-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
-    min-height: 32px;
-    padding: 6px 9px;
+    width: 82px;
+    min-width: 82px;
+    min-height: 34px;
+    padding: 7px 9px;
     border: 0;
     border-radius: 6px;
     color: #ffffff;
@@ -272,6 +277,8 @@
     font-weight: 700;
     line-height: 1;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: opacity 0.2s ease, transform 0.2s ease;
   }
   .action-btn:hover { opacity: 0.88; transform: translateY(-1px); }
@@ -437,22 +444,32 @@
       margin-bottom: 12px;
       border-radius: 8px;
     }
-    .student-table { min-width: 1200px; }
+    .student-table { min-width: 1320px; }
     .student-table th,
     .student-table td { padding: 8px; font-size: 12px; }
-    .student-table .action-column { min-width: 155px; }
+    .student-table .action-column {
+      width: 250px;
+      min-width: 250px;
+      max-width: 250px;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
     .action-buttons {
-      display: grid;
-      grid-template-columns: repeat(3, 34px);
+      display: inline-flex;
+      flex-wrap: nowrap;
       justify-content: center;
+      gap: 6px;
     }
     .action-btn {
-      width: 34px;
+      width: 74px;
+      min-width: 74px;
       height: 32px;
       min-height: 32px;
-      padding: 0;
+      padding: 0 6px;
+      font-size: 11px;
     }
-    .action-btn span { display: none; }
+    .action-btn i { font-size: 11px; }
+    .action-btn span { display: inline; }
   }
 </style>
 </head>
