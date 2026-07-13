@@ -107,9 +107,9 @@
   .image-lightbox__close:hover { background:#042f2e; }
 
   @media (max-width:980px) {
-    .landing-nav { margin:10px 10px 0; align-items:flex-start; flex-direction:column; }
+    .landing-nav { margin:10px 10px 0; align-items:center; flex-direction:row; flex-wrap:wrap; }
     .footer-grid { grid-template-columns:1fr 1fr; }
-    .landing-links { flex-wrap:wrap; }
+    .landing-links { flex-wrap:wrap; justify-content:center; }
     .hero { grid-template-columns:1fr; padding-top:42px; }
     .hero-panel { min-height:0; }
   }
@@ -130,39 +130,27 @@
       flex-direction:row !important;
       align-items:center !important;
       justify-content:space-between !important;
+      flex-wrap:wrap !important;
     }
     .landing-links {
-      position:fixed !important;
-      top:0 !important;
-      right:0 !important;
-      bottom:0 !important;
-      z-index:120 !important;
-      width:min(310px,86vw) !important;
-      padding:82px 18px 22px !important;
-      display:flex !important;
-      flex-direction:column !important;
-      align-items:stretch !important;
-      justify-content:flex-start !important;
-      gap:8px !important;
-      background:#fff !important;
-      border-left:1px solid rgba(226,232,240,.95) !important;
-      box-shadow:-24px 0 55px rgba(15,23,42,.18) !important;
-      transform:translateX(108%) !important;
-      transition:transform .24s ease !important;
-    }
-    .landing-links.open { transform:translateX(0) !important; }
-    .landing-links::before {
-      content:"Menu";
-      position:absolute;
-      top:24px;
-      left:18px;
-      color:#042f2e;
-      font-size:18px;
-      font-weight:950;
-    }
-    .landing-links a {
+      position:static !important;
       width:100% !important;
-      padding:13px 14px !important;
+      padding:0 !important;
+      display:flex !important;
+      flex-direction:row !important;
+      flex-wrap:wrap !important;
+      align-items:center !important;
+      justify-content:center !important;
+      gap:8px !important;
+      background:transparent !important;
+      border-left:0 !important;
+      box-shadow:none !important;
+      transform:none !important;
+    }
+    .landing-links::before { content:none !important; }
+    .landing-links a {
+      width:auto !important;
+      padding:10px 12px !important;
       border-radius:12px !important;
       color:#0f172a !important;
       background:#f8fafc !important;
@@ -170,7 +158,7 @@
     }
     .landing-actions { width:auto !important; flex:none !important; }
     .landing-actions .landing-btn { flex:none !important; }
-    .mobile-nav-toggle { display:inline-flex !important; }
+    .mobile-nav-toggle { display:none !important; }
   }
 </style>
 </head>
