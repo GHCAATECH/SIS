@@ -161,6 +161,119 @@
   .legacy-btn:hover { filter: brightness(.94); }
   .legacy-table .wrap-text,
   .legacy-table .nowrap { white-space: nowrap !important; line-height: 1.35; }
+  .student-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow: auto !important;
+    max-height: min(620px, calc(100dvh - 330px));
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+    -webkit-overflow-scrolling: touch;
+  }
+  .student-table-wrapper::-webkit-scrollbar { height: 11px; width: 11px; }
+  .student-table-wrapper::-webkit-scrollbar-track { background: #f1f5f9; }
+  .student-table-wrapper::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border: 3px solid #f1f5f9;
+    border-radius: 999px;
+  }
+  .student-table-wrapper::-webkit-scrollbar-thumb:hover { background: #0f766e; }
+  .student-table {
+    width: 100%;
+    min-width: 1450px;
+    border-collapse: collapse;
+    table-layout: auto;
+    color: #111827;
+  }
+  .student-table th,
+  .student-table td {
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .student-table th {
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 800;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .student-table tbody tr:hover td { background: #f8fafc; }
+  .student-table th:nth-child(2),
+  .student-table td:nth-child(2),
+  .student-table th:nth-child(4),
+  .student-table td:nth-child(4) {
+    min-width: 170px;
+    max-width: 250px;
+    white-space: normal;
+    line-height: 1.4;
+  }
+  .student-table .student-photo {
+    width: 42px;
+    height: 42px;
+    margin: 0 auto;
+    border: 2px solid #e5e7eb;
+    border-radius: 50%;
+    background: #eef2f7;
+  }
+  .student-table .student-photo span {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    font-size: 12px;
+  }
+  .student-table .student-photo img { border-radius: 50%; }
+  .student-table .action-column {
+    min-width: 330px;
+    text-align: center;
+    position: sticky;
+    right: 0;
+    background: #ffffff;
+    box-shadow: -4px 0 8px rgba(15, 23, 42, 0.06);
+    z-index: 1;
+  }
+  .student-table thead .action-column {
+    background: #f8fafc;
+    z-index: 3;
+  }
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 32px;
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .action-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .view-btn { background: #2563eb; }
+  .edit-btn { background: #f59e0b; }
+  .print-btn { background: #0f766e; }
+  .repeat-btn { background: #7c3aed; }
+  .delete-btn { background: #dc2626; }
   .student-footer-actions {
     display: grid; grid-template-columns: 1fr 235px 235px 1fr;
     gap: 30px; align-items: center;
@@ -313,6 +426,27 @@
     .student-footer-actions { grid-template-columns: 1fr; padding: 18px; gap: 12px; }
     .edit-bio-grid, .edit-two-grid, .edit-subject-grid { grid-template-columns: 1fr; }
     .edit-form-shell { padding: 18px; }
+    .student-table-wrapper {
+      max-height: 58dvh;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+    .student-table { min-width: 1200px; }
+    .student-table th,
+    .student-table td { padding: 8px; font-size: 12px; }
+    .student-table .action-column { min-width: 155px; }
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 34px);
+      justify-content: center;
+    }
+    .action-btn {
+      width: 34px;
+      height: 32px;
+      min-height: 32px;
+      padding: 0;
+    }
+    .action-btn span { display: none; }
   }
 </style>
 </head>
@@ -374,24 +508,21 @@
         </label>
       </div>
 
-      <div class="legacy-table-wrap">
-        <table class="legacy-table" id="studentTable">
+      <div class="student-table-wrapper">
+        <table class="student-table" id="studentTable">
           <thead>
             <tr>
-              <th>Action <span class="sort">▲<br>▼</span></th>
-              <th>Action <span class="sort">▲<br>▼</span></th>
-              <th>PPT_PIC <span class="sort">▲<br>▼</span></th>
-              <th>School_Name <span class="sort">▲<br>▼</span></th>
-              <th>STD_ID <span class="sort">▲<br>▼</span></th>
-              <th>Candidate_Name <span class="sort">▲<br>▼</span></th>
-              <th>Nat'l_ID <span class="sort">▲<br>▼</span></th>
-              <th>Gender <span class="sort">▲<br>▼</span></th>
-              <th>DOB <span class="sort">▲<br>▼</span></th>
-              <th>Class <span class="sort">▲<br>▼</span></th>
-              <th>Created_Date <span class="sort">▲<br>▼</span></th>
-              <th>Inserted_By <span class="sort">▲<br>▼</span></th>
-              <th>Action <span class="sort">▲<br>▼</span></th>
-              <th>Action <span class="sort">▲<br>▼</span></th>
+              <th>PPT PIC</th>
+              <th>School Name</th>
+              <th>Student ID</th>
+              <th>Candidate Name</th>
+              <th>National ID</th>
+              <th>Gender</th>
+              <th>Date of Birth</th>
+              <th>Class</th>
+              <th>Created Date</th>
+              <th>Inserted By</th>
+              <th class="action-column">Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -866,16 +997,14 @@ function initials(name) {
 
 function renderRows(data, message) {
   if (!data.length) {
-    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
+    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="11" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
     document.getElementById('studentTotal').textContent = 0;
     return;
   }
   document.querySelector('#studentTable tbody').innerHTML = data.map(function(r) {
     var genderClass = r[3] === 'FEMALE' ? ' female' : '';
     var passport = r[10] ? '<img src="'+String(r[10]).replace(/"/g, '&quot;')+'" alt="'+String(r[1]).replace(/"/g, '&quot;')+' passport" onerror="this.remove()">' : '';
-    return '<tr>'+
-      '<td><button class="legacy-btn blue" data-act="Edit" data-id="'+r[0]+'"><i class="fas fa-pen-to-square"></i>EDIT</button></td>'+
-      '<td><button class="legacy-btn blue" data-act="Transcript" data-id="'+r[0]+'"><i class="fas fa-file-lines"></i>Transcript</button></td>'+
+    return '<tr data-ass-ref="'+String(r[0]).replace(/"/g, '&quot;')+'" data-name="'+String(r[1]).replace(/"/g, '&quot;')+'">'+
       '<td><div class="student-photo'+genderClass+'">'+passport+'<span>'+initials(r[1])+'</span></div></td>'+
       '<td class="nowrap">ASUOM SENIOR HIGH SCHOOL</td>'+
       '<td class="nowrap">'+r[0]+'</td>'+
@@ -886,8 +1015,13 @@ function renderRows(data, message) {
       '<td>'+r[5]+'</td>'+
       '<td>'+r[6]+'</td>'+
       '<td>'+r[7]+'</td>'+
-      '<td><button class="legacy-btn red" data-act="Delete"><i class="fas fa-pen-to-square"></i>DELETE</button></td>'+
-      '<td><button class="legacy-btn blue" data-act="Repeat"><i class="fas fa-pen-to-square"></i>REPEAT</button></td>'+
+      '<td class="action-column"><div class="action-buttons">'+
+        '<button type="button" class="action-btn view-btn" data-act="View" data-id="'+r[0]+'" title="View student"><i class="fas fa-eye"></i><span>View</span></button>'+
+        '<button type="button" class="action-btn edit-btn" data-act="Edit" data-id="'+r[0]+'" title="Edit student"><i class="fas fa-pen"></i><span>Edit</span></button>'+
+        '<button type="button" class="action-btn print-btn" data-act="Print" data-id="'+r[0]+'" title="Download transcript"><i class="fas fa-print"></i><span>Print</span></button>'+
+        '<button type="button" class="action-btn repeat-btn" data-act="Repeat" data-id="'+r[0]+'" title="Repeat student"><i class="fas fa-rotate-right"></i><span>Repeat</span></button>'+
+        '<button type="button" class="action-btn delete-btn" data-act="Delete" data-id="'+r[0]+'" title="Delete student"><i class="fas fa-trash"></i><span>Delete</span></button>'+
+      '</div></td>'+
     '</tr>';
   }).join('');
   document.getElementById('studentTotal').textContent = data.length;
@@ -1385,13 +1519,13 @@ document.getElementById('studentTable').addEventListener('click', function(e) {
   var btn = e.target.closest('button[data-act]');
   if (!btn) return;
   var row = btn.closest('tr');
-  var name = row.children[5].textContent.trim();
-  var assRef = row.children[4].textContent.trim();
-  if (btn.dataset.act === 'Edit') {
+  var name = row.dataset.name || row.children[3].textContent.trim();
+  var assRef = row.dataset.assRef || btn.dataset.id || row.children[2].textContent.trim();
+  if (btn.dataset.act === 'View' || btn.dataset.act === 'Edit') {
     openEditStudent(btn.dataset.id);
     return;
   }
-  if (btn.dataset.act === 'Transcript') {
+  if (btn.dataset.act === 'Print' || btn.dataset.act === 'Transcript') {
     downloadStudentTranscript(assRef);
     return;
   }
