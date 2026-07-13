@@ -42,8 +42,8 @@
   .legacy-table-wrap {
     width: 100%;
     max-width: 100%;
-    overflow-x: auto !important;
-    overflow-y: hidden;
+    overflow: auto !important;
+    max-height: min(620px, calc(100dvh - 330px));
     background: #fff;
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -57,6 +57,7 @@
   body.sidebar-collapsed .manage-card,
   body.sidebar-collapsed .legacy-table-wrap { width: 100%; max-width: 100%; }
   .legacy-table-wrap::-webkit-scrollbar { height: 11px; }
+  .legacy-table-wrap::-webkit-scrollbar:vertical { width: 11px; }
   .legacy-table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
   .legacy-table-wrap::-webkit-scrollbar-thumb {
     background: #94a3b8;
@@ -65,7 +66,10 @@
   }
   .legacy-table-wrap::-webkit-scrollbar-thumb:hover { background: #0f766e; }
   table.legacy-table {
-    width: 100%; min-width: 2200px; table-layout: fixed; border-collapse: collapse;
+    width: 100% !important;
+    min-width: 2200px !important;
+    table-layout: fixed !important;
+    border-collapse: collapse;
     color: #000;
     font-size: 10px; text-align: center;
   }
@@ -283,6 +287,29 @@
     .table-tools { align-items: stretch; flex-direction: column; }
     .search-control { justify-content: space-between; }
     .search-control .input { width: 100%; }
+    .manage-card { overflow: visible; }
+    .legacy-table-wrap {
+      max-height: 58dvh;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+    table.legacy-table {
+      min-width: 1780px !important;
+      font-size: 9px !important;
+    }
+    .legacy-table th,
+    .legacy-table td {
+      padding-left: 7px;
+      padding-right: 7px;
+    }
+    .legacy-table th { font-size: 9px !important; }
+    .student-photo { width: 64px; height: 64px; }
+    .legacy-table .legacy-btn {
+      min-height: 30px !important;
+      height: 30px !important;
+      padding: 6px 8px !important;
+      font-size: 10px !important;
+    }
     .student-footer-actions { grid-template-columns: 1fr; padding: 18px; gap: 12px; }
     .edit-bio-grid, .edit-two-grid, .edit-subject-grid { grid-template-columns: 1fr; }
     .edit-form-shell { padding: 18px; }
