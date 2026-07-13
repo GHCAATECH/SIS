@@ -414,7 +414,23 @@ h1,h2,h3,h4 { margin: 0; font-weight: 650; letter-spacing: -.01em; }
 .nav__items a.active i { color: #ffffff; }
 
 /* ---------- Main / topbar ---------- */
+html,
+body {
+  min-height: 100%;
+}
+
+body.portal-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .main { flex: 1; margin-left: var(--sidebar-w); min-width: 0; width: calc(100% - var(--sidebar-w)); }
+body.portal-shell > .main {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
 body.sidebar-collapsed .sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
 body.sidebar-collapsed .main { margin-left: 0; width: 100%; }
 .topbar {
@@ -460,6 +476,11 @@ body.sidebar-collapsed .hamburger { display: grid; }
 .usermenu__list hr { border: 0; border-top: 1px solid var(--border); margin: 5px 0; }
 
 .content { padding: 24px 22px 48px; max-width: none; min-width: 0; width: 100%; }
+body.portal-shell .content {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
 
 .users-card {
   min-width: 0 !important;
@@ -655,6 +676,14 @@ table.tbl tbody tr:last-child td { border-bottom: 0; }
 
 /* ---------- Footer ---------- */
 .footer { text-align: center; color: var(--text-faint); font-size: 13px; padding: 26px 0 8px; }
+body.portal-shell > .axiom-standard-footer,
+body.portal-shell > footer {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+body.portal-shell .content > .footer {
+  margin-top: auto;
+}
 
 /* ---------- Empty state ---------- */
 .empty { text-align: center; color: var(--text-faint); padding: 40px 16px; }

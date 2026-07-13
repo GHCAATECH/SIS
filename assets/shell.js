@@ -200,6 +200,7 @@
   }
 
   function wire(active, title, subtitle) {
+    document.body.classList.add('portal-shell');
     setSidebarCollapsed(savedSidebarCollapsed());
 
     // mount sidebar + overlay
