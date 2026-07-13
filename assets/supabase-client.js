@@ -686,8 +686,19 @@
   }
 
   async function listStudents() {
-    var c = db(), school = await currentSchool();
-    if (!c || !school) return null;
+    var c = db();
+    if (!c) return null;
+    var session = await authSession();
+    if (!session || !session.user) {
+      throw new Error('Please login as school administrator before loading students.');
+    }
+    var school = await currentSchool();
+    if (!school) return null;
+    var rpcResult = await c.rpc('secure_list_students', { p_school_id: school.id });
+    if (!rpcResult.error) return rpcResult.data || [];
+    if (!/secure_list_students|schema cache|function/i.test(rpcResult.error.message || '')) {
+      throw rpcResult.error;
+    }
     var result = await c
       .from('students')
       .select('*, classes(name, year_level, programmes(name)), houses(name)')
