@@ -124,6 +124,54 @@
     .gallery-grid { grid-template-columns:1fr; max-height:none; }
     .gallery-shot { height:135px; }
   }
+
+  @media (max-width:980px) {
+    .landing-nav {
+      flex-direction:row !important;
+      align-items:center !important;
+      justify-content:space-between !important;
+    }
+    .landing-links {
+      position:fixed !important;
+      top:0 !important;
+      right:0 !important;
+      bottom:0 !important;
+      z-index:120 !important;
+      width:min(310px,86vw) !important;
+      padding:82px 18px 22px !important;
+      display:flex !important;
+      flex-direction:column !important;
+      align-items:stretch !important;
+      justify-content:flex-start !important;
+      gap:8px !important;
+      background:#fff !important;
+      border-left:1px solid rgba(226,232,240,.95) !important;
+      box-shadow:-24px 0 55px rgba(15,23,42,.18) !important;
+      transform:translateX(108%) !important;
+      transition:transform .24s ease !important;
+    }
+    .landing-links.open { transform:translateX(0) !important; }
+    .landing-links::before {
+      content:"Menu";
+      position:absolute;
+      top:24px;
+      left:18px;
+      color:#042f2e;
+      font-size:18px;
+      font-weight:950;
+    }
+    .landing-links a {
+      width:100% !important;
+      padding:13px 14px !important;
+      border-radius:12px !important;
+      color:#0f172a !important;
+      background:#f8fafc !important;
+      border:1px solid rgba(226,232,240,.9) !important;
+    }
+    .landing-actions { width:auto !important; flex:none !important; }
+    .landing-actions .landing-btn { flex:none !important; }
+    .mobile-nav-toggle { display:inline-flex !important; }
+  }
 </style>
 </head>
 <body>
