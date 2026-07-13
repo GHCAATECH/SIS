@@ -53,16 +53,33 @@
 <body>
 <div class="page-shell">
 
-  <header class="public-nav">
+  <header class="site-header">
     <a class="brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
-    <nav class="nav-links" id="publicNav" aria-label="Public navigation">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobileSidebar"><span></span><span></span><span></span></button>
+    <nav class="desktop-nav" aria-label="Public navigation">
       <a href="workflow.html">Workflow</a>
       <a href="staff-login.html">Staff</a>
       <a href="student-login.html">Students</a>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
     </nav>
+    <a href="signup.html" class="signup-btn desktop-signup">Sign Up</a>
   </header>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="mobile-sidebar" id="mobileSidebar">
+    <div class="sidebar-header">
+      <a class="sidebar-brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
+      <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close navigation menu">&times;</button>
+    </div>
+    <nav class="sidebar-nav" aria-label="Mobile navigation">
+      <a href="workflow.html">Workflow</a>
+      <a href="staff-login.html">Staff</a>
+      <a href="student-login.html">Students</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <a href="signup.html" class="signup-btn sidebar-signup">Sign Up</a>
+  </aside>
   <main>
     <section class="hero"><div class="kicker">Modules</div><h1>Complete school operations in one system.</h1><p class="lead">Explore the major AXIOMBYTE SMS modules used by administrators, staff, and students.</p></section>
     <section class="content"><div class="grid"><article class="card"><i class="fas fa-user-graduate"></i><h2>Student Management</h2><p>Register students, manage student records, class placement, residential status, houses, documents, and progression.</p></article><article class="card"><i class="fas fa-users-gear"></i><h2>Staff & Users</h2><p>Create staff profiles, assign categories, positions, roles, privileges, and class-subject access.</p></article><article class="card"><i class="fas fa-clipboard-check"></i><h2>Assessment Capture</h2><p>Teaching staff capture scores by class, subject, semester, year, and assessment mode.</p></article><article class="card"><i class="fas fa-table"></i><h2>Assessment Records</h2><p>Review current submitted scores, filter records, and download assessment data.</p></article><article class="card"><i class="fas fa-file-lines"></i><h2>Transcript</h2><p>Generate student transcript reports with academic summary, GPA, credits, and qualitative assessment.</p></article><article class="card"><i class="fas fa-book-open"></i><h2>Scheme of Work</h2><p>Teaching staff submit schemes through HOD and Head Academic review workflows.</p></article><article class="card"><i class="fas fa-stamp"></i><h2>Clearance</h2><p>Assign clearance requirements to staff and track student completion approvals.</p></article><article class="card"><i class="fas fa-folder-open"></i><h2>Documents</h2><p>Upload titled documents for students and staff, then view them through portal access.</p></article><article class="card"><i class="fas fa-gear"></i><h2>Settings</h2><p>Create programmes, departments, classes, subjects, houses, and school profile details.</p></article></div></section>

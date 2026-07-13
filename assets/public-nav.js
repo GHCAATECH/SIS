@@ -1,38 +1,39 @@
 (function () {
-  function closeMenu(toggle, panel, backdrop) {
-    panel.classList.remove('open');
-    backdrop.classList.remove('open');
-    toggle.setAttribute('aria-expanded', 'false');
-    document.body.classList.remove('public-nav-open');
+  var menuToggle = document.getElementById('menuToggle');
+  var mobileSidebar = document.getElementById('mobileSidebar');
+  var sidebarOverlay = document.getElementById('sidebarOverlay');
+  var sidebarClose = document.getElementById('sidebarClose');
+  var sidebarLinks = document.querySelectorAll('.sidebar-nav a');
+
+  if (!menuToggle || !mobileSidebar || !sidebarOverlay || !sidebarClose) return;
+
+  function openSidebar() {
+    mobileSidebar.classList.add('active');
+    sidebarOverlay.classList.add('active');
+    document.body.classList.add('menu-open');
+    menuToggle.setAttribute('aria-expanded', 'true');
   }
 
-  document.querySelectorAll('[data-public-menu-toggle]').forEach(function (toggle) {
-    var panelId = toggle.getAttribute('aria-controls');
-    var panel = document.getElementById(panelId);
-    var backdrop = document.querySelector('[data-public-menu-backdrop]');
-    if (!panel || !backdrop) return;
+  function closeSidebar() {
+    mobileSidebar.classList.remove('active');
+    sidebarOverlay.classList.remove('active');
+    document.body.classList.remove('menu-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
 
-    toggle.addEventListener('click', function () {
-      var isOpen = panel.classList.toggle('open');
-      backdrop.classList.toggle('open', isOpen);
-      toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      document.body.classList.toggle('public-nav-open', isOpen);
-    });
+  menuToggle.addEventListener('click', openSidebar);
+  sidebarClose.addEventListener('click', closeSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
 
-    backdrop.addEventListener('click', function () {
-      closeMenu(toggle, panel, backdrop);
-    });
+  sidebarLinks.forEach(function (link) {
+    link.addEventListener('click', closeSidebar);
+  });
 
-    panel.querySelectorAll('a').forEach(function (link) {
-      link.addEventListener('click', function () {
-        closeMenu(toggle, panel, backdrop);
-      });
-    });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeSidebar();
+  });
 
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && panel.classList.contains('open')) {
-        closeMenu(toggle, panel, backdrop);
-      }
-    });
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 768) closeSidebar();
   });
 }());

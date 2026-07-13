@@ -164,19 +164,33 @@
 </head>
 <body>
 <div class="landing-shell">
-  <header class="landing-nav">
-    <a class="landing-brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
-    <nav class="landing-links" id="publicNav" aria-label="Public navigation">
+  <header class="site-header">
+    <a class="brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobileSidebar"><span></span><span></span><span></span></button>
+    <nav class="desktop-nav" aria-label="Public navigation">
       <a href="workflow.html">Workflow</a>
       <a href="staff-login.html">Staff</a>
       <a href="student-login.html">Students</a>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
     </nav>
-    <div class="landing-actions">
-      <a class="landing-btn primary" href="signup.html"><i class="fas fa-user-plus"></i> Sign Up</a>
-    </div>
+    <a href="signup.html" class="signup-btn desktop-signup">Sign Up</a>
   </header>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="mobile-sidebar" id="mobileSidebar">
+    <div class="sidebar-header">
+      <a class="sidebar-brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
+      <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close navigation menu">&times;</button>
+    </div>
+    <nav class="sidebar-nav" aria-label="Mobile navigation">
+      <a href="workflow.html">Workflow</a>
+      <a href="staff-login.html">Staff</a>
+      <a href="student-login.html">Students</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <a href="signup.html" class="signup-btn sidebar-signup">Sign Up</a>
+  </aside>
   <section class="hero">
     <div class="hero-copy">
       <span class="eyebrow"><i class="fas fa-circle-check"></i> Secure multi-school management platform</span>

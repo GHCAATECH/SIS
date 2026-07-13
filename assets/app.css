@@ -50,6 +50,261 @@
   box-shadow: 0 8px 20px rgba(15, 23, 42, .08);
 }
 
+/* Public website premium header + mobile sidebar */
+.site-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1180px;
+  width: calc(100% - 28px);
+  margin: 14px auto 0;
+  padding: 18px 22px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 24px;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, .08);
+}
+
+.site-header .brand,
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.site-header .brand .mark,
+.sidebar-brand .mark {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, #042f2e, #0f766e, #14b8a6);
+}
+
+.site-header .brand .mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+}
+
+.site-header .brand span:last-child,
+.sidebar-brand span:last-child {
+  color: #12459a;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.site-header .brand span:last-child {
+  font-size: 24px;
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1;
+  font-weight: 800;
+}
+
+.desktop-nav a,
+.sidebar-nav a {
+  color: #10182d;
+  text-decoration: none;
+  transition: .25s ease;
+}
+
+.desktop-nav a {
+  padding: 12px 15px;
+  border: 1px solid #e3e8f0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.desktop-nav a:hover,
+.desktop-nav a.active {
+  color: #12459a;
+  border-color: #18b8a6;
+  background: #f5fffd;
+}
+
+.signup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #078c82, #20c7bb);
+  color: #ffffff !important;
+  text-decoration: none;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 12px 26px rgba(15, 118, 110, .18);
+}
+
+.menu-toggle {
+  display: none;
+  width: 46px;
+  height: 46px;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: #f1f5f9;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.menu-toggle span {
+  display: block;
+  width: 100%;
+  height: 3px;
+  margin: 5px 0;
+  border-radius: 20px;
+  background: #12459a;
+}
+
+.mobile-sidebar {
+  position: fixed;
+  top: 0;
+  right: -330px;
+  z-index: 1001;
+  width: min(82%, 330px);
+  height: 100vh;
+  padding: 24px;
+  background: #ffffff;
+  box-shadow: -12px 0 35px rgba(15, 23, 42, .18);
+  transition: right .3s ease;
+  overflow-y: auto;
+}
+
+.mobile-sidebar.active {
+  right: 0;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  background: rgba(3, 10, 25, .55);
+  transition: opacity .3s ease, visibility .3s ease;
+}
+
+.sidebar-overlay.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #e8edf4;
+}
+
+.sidebar-brand .mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+.sidebar-brand span:last-child {
+  font-size: 18px;
+}
+
+.sidebar-close {
+  border: 0;
+  background: transparent;
+  color: #10182d;
+  font-size: 38px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  font-weight: 800;
+}
+
+.sidebar-nav a {
+  display: block;
+  padding: 15px 16px;
+  border-radius: 12px;
+}
+
+.sidebar-nav a:hover {
+  color: #12459a;
+  background: #eef8ff;
+}
+
+.sidebar-signup {
+  width: 100%;
+  margin-top: 28px;
+}
+
+body.menu-open {
+  overflow: hidden;
+}
+
+@media screen and (max-width: 768px) {
+  .site-header {
+    justify-content: space-between;
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .site-header .brand {
+    gap: 10px;
+  }
+
+  .site-header .brand .mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  .site-header .brand span:last-child {
+    font-size: 20px;
+  }
+
+  .desktop-nav,
+  .desktop-signup {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .site-header {
+    padding: 14px;
+  }
+
+  .site-header .brand span:last-child {
+    font-size: 17px;
+  }
+
+  .site-header .brand .mark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .menu-toggle {
+    width: 42px;
+    height: 42px;
+  }
+}
+
 .mobile-nav-toggle:focus-visible {
   outline: 3px solid rgba(20, 184, 166, .32);
   outline-offset: 2px;

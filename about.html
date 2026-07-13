@@ -53,16 +53,33 @@
 <body>
 <div class="page-shell">
 
-  <header class="public-nav">
+  <header class="site-header">
     <a class="brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
-    <nav class="nav-links" id="publicNav" aria-label="Public navigation">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobileSidebar"><span></span><span></span><span></span></button>
+    <nav class="desktop-nav" aria-label="Public navigation">
       <a href="workflow.html">Workflow</a>
       <a href="staff-login.html">Staff</a>
       <a href="student-login.html">Students</a>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
     </nav>
+    <a href="signup.html" class="signup-btn desktop-signup">Sign Up</a>
   </header>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="mobile-sidebar" id="mobileSidebar">
+    <div class="sidebar-header">
+      <a class="sidebar-brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
+      <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close navigation menu">&times;</button>
+    </div>
+    <nav class="sidebar-nav" aria-label="Mobile navigation">
+      <a href="workflow.html">Workflow</a>
+      <a href="staff-login.html">Staff</a>
+      <a href="student-login.html">Students</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <a href="signup.html" class="signup-btn sidebar-signup">Sign Up</a>
+  </aside>
   <main>
     <section class="hero"><div class="kicker">About</div><h1>Built for structured school administration.</h1><p class="lead">A focused platform for keeping academic and administrative workflows clear, traceable, and secure.</p></section>
     <section class="content"><article class="panel"><h2>About AXIOMBYTE SMS</h2><p>AXIOMBYTE SMS is a school management system created to help schools organize student records, staff profiles, assessments, documents, clearance, scheme of work review, and transcript reporting.</p><p>The system is built for multi-school usage, allowing Super Admin oversight while each school manages its own records and users.</p><div class="btn-row"><a class="landing-btn primary" href="signup.html"><i class="fas fa-user-plus"></i> School Sign Up</a><a class="landing-btn" href="modules.html"><i class="fas fa-layer-group"></i> View Modules</a></div></article></section>

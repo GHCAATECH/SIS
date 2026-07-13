@@ -53,16 +53,33 @@
 <body>
 <div class="page-shell">
 
-  <header class="public-nav">
+  <header class="site-header">
     <a class="brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
-    <nav class="nav-links" id="publicNav" aria-label="Public navigation">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobileSidebar"><span></span><span></span><span></span></button>
+    <nav class="desktop-nav" aria-label="Public navigation">
       <a href="workflow.html">Workflow</a>
       <a href="staff-login.html">Staff</a>
       <a href="student-login.html">Students</a>
       <a href="about.html">About</a>
       <a href="contact.html">Contact</a>
     </nav>
+    <a href="signup.html" class="signup-btn desktop-signup">Sign Up</a>
   </header>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="mobile-sidebar" id="mobileSidebar">
+    <div class="sidebar-header">
+      <a class="sidebar-brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
+      <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close navigation menu">&times;</button>
+    </div>
+    <nav class="sidebar-nav" aria-label="Mobile navigation">
+      <a href="workflow.html">Workflow</a>
+      <a href="staff-login.html">Staff</a>
+      <a href="student-login.html">Students</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <a href="signup.html" class="signup-btn sidebar-signup">Sign Up</a>
+  </aside>
   <main>
     <section class="hero"><div class="kicker">Contact</div><h1>Support and school setup assistance.</h1><p class="lead">Reach the AXIOMBYTE SMS support contact for help with trials, setup, and account approval.</p></section>
     <section class="content"><article class="panel"><h2>Contact AXIOMBYTE SMS</h2><p>For setup, onboarding, support, or school account approval, use the contact details below.</p><div class="contact-list"><div class="contact-line"><i class="fas fa-envelope"></i> support@axiombytehub.com</div><div class="contact-line"><i class="fas fa-phone"></i> 0256744028 / 0544762763</div><div class="contact-line"><i class="fas fa-location-dot"></i> School management support desk</div></div><div class="btn-row"><a class="landing-btn primary" href="signup.html"><i class="fas fa-user-plus"></i> Start School Sign Up</a><a class="landing-btn" href="login.html"><i class="fas fa-right-to-bracket"></i> Login Center</a></div></article></section>
