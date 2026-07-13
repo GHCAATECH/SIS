@@ -425,11 +425,39 @@ body.portal-shell {
   flex-direction: column;
 }
 
+body.footer-shell {
+  min-height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
 .main { flex: 1; margin-left: var(--sidebar-w); min-width: 0; width: calc(100% - var(--sidebar-w)); }
 body.portal-shell > .main {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
+}
+body.footer-shell > :is(.main, main, .login-shell, .page-shell, .docs-layout) {
+  flex: 1 0 auto;
+}
+body.footer-shell > .main,
+body.footer-shell > main,
+body.footer-shell > .page-shell,
+body.footer-shell > .docs-layout {
+  display: flex;
+  flex-direction: column;
+}
+body.footer-shell .page-shell > main,
+body.footer-shell .content-wrap,
+body.footer-shell .article-shell {
+  flex: 1 0 auto;
+}
+body.footer-shell .content-wrap {
+  display: flex;
+  flex-direction: column;
+}
+body.footer-shell .login-shell {
+  min-height: auto;
 }
 body.sidebar-collapsed .sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
 body.sidebar-collapsed .main { margin-left: 0; width: 100%; }
@@ -681,7 +709,17 @@ body.portal-shell > footer {
   flex-shrink: 0;
   margin-top: auto;
 }
+body.footer-shell > .axiom-standard-footer,
+body.footer-shell > footer,
+body.footer-shell .page-shell > footer,
+body.footer-shell .content-wrap > footer {
+  flex-shrink: 0;
+  margin-top: auto;
+}
 body.portal-shell .content > .footer {
+  margin-top: auto;
+}
+body.footer-shell .content > .footer {
   margin-top: auto;
 }
 
