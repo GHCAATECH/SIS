@@ -51,7 +51,8 @@
 }
 
 .site-header .brand,
-.sidebar-brand {
+.sidebar-brand,
+.mobile-brand {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -60,7 +61,8 @@
 }
 
 .site-header .brand .mark,
-.sidebar-brand .mark {
+.sidebar-brand .mark,
+.mobile-brand .mark {
   display: grid;
   place-items: center;
   color: #fff;
@@ -74,7 +76,8 @@
 }
 
 .site-header .brand span:last-child,
-.sidebar-brand span:last-child {
+.sidebar-brand span:last-child,
+.mobile-brand span:last-child {
   color: #12459a;
   font-weight: 900;
   white-space: nowrap;
@@ -94,6 +97,7 @@
 }
 
 .desktop-nav a,
+.mobile-navigation a,
 .sidebar-nav a {
   color: #10182d;
   text-decoration: none;
@@ -128,6 +132,7 @@
   box-shadow: 0 12px 26px rgba(15, 118, 110, .18);
 }
 
+.mobile-menu-button,
 .menu-toggle {
   display: none;
   width: 46px;
@@ -140,6 +145,7 @@
   flex-shrink: 0;
 }
 
+.mobile-menu-button span,
 .menu-toggle span {
   display: block;
   width: 100%;
@@ -167,6 +173,7 @@
   right: 0;
 }
 
+.mobile-overlay,
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -177,11 +184,13 @@
   transition: opacity .3s ease, visibility .3s ease;
 }
 
+.mobile-overlay.active,
 .sidebar-overlay.active {
   visibility: visible;
   opacity: 1;
 }
 
+.mobile-sidebar-header,
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -201,6 +210,7 @@
   font-size: 18px;
 }
 
+.mobile-close-button,
 .sidebar-close {
   border: 0;
   background: transparent;
@@ -210,6 +220,7 @@
   cursor: pointer;
 }
 
+.mobile-navigation,
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -218,12 +229,14 @@
   font-weight: 800;
 }
 
+.mobile-navigation a,
 .sidebar-nav a {
   display: block;
   padding: 15px 16px;
   border-radius: 12px;
 }
 
+.mobile-navigation a:hover,
 .sidebar-nav a:hover {
   color: #12459a;
   background: #eef8ff;
@@ -264,6 +277,7 @@ body.menu-open {
     display: none;
   }
 
+  .mobile-menu-button,
   .menu-toggle {
     display: block;
   }
@@ -283,6 +297,7 @@ body.menu-open {
     height: 44px;
   }
 
+  .mobile-menu-button,
   .menu-toggle {
     width: 42px;
     height: 42px;
@@ -295,6 +310,7 @@ body.menu-open {
   display: flex;
 }
 
+.mobile-menu-button,
 .menu-toggle {
   display: none;
 }
@@ -316,6 +332,7 @@ body.menu-open {
     display: none !important;
   }
 
+  .mobile-menu-button,
   .menu-toggle {
     display: flex !important;
     align-items: center;

@@ -1,39 +1,39 @@
 (function () {
-  var menuToggle = document.getElementById('menuToggle');
+  var mobileMenuButton = document.getElementById('mobileMenuButton');
+  var mobileCloseButton = document.getElementById('mobileCloseButton');
   var mobileSidebar = document.getElementById('mobileSidebar');
-  var sidebarOverlay = document.getElementById('sidebarOverlay');
-  var sidebarClose = document.getElementById('sidebarClose');
-  var sidebarLinks = document.querySelectorAll('.sidebar-nav a');
+  var mobileOverlay = document.getElementById('mobileOverlay');
+  var mobileLinks = document.querySelectorAll('.mobile-navigation a');
 
-  if (!menuToggle || !mobileSidebar || !sidebarOverlay || !sidebarClose) return;
+  if (!mobileMenuButton || !mobileCloseButton || !mobileSidebar || !mobileOverlay) return;
 
-  function openSidebar() {
+  function openMobileMenu() {
     mobileSidebar.classList.add('active');
-    sidebarOverlay.classList.add('active');
+    mobileOverlay.classList.add('active');
     document.body.classList.add('menu-open');
-    menuToggle.setAttribute('aria-expanded', 'true');
+    mobileMenuButton.setAttribute('aria-expanded', 'true');
   }
 
-  function closeSidebar() {
+  function closeMobileMenu() {
     mobileSidebar.classList.remove('active');
-    sidebarOverlay.classList.remove('active');
+    mobileOverlay.classList.remove('active');
     document.body.classList.remove('menu-open');
-    menuToggle.setAttribute('aria-expanded', 'false');
+    mobileMenuButton.setAttribute('aria-expanded', 'false');
   }
 
-  menuToggle.addEventListener('click', openSidebar);
-  sidebarClose.addEventListener('click', closeSidebar);
-  sidebarOverlay.addEventListener('click', closeSidebar);
+  mobileMenuButton.addEventListener('click', openMobileMenu);
+  mobileCloseButton.addEventListener('click', closeMobileMenu);
+  mobileOverlay.addEventListener('click', closeMobileMenu);
 
-  sidebarLinks.forEach(function (link) {
-    link.addEventListener('click', closeSidebar);
+  mobileLinks.forEach(function (link) {
+    link.addEventListener('click', closeMobileMenu);
   });
 
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') closeSidebar();
+    if (event.key === 'Escape') closeMobileMenu();
   });
 
   window.addEventListener('resize', function () {
-    if (window.innerWidth > 768) closeSidebar();
+    if (window.innerWidth > 850) closeMobileMenu();
   });
 }());
