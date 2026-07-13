@@ -251,7 +251,7 @@ body.menu-open {
   overflow: hidden;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 850px) {
   .site-header {
     justify-content: space-between;
     padding: 16px;
@@ -274,12 +274,14 @@ body.menu-open {
 
   .desktop-nav,
   .desktop-signup {
-    display: none;
+    display: none !important;
   }
 
   .mobile-menu-button,
   .menu-toggle {
-    display: block;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -301,42 +303,6 @@ body.menu-open {
   .menu-toggle {
     width: 42px;
     height: 42px;
-  }
-}
-
-/* Final public header display rules */
-.desktop-nav,
-.desktop-signup {
-  display: flex;
-}
-
-.mobile-menu-button,
-.menu-toggle {
-  display: none;
-}
-
-.mobile-sidebar {
-  position: fixed;
-  top: 0;
-  right: -320px;
-  width: 300px;
-  height: 100vh;
-  background: #fff;
-  transition: .3s;
-  z-index: 9999;
-}
-
-@media (max-width: 768px) {
-  .desktop-nav,
-  .desktop-signup {
-    display: none !important;
-  }
-
-  .mobile-menu-button,
-  .menu-toggle {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
   }
 }
 
