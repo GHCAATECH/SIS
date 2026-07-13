@@ -63,7 +63,7 @@ body.public-nav-open {
   overflow: hidden;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 980px) {
   .landing-nav,
   .public-nav {
     flex-direction: row !important;
