@@ -55,7 +55,8 @@
 
   <header class="public-nav">
     <a class="brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
-    <nav class="nav-links" aria-label="Public navigation">
+    <button class="mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="publicNav" aria-expanded="false" data-public-menu-toggle><i class="fas fa-bars"></i></button>
+    <nav class="nav-links" id="publicNav" aria-label="Public navigation">
       <a href="workflow.html">Workflow</a>
       <a href="staff-login.html">Staff</a>
       <a href="student-login.html">Students</a>
@@ -63,6 +64,7 @@
       <a href="contact.html">Contact</a>
     </nav>
   </header>
+  <div class="public-nav-backdrop" data-public-menu-backdrop></div>
 
   <main>
     <section class="hero"><div class="kicker">Contact</div><h1>Support and school setup assistance.</h1><p class="lead">Reach the AXIOMBYTE SMS support contact for help with trials, setup, and account approval.</p></section>
@@ -100,5 +102,6 @@
 
 
 </div>
+<script src="assets/public-nav.js"></script>
 </body>
 </html>

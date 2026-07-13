@@ -100,7 +100,8 @@
     <button class="menu-btn" id="menuBtn" type="button" aria-label="Open documentation menu"><i class="fas fa-bars"></i></button>
     <a class="docs-brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span><span class="docs-badge">Docs</span></a>
   </div>
-  <nav class="header-links" aria-label="Documentation top links">
+  <button class="mobile-nav-toggle" type="button" aria-label="Open site navigation" aria-controls="publicNav" aria-expanded="false" data-public-menu-toggle><i class="fas fa-ellipsis-vertical"></i></button>
+  <nav class="header-links" id="publicNav" aria-label="Documentation top links">
     <a href="workflow.html">Workflow</a>
     <a href="staff-login.html">Staff</a>
     <a href="student-login.html">Students</a>
@@ -113,6 +114,7 @@
   </div>
 </header>
 
+<div class="public-nav-backdrop" data-public-menu-backdrop></div>
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <div class="docs-layout">
   <aside class="docs-sidebar" id="docsSidebar">
@@ -258,5 +260,6 @@
   backTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
 }());
 </script>
+<script src="assets/public-nav.js"></script>
 </body>
 </html>

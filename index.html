@@ -130,7 +130,8 @@
 <div class="landing-shell">
   <header class="landing-nav">
     <a class="landing-brand" href="index.html"><span class="mark"><i class="fas fa-graduation-cap"></i></span><span>AXIOMBYTE SMS</span></a>
-    <nav class="landing-links" aria-label="Public navigation">
+    <button class="mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="publicNav" aria-expanded="false" data-public-menu-toggle><i class="fas fa-bars"></i></button>
+    <nav class="landing-links" id="publicNav" aria-label="Public navigation">
       <a href="workflow.html">Workflow</a>
       <a href="staff-login.html">Staff</a>
       <a href="student-login.html">Students</a>
@@ -141,6 +142,7 @@
       <a class="landing-btn primary" href="signup.html"><i class="fas fa-user-plus"></i> Sign Up</a>
     </div>
   </header>
+  <div class="public-nav-backdrop" data-public-menu-backdrop></div>
 
   <section class="hero">
     <div class="hero-copy">
@@ -246,6 +248,7 @@
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && lightbox.classList.contains('open')) closeLightbox(); });
 }());
 </script>
+<script src="assets/public-nav.js"></script>
 
 </body>
 </html>
