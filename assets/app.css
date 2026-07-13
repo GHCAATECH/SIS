@@ -34,35 +34,6 @@
   --font:         'Times New Roman', Times, serif;
 }
 
-.axiom-standard-footer {
-  margin-top: auto;
-  background: #fff;
-  border-top: 1px solid #ddd;
-  padding: 18px 25px;
-}
-
-.footer-content,
-.footer-inner.footer-content {
-  display: flex;
-  justify-content: center;
-  gap: 60px;
-  flex-wrap: wrap;
-  color: #566b8f;
-  font-weight: 600;
-  font-size: 13px;
-  line-height: 1.6;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
-  .footer-content,
-  .footer-inner.footer-content {
-    flex-direction: column;
-    gap: 8px;
-    text-align: center;
-  }
-}
-
 /* Public website premium header + mobile sidebar */
 .site-header {
   position: relative;
