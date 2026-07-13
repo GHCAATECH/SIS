@@ -14,6 +14,29 @@
     width: 100%;
     min-width: 0;
   }
+  html,
+  body {
+    min-height: 100%;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  body > .main {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  body > .main > .content {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  body > .axiom-standard-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+  }
   .users-tools {
     display: flex;
     justify-content: space-between;
