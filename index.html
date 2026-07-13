@@ -6,7 +6,7 @@
 <title>AXIOMBYTE SMS - School Management System</title>
 <meta name="description" content="AXIOMBYTE SMS is a secure school management system for admissions, staff, assessments, documents, clearance, transcripts, and multi-school operations." />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260713-hamburgerfix" />
+<link rel="stylesheet" href="assets/app.css?v=20260713-barsfix" />
 <style>
 :root {
   --primary: #12479b;
@@ -138,6 +138,7 @@ button { font: inherit; }
 
 .mobile-menu-button {
   display: none;
+  position: relative;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -151,12 +152,24 @@ button { font: inherit; }
   box-shadow: 0 10px 24px rgba(18, 71, 155, .24);
   cursor: pointer;
 }
+.mobile-menu-button::before,
+.mobile-menu-button::after,
 .mobile-menu-button span {
+  content: "";
+  position: absolute;
+  left: 12px;
   display: block;
   width: 24px;
   height: 3px;
   background: #ffffff;
   border-radius: 20px;
+  opacity: 1 !important;
+}
+.mobile-menu-button::before { top: 15px; }
+.mobile-menu-button span { top: 22px; }
+.mobile-menu-button::after { top: 29px; }
+.mobile-menu-button span:nth-child(n+2) {
+  display: none;
 }
 .mobile-overlay {
   position: fixed;
@@ -1032,6 +1045,6 @@ body.landing-page.force-mobile-nav .mobile-overlay.active {
   <div class="footer-bottom"><span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span>Built for secure school operations.</span></div>
 </footer>
 
-<script src="assets/public-nav.js?v=20260713-hamburgerfix"></script>
+<script src="assets/public-nav.js?v=20260713-barsfix"></script>
 </body>
 </html>
