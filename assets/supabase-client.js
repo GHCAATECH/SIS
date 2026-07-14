@@ -232,6 +232,9 @@
       }
     }
     if (profile.school_code) setActiveSchool(profile.school_code, profile.school_id, profile.school_name);
+    profile.type = profile.type || 'staff';
+    profile.isAdmin = profile.isAdmin || profile.category === 'School Administrator' || profile.role === 'School Administrator';
+    profile.privileges = profile.privileges || [];
     return profile;
   }
   async function loginSuperAdmin(username, password) {
