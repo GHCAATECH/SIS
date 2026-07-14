@@ -913,6 +913,27 @@ table.users-table {
   }
 }
 
+@media (min-width: 769px) {
+  body.portal-shell .sidebar {
+    transform: none !important;
+  }
+
+  body.portal-shell > .main,
+  body.portal-shell.sidebar-collapsed > .main {
+    margin-left: var(--sidebar-w) !important;
+    width: calc(100% - var(--sidebar-w)) !important;
+  }
+
+  body.portal-shell .hamburger,
+  body.portal-shell.sidebar-collapsed .hamburger {
+    display: none !important;
+  }
+
+  body.portal-shell.nav-open .overlay {
+    display: none !important;
+  }
+}
+
 @media (max-width: 900px) {
   .cols-2 { grid-template-columns: repeat(2,1fr); }
   .cols-3, .cols-4 { grid-template-columns: repeat(2,1fr); }
