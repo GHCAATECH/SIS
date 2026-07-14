@@ -243,7 +243,12 @@
         });
         if (!authLogin.error && authLogin.data && authLogin.data.user) {
           var authProfile = await loadAuthProfile(authLogin.data.user, 'staff');
-          if (authProfile) return authProfile;
+          if (authProfile) {
+            authProfile.session_token = profile.session_token;
+            authProfile.privileges = profile.privileges || authProfile.privileges || [];
+            if (profile.school_code) setActiveSchool(profile.school_code, profile.school_id, profile.school_name);
+            return authProfile;
+          }
         }
       } catch (e) {
         console.warn('Account password fallback could not establish Auth session.', e);
