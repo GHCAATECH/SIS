@@ -211,7 +211,10 @@
 
   function wire(active, title, subtitle) {
     document.body.classList.add('portal-shell');
-    setSidebarCollapsed(savedSidebarCollapsed());
+    var bootUser = currentUser();
+    if (bootUser && bootUser.isAdmin) document.body.classList.add('school-admin-portal');
+    // Keep the full sidebar on desktop/tablet, but start narrow screens in drawer mode.
+    setSidebarCollapsed(window.innerWidth < 700 ? true : savedSidebarCollapsed());
 
     // mount sidebar + overlay
     if (!document.getElementById('sidebar')) {
@@ -236,11 +239,11 @@
     // mobile nav
     var hamburger = document.getElementById('hamburger');
     var overlay = document.getElementById('overlay');
-    hamburger.addEventListener('click', function () {
+    if (hamburger) hamburger.addEventListener('click', function () {
       setSidebarCollapsed(false);
       document.body.classList.toggle('nav-open');
     });
-    overlay.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
+    if (overlay) overlay.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
     document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
         document.body.classList.remove('nav-open');
@@ -249,14 +252,16 @@
 
     // user menu
     var um = document.getElementById('usermenu');
-    um.querySelector('.usermenu__btn').addEventListener('click', function (e) { e.stopPropagation(); um.classList.toggle('open'); });
-    document.addEventListener('click', function () { um.classList.remove('open'); });
+    if (um && um.querySelector('.usermenu__btn')) um.querySelector('.usermenu__btn').addEventListener('click', function (e) { e.stopPropagation(); um.classList.toggle('open'); });
+    document.addEventListener('click', function () { if (um) um.classList.remove('open'); });
 
     // help + logout
-    document.getElementById('helpBtn').addEventListener('click', function () {
+    var helpBtn = document.getElementById('helpBtn');
+    if (helpBtn) helpBtn.addEventListener('click', function () {
       Portal.toast('Use the field labels and tooltips on this page for guidance.');
     });
-    document.getElementById('logoutLink').addEventListener('click', function (e) {
+    var logoutLink = document.getElementById('logoutLink');
+    if (logoutLink) logoutLink.addEventListener('click', function (e) {
       e.preventDefault();
       if (confirm('Log out of the portal?')) {
         if (window.AxiomDB && AxiomDB.signOut) { AxiomDB.signOut(); }
@@ -281,6 +286,7 @@
         main.style.width = 'calc(100% - var(--sidebar-w))';
         document.body.classList.remove('sidebar-collapsed', 'nav-open');
       } else {
+        setSidebarCollapsed(true);
         sidebar.style.transform = '';
         sidebar.style.display = '';
         main.style.marginLeft = '';
