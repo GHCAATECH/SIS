@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Capture Assessment - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-sidebar-fix9" />
+<link rel="stylesheet" href="assets/app.css?v=20260714-staff-assignments1" />
 <style>
   .cass-shell {
     padding: 20px 18px 24px;
@@ -263,8 +263,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="assets/supabase-client.js?v=20260714-sidebar-fix9"></script>
-<script src="assets/shell.js?v=20260714-sidebar-fix9"></script>
+<script src="assets/supabase-client.js?v=20260714-staff-assignments1"></script>
+<script src="assets/shell.js?v=20260714-staff-assignments1"></script>
 <script>
 Portal.init({ active: 'cass' });
 
@@ -329,21 +329,64 @@ function localTeacherAssignments() {
   try { return JSON.parse(localStorage.getItem(assignmentKey(currentUser.id)) || '[]'); } catch (e) { return []; }
 }
 
+function normalizeAssessmentText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizedAssignment(item) {
+  item = item || {};
+  return {
+    classId: normalizeAssessmentText(item.classId || item.class_id),
+    className: normalizeAssessmentText(item.className || item.class_name || item.class || item.class_id),
+    subjectId: normalizeAssessmentText(item.subjectId || item.subject_id),
+    subjectName: normalizeAssessmentText(item.subjectName || item.subject_name || item.subject || item.subject_id)
+  };
+}
+
+function classMatchesAssignment(cls, assignment) {
+  var normalizedClass = normalizeAssessmentText(cls && cls.name);
+  var normalizedId = normalizeAssessmentText(cls && cls.id);
+  return (assignment.className && assignment.className === normalizedClass) ||
+    (assignment.classId && assignment.classId === normalizedId) ||
+    (assignment.classId && assignment.classId === normalizedClass);
+}
+
+function assignedSubjectNamesForClass(className) {
+  var normalizedClassName = normalizeAssessmentText(className);
+  var cls = loadClasses().find(function(item) { return normalizeAssessmentText(item.name) === normalizedClassName; });
+  return teacherAssignments.map(normalizedAssignment).filter(function(item) {
+    return cls ? classMatchesAssignment(cls, item) : item.className === normalizedClassName;
+  }).map(function(item) { return item.subjectName; }).filter(Boolean);
+}
+
+function isAssignedClassSubject(className, subjectName) {
+  if (!requiresAssessmentAssignment()) return true;
+  var normalizedClassName = normalizeAssessmentText(className);
+  var normalizedSubjectName = normalizeAssessmentText(subjectName);
+  var cls = loadClasses().find(function(item) { return normalizeAssessmentText(item.name) === normalizedClassName; });
+  return teacherAssignments.map(normalizedAssignment).some(function(item) {
+    var classMatch = cls ? classMatchesAssignment(cls, item) : item.className === normalizedClassName;
+    var subjectMatch = item.subjectName === normalizedSubjectName || item.subjectId === normalizedSubjectName;
+    return classMatch && subjectMatch;
+  });
+}
+
 function classesAllowedForTeacher(classes) {
   if (!requiresAssessmentAssignment()) return classes;
   if (!teacherAssignments.length) return [];
-  var allowedClassNames = {};
-  teacherAssignments.forEach(function(item) { allowedClassNames[item.className] = true; });
-  return classes.filter(function(cls) { return allowedClassNames[cls.name]; });
+  var normalizedAssignments = teacherAssignments.map(normalizedAssignment);
+  return classes.filter(function(cls) {
+    return normalizedAssignments.some(function(item) { return classMatchesAssignment(cls, item); });
+  });
 }
 
 function subjectsAllowedForTeacher(className, subjects) {
   if (!requiresAssessmentAssignment()) return subjects;
-  var allowedSubjects = {};
-  teacherAssignments.filter(function(item) { return item.className === className; }).forEach(function(item) {
-    allowedSubjects[item.subjectName] = true;
+  var allowedSubjects = assignedSubjectNamesForClass(className);
+  if (!allowedSubjects.length) return [];
+  return subjects.filter(function(subject) {
+    return allowedSubjects.indexOf(normalizeAssessmentText(subject)) > -1;
   });
-  return subjects.filter(function(subject) { return allowedSubjects[subject]; });
 }
 
 async function loadTeacherAssignments() {
@@ -428,7 +471,12 @@ async function loadAssessmentSetupFromSupabase() {
 function populateClasses() {
   var select = document.getElementById('classSelect');
   select.innerHTML = '<option value=""></option>';
-  classesAllowedForTeacher(loadClasses()).forEach(function(cls) {
+  var allowedClasses = classesAllowedForTeacher(loadClasses());
+  if (requiresAssessmentAssignment() && !allowedClasses.length) {
+    select.innerHTML = '<option value="">No assigned class</option>';
+    return;
+  }
+  allowedClasses.forEach(function(cls) {
     var option = document.createElement('option');
     option.value = cls.name;
     option.textContent = cls.name;
@@ -441,7 +489,12 @@ function populateSubjects() {
   var cls = loadClasses().find(function(item) { return item.name === className; });
   var select = document.getElementById('subjectSelect');
   select.innerHTML = '<option value=""></option>';
-  subjectsAllowedForTeacher(className, cls ? cls.subjects : []).forEach(function(subject) {
+  var allowedSubjects = subjectsAllowedForTeacher(className, cls ? cls.subjects : []);
+  if (requiresAssessmentAssignment() && className && !allowedSubjects.length) {
+    select.innerHTML = '<option value="">No assigned subject</option>';
+    return;
+  }
+  allowedSubjects.forEach(function(subject) {
     var option = document.createElement('option');
     option.value = subject;
     option.textContent = subject;
@@ -634,10 +687,9 @@ function validateAssessmentPayload(payload) {
     throw new Error('Select class and subject before saving assessment.');
   }
   if (payload.requireAssignment) {
-    var assigned = teacherAssignments.some(function(item) {
-      return item.className === payload.className && item.subjectName === payload.subjectName;
-    });
-    if (!assigned) throw new Error('You are not assigned to capture scores for this class and subject.');
+    if (!isAssignedClassSubject(payload.className, payload.subjectName)) {
+      throw new Error('You are not assigned to capture scores for this class and subject.');
+    }
   }
   if (!payload.scores.length) throw new Error('No student scores are available to save.');
   var invalidScore = payload.scores.find(function(row) {

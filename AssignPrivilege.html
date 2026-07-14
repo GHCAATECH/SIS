@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Manage Users - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-sidebar-fix9" />
+<link rel="stylesheet" href="assets/app.css?v=20260714-staff-assignments1" />
 <style>
   .users-card {
     border-radius: 8px;
@@ -695,6 +695,7 @@
         <div class="user-type-tabs" id="userTypeTabs">
           <button type="button" class="active" data-category="Teaching Staff"><i class="fas fa-chalkboard-user"></i> Teaching Staff</button>
           <button type="button" data-category="Non-Teaching Staff"><i class="fas fa-user-tie"></i> Non-Teaching Staff</button>
+          <button type="button" data-category="School Administrator"><i class="fas fa-user-shield"></i> School Administrator</button>
         </div>
         <label class="search-control">Search:
           <input class="input" id="search" />
@@ -808,13 +809,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260714-sidebar-fix9"></script>
-<script src="assets/shell.js?v=20260714-sidebar-fix9"></script>
+<script src="assets/supabase-client.js?v=20260714-staff-assignments1"></script>
+<script src="assets/shell.js?v=20260714-staff-assignments1"></script>
 <script src="assets/staff-ranks.js"></script>
 <script>
 Portal.init({ active: 'AssignPrivilege' });
 
 var users = [];
+var managedCurrentUser = Portal.currentUser();
 var demoUsers = [
   ['ABEL SENYO AVUDZEGA', 'AABELSENYO@GMAIL.COM', '0248716574', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'AABELSENYO@GMAIL.COM', { full_name: 'ABEL SENYO AVUDZEGA', email: 'AABELSENYO@GMAIL.COM', phone: '0248716574', role: 'USR', status: 'Active' }],
   ['DORCAS AKYERE BADER', 'abaakyeredorcas@gmail.com', '0558663906', 'ASUOM SENIOR HIGH SCHOOL', 'USR', 'abaakyeredorcas@gmail.com', { full_name: 'DORCAS AKYERE BADER', email: 'abaakyeredorcas@gmail.com', phone: '0558663906', role: 'USR', status: 'Active' }],
@@ -1464,7 +1466,11 @@ async function saveActivePrivileges() {
 }
 
 function userCategory(user) {
-  return (user && user[6] && user[6].category) || 'Teaching Staff';
+  var raw = (user && user[6] && (user[6].category || user[6].role)) || user && user[4] || 'Teaching Staff';
+  var key = String(raw || '').trim().toLowerCase();
+  if (key === 'school administrator') return 'School Administrator';
+  if (key === 'non-teaching staff') return 'Non-Teaching Staff';
+  return 'Teaching Staff';
 }
 
 function actionHeader(columnClass, label) {
@@ -1527,6 +1533,16 @@ function renderUsers(data, message) {
 
 function mapStaffUser(row) {
   return [row.full_name || row.staff_name || '', row.email || '', row.phone || '', 'ASUOM SENIOR HIGH SCHOOL', row.role || 'USR', row.id || row.email || row.staff_id || '', row];
+}
+
+function ensureCurrentAdministratorUser() {
+  if (!managedCurrentUser || userCategory([null, null, null, null, null, null, managedCurrentUser]) !== 'School Administrator') return;
+  var currentId = String(managedCurrentUser.id || managedCurrentUser.staff_id || managedCurrentUser.email || '').toLowerCase();
+  var exists = users.some(function(user) {
+    return String(user[5] || user[1] || '').toLowerCase() === currentId ||
+      String(user[6] && (user[6].id || user[6].staff_id || user[6].email) || '').toLowerCase() === currentId;
+  });
+  if (!exists) users.push(mapStaffUser(managedCurrentUser));
 }
 
 function loadLocalUsers() {
@@ -1606,6 +1622,7 @@ async function loadUsersFromSupabase() {
   if (!window.AxiomDB || !AxiomDB.isConfigured()) {
     users = loadLocalUsers();
     if (!users.length) users = demoUsers.slice();
+    ensureCurrentAdministratorUser();
     filterUsers();
     return;
   }
@@ -1616,11 +1633,13 @@ async function loadUsersFromSupabase() {
     } else {
       users = [];
     }
+    ensureCurrentAdministratorUser();
     filterUsers();
   } catch (err) {
     console.error(err);
     Portal.toast('Could not load users from Supabase: ' + (err.message || 'Unknown error'), true);
     users = loadLocalUsers();
+    ensureCurrentAdministratorUser();
     filterUsers();
   }
 }
