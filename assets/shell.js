@@ -124,9 +124,7 @@
               items.push({ key: 'staffportal', label: 'Staff Portal', icon: 'fa-id-card', href: 'dashboard.html' });
               return items;
             }
-            if (item.key !== 'schemeofwork' || user.category === 'Teaching Staff') {
-              items.push(item);
-            }
+            items.push(item);
             return items;
           })
         };
@@ -196,6 +194,19 @@
     );
   }
 
+  function sidebarIsUsable(sidebar) {
+    return !!(sidebar && sidebar.querySelector('.sidebar__brand') && sidebar.querySelector('.nav__items a'));
+  }
+
+  function ensureSidebar(active) {
+    var sidebar = document.getElementById('sidebar');
+    if (!sidebarIsUsable(sidebar)) {
+      if (sidebar) sidebar.remove();
+      document.body.prepend(buildSidebar(active));
+    }
+    forceDesktopSidebar();
+  }
+
   function activeSchoolLabel() {
     try {
       var code = localStorage.getItem('axiom_active_school_code') || SCHOOL.code;
@@ -239,9 +250,7 @@
     setSidebarCollapsed(window.innerWidth < 700 ? true : savedSidebarCollapsed());
 
     // mount sidebar + overlay
-    if (!document.getElementById('sidebar')) {
-      document.body.prepend(buildSidebar(active));
-    }
+    ensureSidebar(active);
     if (!document.getElementById('overlay')) {
       document.body.appendChild(el('<div class="overlay" id="overlay"></div>'));
     }
@@ -268,9 +277,16 @@
     if (overlay) overlay.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
     document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
-        document.body.classList.remove('nav-open');
+        if (window.innerWidth < 700) document.body.classList.remove('nav-open');
+        setTimeout(function () { ensureSidebar(active); }, 60);
       });
     });
+
+    ['pageshow', 'focus', 'visibilitychange'].forEach(function (eventName) {
+      window.addEventListener(eventName, function () { ensureSidebar(active); });
+    });
+    setTimeout(function () { ensureSidebar(active); }, 250);
+    setTimeout(function () { ensureSidebar(active); }, 1000);
 
     // user menu
     var um = document.getElementById('usermenu');
@@ -316,7 +332,10 @@
       }
     }
     apply();
-    window.addEventListener('resize', apply);
+    if (!forceDesktopSidebar.bound) {
+      window.addEventListener('resize', function () { forceDesktopSidebar(); });
+      forceDesktopSidebar.bound = true;
+    }
   }
 
   var Portal = {
