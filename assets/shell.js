@@ -60,6 +60,12 @@
     );
   }
 
+  function isSchoolAdminPortal(user) {
+    return isSchoolAdmin(user) ||
+      norm(location.hostname).indexOf('schooladmin.') === 0 ||
+      location.pathname.replace(/\\/g, '/').indexOf('/admin/') > -1;
+  }
+
   function currentUser() {
     try {
       var user = JSON.parse(localStorage.getItem('axiom_current_user') || 'null');
@@ -95,6 +101,22 @@
         return { title: group.title, items: items };
       });
     }
+    if (isSchoolAdminPortal(user)) {
+      return NAV.map(function (group) {
+        return {
+          title: group.title,
+          items: group.items.reduce(function (items, item) {
+            if (item.key === 'dashboard') {
+              items.push({ key: 'dashboard', label: pageBase() === '../' ? 'Dashboard' : 'Back to Admin Portal', icon: 'fa-chart-pie', href: 'admin/admin.html' });
+              items.push({ key: 'staffportal', label: 'Staff Portal', icon: 'fa-id-card', href: 'dashboard.html' });
+              return items;
+            }
+            items.push(item);
+            return items;
+          }, [])
+        };
+      });
+    }
     if (user && user.type === 'student') {
       return [{
         title: 'Student Portal',
@@ -111,22 +133,6 @@
         return {
           title: group.title,
           items: group.items.filter(function (item) { return item.key !== 'schemeofwork'; })
-        };
-      });
-    }
-    if (isSchoolAdmin(user)) {
-      return NAV.map(function (group) {
-        return {
-          title: group.title,
-          items: group.items.reduce(function (items, item) {
-            if (item.key === 'dashboard') {
-              items.push({ key: 'dashboard', label: pageBase() === '../' ? 'Dashboard' : 'Back to Admin Portal', icon: 'fa-chart-pie', href: 'admin/admin.html' });
-              items.push({ key: 'staffportal', label: 'Staff Portal', icon: 'fa-id-card', href: 'dashboard.html' });
-              return items;
-            }
-            items.push(item);
-            return items;
-          })
         };
       });
     }
@@ -171,9 +177,9 @@
   function buildSidebar(active) {
     var nav = allowedNav();
     var user = currentUser();
-    var homeHref = (isSchoolAdmin(user) && !user.isSuperAdmin) ? route('admin/admin.html') : route('dashboard.html');
+    var homeHref = (isSchoolAdminPortal(user) && !(user && user.isSuperAdmin)) ? route('admin/admin.html') : route('dashboard.html');
     var groups = nav.map(function (g, idx) {
-      var open = isSchoolAdmin(user) || (user && user.isSuperAdmin) || g.items.some(function (i) { return i.key === active; }) || idx === 0;
+      var open = isSchoolAdminPortal(user) || (user && user.isSuperAdmin) || g.items.some(function (i) { return i.key === active; }) || idx === 0;
       var links = g.items.map(function (i) {
         var cls = i.key === active ? ' class="active"' : '';
         return '<a href="' + pageHref(i) + '"' + cls + '><i class="fas ' + i.icon + '"></i> ' + i.label + '</a>';
@@ -219,7 +225,7 @@
     var user = currentUser();
     var displayName = user && user.full_name ? user.full_name : SCHOOL.user;
     var myDocumentsLabel = user && user.type === 'student' ? 'Student Documents' : 'My Documents';
-    var addUserLink = (!user || isSchoolAdmin(user)) ? '<a href="' + route('registeruser.html') + '"><i class="fas fa-user-plus" style="width:16px"></i> Add New User</a>' : '';
+    var addUserLink = (!user || isSchoolAdminPortal(user)) ? '<a href="' + route('registeruser.html') + '"><i class="fas fa-user-plus" style="width:16px"></i> Add New User</a>' : '';
     return el(
       '<header class="topbar">' +
         '<button class="icon-btn hamburger" id="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>' +
@@ -245,7 +251,7 @@
   function wire(active, title, subtitle) {
     document.body.classList.add('portal-shell');
     var bootUser = currentUser();
-    var adminUser = isSchoolAdmin(bootUser);
+    var adminUser = isSchoolAdminPortal(bootUser);
     if (adminUser) document.body.classList.add('school-admin-portal');
     // School admins should keep the navigation visible while moving between modules.
     setSidebarCollapsed(adminUser ? false : (window.innerWidth < 700 ? true : savedSidebarCollapsed()));
@@ -277,11 +283,11 @@
       document.body.classList.toggle('nav-open');
     });
     if (overlay) overlay.addEventListener('click', function () {
-      if (!isSchoolAdmin(currentUser())) document.body.classList.remove('nav-open');
+      if (!isSchoolAdminPortal(currentUser())) document.body.classList.remove('nav-open');
     });
     document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
-        if (isSchoolAdmin(currentUser())) {
+        if (isSchoolAdminPortal(currentUser())) {
           setSidebarCollapsed(false);
           if (window.innerWidth < 700) document.body.classList.add('nav-open');
         } else if (window.innerWidth < 700) {
@@ -352,6 +358,7 @@
     NAV: NAV,
     currentUser: currentUser,
     isSchoolAdmin: isSchoolAdmin,
+    isSchoolAdminPortal: isSchoolAdminPortal,
 
     init: function (opts) {
       opts = opts || {};
@@ -378,7 +385,7 @@
           if (opts.onReady) opts.onReady();
           return;
         }
-        if (user && !isSchoolAdmin(user) && user.category !== 'Teaching Staff' && active === 'cass') {
+        if (user && !isSchoolAdminPortal(user) && user.category !== 'Teaching Staff' && active === 'cass') {
           Portal.toast('Capture Assessment is for Teaching Staff only.', true);
           setTimeout(function () { location.href = route('mydocuments.html'); }, 900);
           return;
@@ -387,7 +394,7 @@
           if (opts.onReady) opts.onReady();
           return;
         }
-        if (active === 'schemeofwork' && (!user || (!isSchoolAdmin(user) && user.category !== 'Teaching Staff'))) {
+        if (active === 'schemeofwork' && (!user || (!isSchoolAdminPortal(user) && user.category !== 'Teaching Staff'))) {
           Portal.toast('Scheme of Work is for Teaching Staff only.', true);
           setTimeout(function () { location.href = user ? route('dashboard.html') : route('login.html'); }, 900);
           return;
@@ -396,7 +403,7 @@
           if (opts.onReady) opts.onReady();
           return;
         }
-        if (user && !isSchoolAdmin(user) && active && active !== 'mydocuments' && (user.privileges || []).indexOf(active) === -1) {
+        if (user && !isSchoolAdminPortal(user) && active && active !== 'mydocuments' && (user.privileges || []).indexOf(active) === -1) {
           Portal.toast('You do not have access to this module.', true);
           setTimeout(function () { location.href = route('mydocuments.html'); }, 900);
           return;
