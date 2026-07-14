@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scheme of Work - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-scheme-years2" />
+<link rel="stylesheet" href="assets/app.css?v=20260714-scheme-years3" />
 <style>
   .scheme-layout { display:grid; grid-template-columns:minmax(320px, .72fr) minmax(560px, 1.6fr); gap:16px; align-items:start; }
   .scheme-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -61,7 +61,7 @@
         <div class="card__body">
           <div class="role-note" id="departmentNote"><i class="fas fa-building"></i><span>Loading staff department...</span></div>
           <form id="schemeForm" class="scheme-form" style="margin-top:14px">
-            <div class="field"><label for="academicYear">Academic Year *</label><select class="select" id="academicYear" required><option value="2027/2028">2027/2028</option><option value="2026/2027">2026/2027</option><option value="2025/2026">2025/2026</option></select></div>
+            <div class="field"><label for="academicYear">Academic Year *</label><select class="select" id="academicYear" required><option value="2030/2031">2030/2031</option><option value="2029/2030">2029/2030</option><option value="2028/2029">2028/2029</option><option value="2027/2028">2027/2028</option><option value="2026/2027">2026/2027</option><option value="2025/2026">2025/2026</option><option value="2024/2025">2024/2025</option><option value="2023/2024">2023/2024</option><option value="2022/2023">2022/2023</option><option value="2021/2022">2021/2022</option><option value="2020/2021">2020/2021</option></select></div>
             <div class="field"><label for="term">Semester *</label><select class="select" id="term" required><option value="Semester 1">Semester 1</option><option value="Semester 2">Semester 2</option></select></div>
             <div class="field"><label for="className">Class *</label><select class="select" id="className" required><option value="">Select class</option></select></div>
             <div class="field"><label for="subjectName">Subject *</label><select class="select" id="subjectName" required><option value="">Select subject</option></select></div>
@@ -109,8 +109,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260714-scheme-years2"></script>
-<script src="assets/shell.js?v=20260714-scheme-years2"></script>
+<script src="assets/supabase-client.js?v=20260714-scheme-years3"></script>
+<script src="assets/shell.js?v=20260714-scheme-years3"></script>
 <script>
 Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
 (function () {
@@ -145,7 +145,7 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
   function documentLink(row) { return '<a class="btn btn--sm" href="'+esc(row.file_url)+'" target="_blank" rel="noopener"><i class="fas fa-file-arrow-down"></i> Open</a>'; }
 
   function populateYears() {
-    var html = ['2027/2028','2026/2027','2025/2026'].map(function(year) {
+    var html = ['2030/2031','2029/2030','2028/2029','2027/2028','2026/2027','2025/2026','2024/2025','2023/2024','2022/2023','2021/2022','2020/2021'].map(function(year) {
       return '<option value="'+year+'">'+year+'</option>';
     }).join('');
     document.getElementById('academicYear').innerHTML = html;
