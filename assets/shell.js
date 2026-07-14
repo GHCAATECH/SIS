@@ -245,15 +245,17 @@
   function wire(active, title, subtitle) {
     document.body.classList.add('portal-shell');
     var bootUser = currentUser();
-    if (isSchoolAdmin(bootUser)) document.body.classList.add('school-admin-portal');
-    // Keep the full sidebar on desktop/tablet, but start narrow screens in drawer mode.
-    setSidebarCollapsed(window.innerWidth < 700 ? true : savedSidebarCollapsed());
+    var adminUser = isSchoolAdmin(bootUser);
+    if (adminUser) document.body.classList.add('school-admin-portal');
+    // School admins should keep the navigation visible while moving between modules.
+    setSidebarCollapsed(adminUser ? false : (window.innerWidth < 700 ? true : savedSidebarCollapsed()));
 
     // mount sidebar + overlay
     ensureSidebar(active);
     if (!document.getElementById('overlay')) {
       document.body.appendChild(el('<div class="overlay" id="overlay"></div>'));
     }
+    if (adminUser && window.innerWidth < 700) document.body.classList.add('nav-open');
 
     // mount topbar at top of .main
     var main = document.querySelector('.main');
@@ -274,10 +276,17 @@
       setSidebarCollapsed(false);
       document.body.classList.toggle('nav-open');
     });
-    if (overlay) overlay.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
+    if (overlay) overlay.addEventListener('click', function () {
+      if (!isSchoolAdmin(currentUser())) document.body.classList.remove('nav-open');
+    });
     document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
-        if (window.innerWidth < 700) document.body.classList.remove('nav-open');
+        if (isSchoolAdmin(currentUser())) {
+          setSidebarCollapsed(false);
+          if (window.innerWidth < 700) document.body.classList.add('nav-open');
+        } else if (window.innerWidth < 700) {
+          document.body.classList.remove('nav-open');
+        }
         setTimeout(function () { ensureSidebar(active); }, 60);
       });
     });
