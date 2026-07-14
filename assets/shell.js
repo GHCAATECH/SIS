@@ -214,12 +214,18 @@
     setSidebarCollapsed(savedSidebarCollapsed());
 
     // mount sidebar + overlay
-    document.body.prepend(buildSidebar(active));
-    document.body.appendChild(el('<div class="overlay" id="overlay"></div>'));
+    if (!document.getElementById('sidebar')) {
+      document.body.prepend(buildSidebar(active));
+    }
+    if (!document.getElementById('overlay')) {
+      document.body.appendChild(el('<div class="overlay" id="overlay"></div>'));
+    }
 
     // mount topbar at top of .main
     var main = document.querySelector('.main');
-    main.prepend(buildTopbar(title, subtitle));
+    if (main && !document.querySelector('.topbar')) {
+      main.prepend(buildTopbar(title, subtitle));
+    }
 
     // accordion
     document.querySelectorAll('.nav__title').forEach(function (b) {
