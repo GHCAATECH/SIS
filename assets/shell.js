@@ -226,6 +226,7 @@
     if (main && !document.querySelector('.topbar')) {
       main.prepend(buildTopbar(title, subtitle));
     }
+    forceDesktopSidebar();
 
     // accordion
     document.querySelectorAll('.nav__title').forEach(function (b) {
@@ -266,6 +267,28 @@
 
     // toast host
     document.body.appendChild(el('<div class="toast-host" id="toastHost"></div>'));
+  }
+
+  function forceDesktopSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var main = document.querySelector('.main');
+    if (!sidebar || !main) return;
+    function apply() {
+      if (window.innerWidth >= 700) {
+        sidebar.style.transform = 'none';
+        sidebar.style.display = 'flex';
+        main.style.marginLeft = 'var(--sidebar-w)';
+        main.style.width = 'calc(100% - var(--sidebar-w))';
+        document.body.classList.remove('sidebar-collapsed', 'nav-open');
+      } else {
+        sidebar.style.transform = '';
+        sidebar.style.display = '';
+        main.style.marginLeft = '';
+        main.style.width = '';
+      }
+    }
+    apply();
+    window.addEventListener('resize', apply);
   }
 
   var Portal = {

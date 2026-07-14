@@ -2258,3 +2258,22 @@ table tbody tr:hover,
   }
 }
 
+/* Final portal sidebar guard: desktop and tablet portal pages must keep the side navigation visible. */
+@media screen and (min-width: 700px) {
+  body.portal-shell .sidebar#sidebar {
+    display: flex !important;
+    transform: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  body.portal-shell > .main {
+    margin-left: var(--sidebar-w) !important;
+    width: calc(100% - var(--sidebar-w)) !important;
+  }
+
+  body.portal-shell .hamburger {
+    display: none !important;
+  }
+}
+
