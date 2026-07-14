@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Capture Assessment - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-capture-flow5" />
+<link rel="stylesheet" href="assets/app.css?v=20260714-capture-flow6" />
 <style>
   .cass-shell {
     padding: 20px 18px 24px;
@@ -260,8 +260,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
-<script src="assets/shell.js?v=20260714-capture-flow5"></script>
+<script src="assets/supabase-client.js?v=20260714-capture-flow6"></script>
+<script src="assets/shell.js?v=20260714-capture-flow6"></script>
 <script>
 Portal.init({ active: 'cass' });
 
@@ -715,6 +715,8 @@ function scoreRows(tableSelector) {
       subject: row.dataset.subject || '',
       score: changeInput && changeInput.value !== '' ? changeInput.value : (scoreInput ? scoreInput.value : row.dataset.currentScore)
     };
+  }).filter(function(row) {
+    return String(row.score === null || row.score === undefined ? '' : row.score).trim() !== '';
   });
 }
 
@@ -768,7 +770,7 @@ function validateAssessmentPayload(payload) {
       throw new Error('You are not assigned to capture scores for this class and subject.');
     }
   }
-  if (!payload.scores.length) throw new Error('No student scores are available to save.');
+  if (!payload.scores.length) throw new Error('Enter at least one student score before saving.');
   var invalidScore = payload.scores.find(function(row) {
     if (row.score === '' || row.score === null || row.score === undefined) return false;
     var score = Number(row.score);
@@ -1053,8 +1055,8 @@ document.getElementById('downloadData').addEventListener('click', function() {
 });
 document.getElementById('submitComplete').addEventListener('click', function() {
   saveAssessment('Submitted').then(function() {
-    clearCaptureRows('Scores have been submitted for this assessment mode.');
-    setCaptureStatus('Score submitted. Click Refresh to display the saved assessment below for updating.', 'success');
+    setCaptureStatus('Score submitted. Checking outstanding students...', 'success');
+    return applyAssessmentFilter();
   }).catch(function(err) {
     console.error(err);
     Portal.toast('Could not submit assessment: ' + (err.message || 'Unknown error'), true);
