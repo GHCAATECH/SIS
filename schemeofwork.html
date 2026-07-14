@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scheme of Work - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-scheme-years1" />
+<link rel="stylesheet" href="assets/app.css?v=20260714-scheme-years2" />
 <style>
   .scheme-layout { display:grid; grid-template-columns:minmax(320px, .72fr) minmax(560px, 1.6fr); gap:16px; align-items:start; }
   .scheme-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -61,7 +61,7 @@
         <div class="card__body">
           <div class="role-note" id="departmentNote"><i class="fas fa-building"></i><span>Loading staff department...</span></div>
           <form id="schemeForm" class="scheme-form" style="margin-top:14px">
-            <div class="field"><label for="academicYear">Academic Year *</label><select class="select" id="academicYear" required></select></div>
+            <div class="field"><label for="academicYear">Academic Year *</label><select class="select" id="academicYear" required><option value="2027/2028">2027/2028</option><option value="2026/2027">2026/2027</option><option value="2025/2026">2025/2026</option></select></div>
             <div class="field"><label for="term">Semester *</label><select class="select" id="term" required><option value="Semester 1">Semester 1</option><option value="Semester 2">Semester 2</option></select></div>
             <div class="field"><label for="className">Class *</label><select class="select" id="className" required><option value="">Select class</option></select></div>
             <div class="field"><label for="subjectName">Subject *</label><select class="select" id="subjectName" required><option value="">Select subject</option></select></div>
@@ -109,8 +109,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260714-scheme-years1"></script>
-<script src="assets/shell.js?v=20260714-scheme-years1"></script>
+<script src="assets/supabase-client.js?v=20260714-scheme-years2"></script>
+<script src="assets/shell.js?v=20260714-scheme-years2"></script>
 <script>
 Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
 (function () {
@@ -271,7 +271,8 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
     }
   });
 
-  document.getElementById('yr').textContent = new Date().getFullYear();
+  var footerYear = document.getElementById('yr');
+  if (footerYear) footerYear.textContent = new Date().getFullYear();
   populateYears();
   loadProfile().catch(function (err) { console.error(err); Portal.toast('Could not open Scheme of Work: '+err.message, true); });
 })();
