@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Capture Assessment - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-capture-flow4" />
+<link rel="stylesheet" href="assets/app.css?v=20260714-capture-flow5" />
 <style>
   .cass-shell {
     padding: 20px 18px 24px;
@@ -15,7 +15,7 @@
   }
   .cass-filter {
     display: grid;
-    grid-template-columns: 1fr .8fr .8fr 1.25fr .9fr .9fr 1fr;
+    grid-template-columns: .8fr .8fr 1.35fr .9fr .9fr 1fr;
     gap: 14px;
     align-items: end;
   }
@@ -179,10 +179,7 @@
   <main class="content">
     <div class="cass-shell">
       <div class="cass-filter">
-        <div class="cass-field">
-          <label>Academic Year:</label>
-          <input class="input" id="academicYearSelect" pattern="\d{4}/\d{4}" placeholder="2025/2026">
-        </div>
+        <input type="hidden" id="academicYearSelect" pattern="\d{4}/\d{4}">
         <div class="cass-field">
           <label>Year:</label>
           <select class="select" id="yearSelect"><option selected>Year 1</option><option>Year 2</option><option>Year 3</option></select>
@@ -263,8 +260,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="assets/supabase-client.js?v=20260714-capture-flow4"></script>
-<script src="assets/shell.js?v=20260714-capture-flow4"></script>
+<script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
+<script src="assets/shell.js?v=20260714-capture-flow5"></script>
 <script>
 Portal.init({ active: 'cass' });
 
@@ -604,13 +601,13 @@ function scoreRowHtml(row, idx, filters, score) {
     '<td><input class="score-box" type="number" min="0" max="'+overallScore+'" value="'+(score === null || score === undefined ? '' : score)+'" placeholder="0"></td></tr>';
 }
 
-function renderNewAssessmentRows(filters) {
-  var rows = studentRowsForFilter(filters);
+function renderNewAssessmentRows(filters, rowsOverride, statusMessage) {
+  var rows = rowsOverride || studentRowsForFilter(filters);
   document.querySelector('#scoreTable tbody').innerHTML = rows.map(function(student, idx) {
     return scoreRowHtml(student, idx, filters, '');
   }).join('');
   document.getElementById('studentCount').textContent = rows.length || '/';
-  setCaptureStatus(rows.length ? 'Students loaded. Enter scores and submit this assessment mode.' : 'No students found for the selected class and year.', rows.length ? '' : 'error');
+  setCaptureStatus(rows.length ? (statusMessage || 'Students loaded. Enter scores and submit this assessment mode.') : 'No students found for the selected class and year.', rows.length ? '' : 'error');
 }
 
 function localSubmittedAssessment(filters) {
@@ -652,6 +649,17 @@ async function loadSubmittedAssessment(filters) {
   return localSubmittedAssessment(filters);
 }
 
+function submittedScoreMap(submitted) {
+  var map = {};
+  (submitted && submitted.scores || []).forEach(function(row) {
+    var ref = String(row.assRef || '').trim();
+    if (!ref) return;
+    var score = row.score;
+    if (score !== '' && score !== null && score !== undefined) map[ref] = true;
+  });
+  return map;
+}
+
 async function applyAssessmentFilter() {
   var filters = selectedFilters();
   if (!/^\d{4}\/\d{4}$/.test(filters.academicYear)) throw new Error('Academic year must use YYYY/YYYY format.');
@@ -660,14 +668,27 @@ async function applyAssessmentFilter() {
   document.getElementById('submittedRecordsPanel').classList.remove('show');
   clearCaptureRows('Checking submitted scores...');
   setCaptureStatus('Checking the selected assessment mode...');
+  var currentRows = studentRowsForFilter(filters);
   var submitted = await loadSubmittedAssessment(filters);
   if (submitted) {
     if (submitted.overallScore) document.getElementById('overallScore').value = submitted.overallScore;
+    var submittedRefs = submittedScoreMap(submitted);
+    var outstandingRows = currentRows.filter(function(student) {
+      return !submittedRefs[String(student[0] || '').trim()];
+    });
+    if (outstandingRows.length) {
+      renderNewAssessmentRows(
+        filters,
+        outstandingRows,
+        outstandingRows.length + ' outstanding student(s) loaded. Enter scores and submit this assessment mode.'
+      );
+      return;
+    }
     clearCaptureRows('Scores have already been submitted for this assessment mode.');
     setCaptureStatus('Score submitted. Click Refresh to display the saved assessment below for updating.', 'success');
     return;
   }
-  renderNewAssessmentRows(filters);
+  renderNewAssessmentRows(filters, currentRows);
 }
 
 function downloadExcel(filename, sheetName, headers, rows) {
@@ -942,7 +963,7 @@ populateSubjects();
 showFilterPending();
 loadAssessmentSetupFromSupabase();
 
-['academicYearSelect','yearSelect','semesterSelect','modeSelect','subjectSelect'].forEach(function(id) {
+['yearSelect','semesterSelect','modeSelect','subjectSelect'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', showFilterPending);
 });
 document.getElementById('classSelect').addEventListener('change', function() {
