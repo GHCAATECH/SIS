@@ -213,6 +213,14 @@
     forceDesktopSidebar();
   }
 
+  function hideSidebarTemporarily() {
+    document.body.classList.add('sidebar-temporary-hidden');
+    document.body.classList.remove('nav-open');
+    setTimeout(function () {
+      document.body.classList.remove('sidebar-temporary-hidden');
+    }, 900);
+  }
+
   function activeSchoolLabel() {
     try {
       var code = localStorage.getItem('axiom_active_school_code') || SCHOOL.code;
@@ -287,13 +295,8 @@
     });
     document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
-        if (isSchoolAdminPortal(currentUser())) {
-          setSidebarCollapsed(false);
-          if (window.innerWidth < 700) document.body.classList.add('nav-open');
-        } else if (window.innerWidth < 700) {
-          document.body.classList.remove('nav-open');
-        }
-        setTimeout(function () { ensureSidebar(active); }, 60);
+        hideSidebarTemporarily();
+        setTimeout(function () { ensureSidebar(active); }, 950);
       });
     });
 

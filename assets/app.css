@@ -507,6 +507,13 @@ body.footer-shell .login-shell {
 }
 body.sidebar-collapsed .sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
 body.sidebar-collapsed .main { margin-left: 0; width: 100%; }
+body.sidebar-temporary-hidden .sidebar#sidebar {
+  transform: translateX(calc(-1 * var(--sidebar-w))) !important;
+}
+body.sidebar-temporary-hidden > .main {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
 .topbar {
   height: var(--header-h); background: rgba(255,255,255,.92);
   border-bottom: 1px solid var(--border);
