@@ -98,7 +98,7 @@
           title: group.title,
           items: group.items.reduce(function (items, item) {
             if (item.key === 'dashboard') {
-              items.push({ key: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie', href: 'admin/admin.html' });
+              items.push({ key: 'dashboard', label: 'Back to Admin Portal', icon: 'fa-chart-pie', href: 'admin/admin.html' });
               items.push({ key: 'staffportal', label: 'Staff Portal', icon: 'fa-id-card', href: 'dashboard.html' });
               return items;
             }
