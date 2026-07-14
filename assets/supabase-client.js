@@ -973,7 +973,21 @@
   }
 
   async function saveStaffSubjectClasses(staffUserId, assignments) {
-    var c = db(), school = await currentSchool();
+    var c = db();
+    if (!c || !staffUserId) return null;
+    var token = activeStaffSessionToken();
+    if (token) {
+      var sessionResult = await c.rpc('secure_save_staff_subject_classes_with_session', {
+        p_session_token: token,
+        p_staff_user_id: staffUserId,
+        p_assignments: assignments || []
+      });
+      if (!sessionResult.error) return sessionResult.data || [];
+      if (!/secure_save_staff_subject_classes_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw sessionResult.error;
+      }
+    }
+    var school = await currentSchool();
     if (!c || !school || !staffUserId) return null;
     var deleted = await c
       .from('staff_subject_classes')
