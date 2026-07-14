@@ -54,14 +54,12 @@
   function setSidebarCollapsed(collapsed) {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
     try {
-      if (collapsed) localStorage.setItem('axiom_sidebar_collapsed', '1');
-      else localStorage.removeItem('axiom_sidebar_collapsed');
+      localStorage.removeItem('axiom_sidebar_collapsed');
     } catch (e) {}
   }
 
   function savedSidebarCollapsed() {
-    try { return localStorage.getItem('axiom_sidebar_collapsed') === '1'; }
-    catch (e) { return false; }
+    return false;
   }
 
   function allowedNav() {
@@ -238,7 +236,6 @@
     overlay.addEventListener('click', function () { document.body.classList.remove('nav-open'); });
     document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
-        setSidebarCollapsed(true);
         document.body.classList.remove('nav-open');
       });
     });
