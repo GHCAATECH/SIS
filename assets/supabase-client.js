@@ -72,7 +72,7 @@
     if (!c) return null;
     var cachedId = w.localStorage.getItem('axiom_active_school_id');
     var cachedName = w.localStorage.getItem('axiom_active_school_name');
-    if (cachedId && activeStaffSessionToken()) {
+    if (cachedId) {
       return {
         id: cachedId,
         code: activeSchoolCode(),
@@ -260,7 +260,7 @@
     var c = db();
     if (!c) return null;
     var token = activeStaffSessionToken();
-    if (!token) return null;
+    if (!token) return { needsLogin: true, assignments: [], classes: [], students: [], assessment_modes: [] };
     var result = await c.rpc('secure_capture_assessment_setup', {
       p_session_token: token
     });
@@ -898,6 +898,8 @@
   }
 
   async function loginStaff(login, password) {
+    var fallbackProfile = await loginStaffWithAccountPassword(login, password);
+    if (fallbackProfile && !fallbackProfile.error) return fallbackProfile;
     return loginWithAuth('staff', login, password);
   }
 
