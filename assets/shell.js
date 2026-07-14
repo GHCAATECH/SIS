@@ -98,8 +98,16 @@
       return NAV.map(function (group) {
         return {
           title: group.title,
-          items: group.items.filter(function (item) {
-            return item.key !== 'schemeofwork' || user.category === 'Teaching Staff';
+          items: group.items.reduce(function (items, item) {
+            if (item.key === 'dashboard') {
+              items.push({ key: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie', href: 'admin/admin.html' });
+              items.push({ key: 'staffportal', label: 'Staff Portal', icon: 'fa-id-card', href: 'dashboard.html' });
+              return items;
+            }
+            if (item.key !== 'schemeofwork' || user.category === 'Teaching Staff') {
+              items.push(item);
+            }
+            return items;
           })
         };
       });
@@ -135,13 +143,17 @@
   function pageHref(item) {
     var base = pageBase();
     if (item.href) {
-      return cleanUrl(base ? item.href.replace(/^admin\//, '') : item.href);
+      if (/^(https?:|#|\/)/i.test(item.href)) return cleanUrl(item.href);
+      if (base && item.href.indexOf('admin/') === 0) return cleanUrl(item.href.replace(/^admin\//, ''));
+      return cleanUrl(base + item.href);
     }
     return cleanUrl(base + item.key + '.html');
   }
 
   function buildSidebar(active) {
     var nav = allowedNav();
+    var user = currentUser();
+    var homeHref = (user && user.isAdmin && !user.isSuperAdmin) ? route('admin/admin.html') : route('dashboard.html');
     var groups = nav.map(function (g, idx) {
       var open = g.items.some(function (i) { return i.key === active; }) || idx === 0;
       var links = g.items.map(function (i) {
@@ -155,7 +167,7 @@
 
     return el(
       '<aside class="sidebar" id="sidebar">' +
-        '<a class="sidebar__brand" href="' + route('dashboard.html') + '">' +
+        '<a class="sidebar__brand" href="' + homeHref + '">' +
           '<span class="logo"><i class="fas fa-graduation-cap"></i></span>' +
           '<span>AXIOMBYTE SMS<small>AXIOMBYTE SMS</small></span>' +
         '</a>' +
