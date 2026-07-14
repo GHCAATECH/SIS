@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Capture Assessment - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-staff-assignments1" />
+<link rel="stylesheet" href="assets/app.css?v=20260714-capture-flow1" />
 <style>
   .cass-shell {
     padding: 20px 18px 24px;
@@ -263,8 +263,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="assets/supabase-client.js?v=20260714-staff-assignments1"></script>
-<script src="assets/shell.js?v=20260714-staff-assignments1"></script>
+<script src="assets/supabase-client.js?v=20260714-capture-flow1"></script>
+<script src="assets/shell.js?v=20260714-capture-flow1"></script>
 <script>
 Portal.init({ active: 'cass' });
 
@@ -426,6 +426,47 @@ function promoteStudent(currentLevel) {
 }
 
 async function loadAssessmentSetupFromSupabase() {
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.captureAssessmentSetup) {
+    try {
+      var setup = await AxiomDB.captureAssessmentSetup();
+      if (setup) {
+        teacherAssignments = setup.assignments || [];
+        if (setup.classes && setup.classes.length) {
+          window.liveClasses = setup.classes;
+          saveClassesCache(setup.classes);
+        } else {
+          window.liveClasses = [];
+          saveClassesCache([]);
+        }
+        if (setup.students && setup.students.length) {
+          students = setup.students.map(function(row) {
+            return [
+              row.ass_ref_id,
+              [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ').toUpperCase(),
+              row.classes && row.classes.name ? row.classes.name : '',
+              row.student_level || (row.year_admitted ? getStudentLevel(row.year_admitted, new Date().getFullYear()) : '')
+            ];
+          });
+        } else {
+          students = [];
+        }
+        if (setup.assessment_modes && setup.assessment_modes.length) {
+          document.getElementById('modeSelect').innerHTML = setup.assessment_modes.map(function(mode) {
+            return '<option>'+mode.display_order+'. '+mode.name+'</option>';
+          }).join('');
+        }
+        populateClasses();
+        var setupAllowedClasses = classesAllowedForTeacher(loadClasses());
+        document.getElementById('classSelect').value = setupAllowedClasses[0] ? setupAllowedClasses[0].name : '';
+        populateSubjects();
+        showFilterPending();
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load assigned capture setup: ' + (err.message || 'Unknown error'), true);
+    }
+  }
   await loadTeacherAssignments();
   if (!window.AxiomDB || !AxiomDB.isConfigured()) {
     populateClasses();

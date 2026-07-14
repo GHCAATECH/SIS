@@ -37,6 +37,15 @@
     if (name) w.localStorage.setItem('axiom_active_school_name', String(name));
   }
 
+  function activeStaffSessionToken() {
+    try {
+      var user = JSON.parse(w.localStorage.getItem('axiom_current_user') || 'null');
+      return user && user.session_token ? String(user.session_token) : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
   async function authSession() {
     var c = db();
     if (!c) return null;
@@ -61,6 +70,15 @@
   async function currentSchool() {
     var c = db();
     if (!c) return null;
+    var cachedId = w.localStorage.getItem('axiom_active_school_id');
+    var cachedName = w.localStorage.getItem('axiom_active_school_name');
+    if (cachedId && activeStaffSessionToken()) {
+      return {
+        id: cachedId,
+        code: activeSchoolCode(),
+        name: cachedName || 'ASUOM SENIOR HIGH SCHOOL'
+      };
+    }
     var result = await c.from('schools').select('*').eq('code', activeSchoolCode()).limit(1).maybeSingle();
     if (result.error) throw result.error;
     if (!result.data) {
@@ -236,6 +254,21 @@
     profile.isAdmin = profile.isAdmin || profile.category === 'School Administrator' || profile.role === 'School Administrator';
     profile.privileges = profile.privileges || [];
     return profile;
+  }
+
+  async function captureAssessmentSetup() {
+    var c = db();
+    if (!c) return null;
+    var token = activeStaffSessionToken();
+    if (!token) return null;
+    var result = await c.rpc('secure_capture_assessment_setup', {
+      p_session_token: token
+    });
+    if (result.error) {
+      if (/secure_capture_assessment_setup|schema cache|function/i.test(result.error.message || '')) return null;
+      throw result.error;
+    }
+    return result.data || null;
   }
   async function loginSuperAdmin(username, password) {
     return loginWithAuth('superadmin', username, password);
@@ -970,7 +1003,22 @@
   }
 
   async function saveAssessmentScores(payload) {
-    var c = db(), school = await currentSchool();
+    var c = db();
+    if (!c) return null;
+    var token = activeStaffSessionToken();
+    var session = null;
+    try { session = await authSession(); } catch (e) { session = null; }
+    if (!session && token) {
+      var sessionResult = await c.rpc('secure_save_assessment_scores_with_session', {
+        p_session_token: token,
+        p_payload: payload || {}
+      });
+      if (!sessionResult.error) return sessionResult.data;
+      if (!/secure_save_assessment_scores_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw sessionResult.error;
+      }
+    }
+    var school = await currentSchool();
     if (!c || !school) return null;
     payload = Object.assign({}, payload || {}, { school_id: school.id });
     var result = await c.rpc('secure_save_assessment_scores', { p_payload: payload });
@@ -1505,6 +1553,7 @@
     listStaffSubjectClasses: listStaffSubjectClasses,
     saveStaffSubjectClasses: saveStaffSubjectClasses,
     listAssessmentModes: listAssessmentModes,
+    captureAssessmentSetup: captureAssessmentSetup,
     saveAssessmentScores: saveAssessmentScores,
     listAssessmentRecords: listAssessmentRecords,
     recalculateClassPositions: recalculateClassPositions,
