@@ -427,6 +427,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
 <script src="assets/shell.js?v=20260715-student-archive1"></script>
 <script>
@@ -553,11 +554,139 @@ function saveLocalRegisteredStudent(payload) {
   list.push(Object.assign({
     id: 'LOCAL-STUDENT-' + Date.now(),
     name: [payload.first_name, payload.surname, payload.other_names].filter(Boolean).join(' '),
-    class_name: document.getElementById('studentClass').value,
-    programme: document.getElementById('studentProgramme').value,
+    class_name: payload.class_name || document.getElementById('studentClass').value,
+    programme: payload.programme || document.getElementById('studentProgramme').value,
     created_at: new Date().toISOString()
   }, payload));
   localStorage.setItem(REGISTERED_STUDENTS_KEY, JSON.stringify(list));
+}
+
+function valueText(value) {
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).trim();
+}
+
+function excelDate(value) {
+  if (value === null || value === undefined || value === '') return '';
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === 'number' && window.XLSX && XLSX.SSF) {
+    var parsed = XLSX.SSF.parse_date_code(value);
+    if (parsed) return String(parsed.y).padStart(4, '0') + '-' + String(parsed.m).padStart(2, '0') + '-' + String(parsed.d).padStart(2, '0');
+  }
+  var text = String(value).trim();
+  if (!text) return '';
+  var date = new Date(text);
+  if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
+  return text;
+}
+
+function findClassByName(className, programme) {
+  var classes = programme ? classesForProgramme(programme) : (window.liveClasses || loadList('axiom_classes', defaultClasses));
+  return classes.find(function(cls) { return String(cls.name || '').toLowerCase() === String(className || '').toLowerCase(); }) || null;
+}
+
+function findHouseByName(houseName, residentialStatus) {
+  return loadHousesList().find(function(house) {
+    var nameMatches = String(house.name || '').toLowerCase() === String(houseName || '').toLowerCase();
+    var statusMatches = !residentialStatus || String(house.residentialStatus || '').toLowerCase() === String(residentialStatus || '').toLowerCase();
+    return nameMatches && statusMatches;
+  }) || null;
+}
+
+function headerLookup(headers) {
+  var lookup = {};
+  headers.forEach(function(header, index) {
+    lookup[String(header || '').trim().toLowerCase()] = index;
+  });
+  return lookup;
+}
+
+function cell(row, lookup, name) {
+  return valueText(row[lookup[String(name).toLowerCase()]]);
+}
+
+function payloadFromExcelRow(row, lookup, rowNumber) {
+  var surname = cell(row, lookup, 'Surname');
+  var firstName = cell(row, lookup, 'First Name');
+  var gender = cell(row, lookup, 'Gender');
+  var disability = cell(row, lookup, 'Disability Status') || 'No';
+  var dob = excelDate(row[lookup['date of birth']]);
+  var guardianName = cell(row, lookup, 'Guardian Name');
+  var relationship = cell(row, lookup, 'Relationship') || 'Guardian';
+  var phone = cell(row, lookup, 'Phone Number');
+  var admissionYear = cell(row, lookup, 'Admission Year');
+  var programme = cell(row, lookup, 'Learning Area');
+  var className = cell(row, lookup, 'Class');
+  var residentialStatus = cell(row, lookup, 'Residential Status');
+  var requiredMissing = [];
+  [
+    ['Surname', surname],
+    ['First Name', firstName],
+    ['Gender', gender],
+    ['Disability Status', disability],
+    ['Date of Birth', dob],
+    ['Guardian Name', guardianName],
+    ['Relationship', relationship],
+    ['Phone Number', phone],
+    ['Admission Year', admissionYear],
+    ['Learning Area', programme],
+    ['Class', className],
+    ['Residential Status', residentialStatus]
+  ].forEach(function(pair) { if (!pair[1]) requiredMissing.push(pair[0]); });
+  if (requiredMissing.length) throw new Error('Row ' + rowNumber + ' is missing: ' + requiredMissing.join(', '));
+  var cls = findClassByName(className, programme);
+  if (!cls && window.AxiomDB && AxiomDB.isConfigured()) throw new Error('Row ' + rowNumber + ': class "' + className + '" was not found under "' + programme + '". Create/link the class first.');
+  var house = findHouseByName(cell(row, lookup, 'House'), residentialStatus);
+  return {
+    class_id: cls && cls.id ? cls.id : null,
+    house_id: house && house.id ? house.id : null,
+    ass_ref_id: 'STD-' + Date.now() + '-' + rowNumber,
+    surname: surname,
+    first_name: firstName,
+    other_names: cell(row, lookup, 'Other Names'),
+    ghana_card_number: cell(row, lookup, 'Ghana Card Number'),
+    gender: gender,
+    disability_status: disability,
+    date_of_birth: dob,
+    guardian_name: guardianName,
+    relationship: relationship,
+    phone_number: phone,
+    profession: cell(row, lookup, 'Profession'),
+    residential_address: cell(row, lookup, 'Residential Address'),
+    residential_status: residentialStatus,
+    year_admitted: Number(admissionYear),
+    student_level: cell(row, lookup, 'Student Level') || getStudentLevel(Number(admissionYear), new Date().getFullYear()),
+    status: 'Active',
+    inserted_by: 'Admin',
+    class_name: className,
+    programme: programme
+  };
+}
+
+async function importStudentsFromWorkbook(file) {
+  if (!window.XLSX) throw new Error('Excel reader could not load. Check your internet connection and reload.');
+  var workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+  var worksheet = workbook.Sheets['Student Import'] || workbook.Sheets[workbook.SheetNames[0]];
+  var rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+  var headerRowIndex = rows.findIndex(function(row) { return row.indexOf('Surname') > -1 && row.indexOf('First Name') > -1; });
+  if (headerRowIndex === -1) throw new Error('The Excel template headers were not found. Download a fresh template and try again.');
+  var lookup = headerLookup(rows[headerRowIndex]);
+  var payloads = rows.slice(headerRowIndex + 2).map(function(row, index) {
+    var hasData = row.some(function(value) { return valueText(value); });
+    if (!hasData) return null;
+    return payloadFromExcelRow(row, lookup, headerRowIndex + index + 3);
+  }).filter(Boolean);
+  if (!payloads.length) throw new Error('No student rows were found in the Excel file.');
+  var savedCount = 0;
+  for (var i = 0; i < payloads.length; i++) {
+    var payload = payloads[i];
+    var saved = null;
+    if (window.AxiomDB && AxiomDB.isConfigured()) saved = await AxiomDB.createStudent(payload);
+    saveLocalRegisteredStudent(Object.assign({}, payload, saved || {}));
+    savedCount++;
+  }
+  return savedCount;
 }
 
 function renderSubjects() {
@@ -744,8 +873,23 @@ document.getElementById('uploadTemplate').addEventListener('click', function() {
     document.getElementById('bulkFile').value = '';
     return;
   }
-  Portal.toast('Excel template uploaded: ' + file.name);
-  closeBulkUploadModal();
+  var button = this;
+  async function upload() {
+    button.disabled = true;
+    button.textContent = 'Uploading...';
+    await loadRegistrationDataFromSupabase();
+    var savedCount = await importStudentsFromWorkbook(file);
+    Portal.toast(savedCount + ' student(s) uploaded successfully.');
+    document.getElementById('bulkFile').value = '';
+    closeBulkUploadModal();
+  }
+  upload().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not upload students: ' + (err.message || 'Unknown error'), true);
+  }).finally(function() {
+    button.disabled = false;
+    button.innerHTML = '<i class="fas fa-upload"></i> Upload';
+  });
 });
 
 document.getElementById('regForm').addEventListener('reset', function() {
