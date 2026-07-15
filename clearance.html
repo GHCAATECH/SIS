@@ -113,7 +113,7 @@
           </div>
         </div>
         <div class="clearance-card__body">
-          <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Reason</th><th>Reviewed By</th><th>Action</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+          <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Reason</th><th>Cleared By</th><th>Action</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
         </div>
       </div>
 
@@ -122,7 +122,7 @@
           <h2><i class="fas fa-circle-check"></i> Cleared Students</h2>
         </div>
         <div class="clearance-card__body">
-          <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Reason</th><th>Reviewed By</th><th>Action</th></tr></thead><tbody id="clearedBody"></tbody></table></div>
+          <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Reason</th><th>Cleared By</th><th>Action</th></tr></thead><tbody id="clearedBody"></tbody></table></div>
         </div>
       </div>
     </section>
@@ -145,7 +145,7 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260716-clearance-form1"></script>
+<script src="assets/supabase-client.js?v=20260716-clearance-form2"></script>
 <script src="assets/shell.js?v=20260715-student-session1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -270,7 +270,7 @@ function renderRecords() {
     var cls = student.classes || {};
     var req = row.clearance_requirements || {};
     var assigned = row.assigned_staff ? row.assigned_staff.full_name : 'Any matching staff';
-    var reviewer = row.reviewer ? row.reviewer.full_name : '';
+    var reviewer = row.reviewer ? row.reviewer.full_name : (row.status === 'Cleared' ? (assigned !== 'Any matching staff' ? assigned : row.position_title || 'Admin update') : '');
     var action = studentView ? '<span class="muted">View only</span>' : row.status === 'Pending' ? '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '">Clear</button> <button class="btn btn--danger" data-review="Declined" data-id="' + row.id + '">Decline</button>' : '<span class="muted">Reviewed</span>';
     return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls.name || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td>' + action + '</td></tr>';
   }).join('') : '<tr><td colspan="10" class="muted">No clearance records found.</td></tr>';
@@ -280,7 +280,7 @@ function renderRecords() {
       var cls = student.classes || {};
       var req = row.clearance_requirements || {};
       var assigned = row.assigned_staff ? row.assigned_staff.full_name : 'Any matching staff';
-      var reviewer = row.reviewer ? row.reviewer.full_name : '';
+      var reviewer = row.reviewer ? row.reviewer.full_name : (row.status === 'Cleared' ? (assigned !== 'Any matching staff' ? assigned : row.position_title || 'Admin update') : '');
       return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls.name || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td><span class="muted">Reviewed</span></td></tr>';
     }).join('') : '<tr><td colspan="10" class="muted">No cleared students found.</td></tr>';
   }
@@ -305,11 +305,13 @@ function renderClearanceForm() {
       '<div class="clearance-form-tile"><span>School</span><b>' + escapeHtml((currentUser && currentUser.school_name) || 'ASUOM SENIOR HIGH SCHOOL') + '</b></div>' +
       '<div class="clearance-form-tile"><span>Generated On</span><b>' + escapeHtml(new Date().toLocaleDateString()) + '</b></div>' +
     '</div>' +
-    '<table class="clearance-form-table"><thead><tr><th>Clearance</th><th>Position</th><th>Status</th><th>Reviewed By</th><th>Reviewed On</th><th>Reason</th></tr></thead><tbody>' +
+    '<table class="clearance-form-table"><thead><tr><th>Clearance</th><th>Position</th><th>Status</th><th>Cleared By</th><th>Cleared On</th><th>Reason</th></tr></thead><tbody>' +
     (records.length ? records.map(function(row) {
       var req = row.clearance_requirements || {};
       var reviewer = row.reviewer ? row.reviewer.full_name : '';
-      return '<tr><td>' + escapeHtml(req.title || clearanceRowTitle(row)) + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status || 'Pending') + '</span></td><td>' + escapeHtml(reviewer || '-') + '</td><td>' + escapeHtml(formatDate(row.reviewed_at) || '-') + '</td><td>' + escapeHtml(row.reason || '') + '</td></tr>';
+      var assigned = row.assigned_staff ? row.assigned_staff.full_name : '';
+      var clearedBy = reviewer || (row.status === 'Cleared' && row.reviewed_at ? assigned || row.position_title || 'Admin update' : '-');
+      return '<tr><td>' + escapeHtml(req.title || clearanceRowTitle(row)) + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status || 'Pending') + '</span></td><td>' + escapeHtml(clearedBy) + '</td><td>' + escapeHtml(formatDate(row.reviewed_at) || '-') + '</td><td>' + escapeHtml(row.reason || '') + '</td></tr>';
     }).join('') : '<tr><td colspan="6" class="muted">No clearance records found.</td></tr>') +
     '</tbody></table>';
 }
