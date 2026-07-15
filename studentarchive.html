@@ -147,13 +147,13 @@ function populateFilters() {
   var classSelect = document.getElementById('archiveClassFilter');
   var selectedYear = yearSelect.value;
   var selectedClass = classSelect.value;
-  var years = {};
   var classes = {};
   archiveRows.forEach(function(row) {
-    if (row.completionYear) years[row.completionYear] = true;
     if (row.className) classes[row.className] = true;
   });
-  yearSelect.innerHTML = '<option value="">All Years</option>' + Object.keys(years).sort().reverse().map(function(year) {
+  var yearOptions = [];
+  for (var year = 2024; year <= 2070; year++) yearOptions.push(String(year));
+  yearSelect.innerHTML = '<option value="">All Years</option>' + yearOptions.map(function(year) {
     return '<option value="' + escapeHtml(year) + '">' + escapeHtml(year) + '</option>';
   }).join('');
   classSelect.innerHTML = '<option value="">All Classes</option>' + Object.keys(classes).sort().map(function(cls) {
