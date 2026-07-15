@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Manage Students - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-capture-flow5" />
+<link rel="stylesheet" href="assets/app.css?v=20260715-filter-load1" />
 <style>
   .manage-card { width: 100%; min-width: 0; border-radius: 4px; overflow: hidden; }
   .manage-title {
@@ -643,12 +643,14 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
-<script src="assets/shell.js?v=20260714-capture-flow5"></script>
+<script src="assets/supabase-client.js?v=20260715-filter-load1"></script>
+<script src="assets/shell.js?v=20260715-filter-load1"></script>
 <script>
 Portal.init({ active: 'studentperprogram' });
 
 var students = [];
+var studentFilterApplied = false;
+var studentsLoaded = false;
 var demoStudents = [
   ['2400211013DB', 'FOSTER TETTEY ADAMNOR', '', 'MALE', '2008-03-22', 'SCI_24', '2025-05-01', 'Admin', 'Active'],
   ['2400211013DC', 'DAVID ADDIN', '', 'MALE', '2007-01-30', 'SCI_24', '2025-05-01', 'Admin', 'Active'],
@@ -994,11 +996,10 @@ async function loadStudentsFromSupabase() {
     var dbStudents = await AxiomDB.listStudents();
     if (dbStudents && dbStudents.length) {
       students = removeDeletedStudents(dbStudents.map(mapDbStudent));
-      applySearch();
     } else {
       students = [];
-      renderRows([]);
     }
+    studentsLoaded = true;
   } catch (err) {
     console.error(err);
     Portal.toast('Could not load students from Supabase: ' + (err.message || 'Unknown error'), true);
@@ -1037,6 +1038,11 @@ function renderRows(data, message) {
     '</tr>';
   }).join('');
   document.getElementById('studentTotal').textContent = data.length;
+}
+
+function showStudentFilterPending(message) {
+  studentFilterApplied = false;
+  renderRows([], message || 'Select filters and click Filter to load students.');
 }
 
 var editingStudentId = '';
@@ -1178,6 +1184,10 @@ function closeEditStudent() {
 }
 
 function applySearch() {
+  if (!studentFilterApplied) {
+    showStudentFilterPending('Selections are pending. Click Filter to load students.');
+    return;
+  }
   var q = (document.getElementById('tableSearch').value + ' ' + document.getElementById('assIdSearch').value).toLowerCase().trim();
   var programmeFilter = document.getElementById('learningArea').value;
   var classFilter = document.getElementById('classFilter').value;
@@ -1207,6 +1217,7 @@ function downloadExcel(filename, sheetName, headers, rows) {
 }
 
 function currentFilteredStudents() {
+  if (!studentFilterApplied) return [];
   var q = (document.getElementById('tableSearch').value + ' ' + document.getElementById('assIdSearch').value).toLowerCase().trim();
   var programmeFilter = document.getElementById('learningArea').value;
   var classFilter = document.getElementById('classFilter').value;
@@ -1255,29 +1266,50 @@ function studentRegistrationExportRow(row) {
 async function initStudentPage() {
   await loadAcademicData();
   if (window.AxiomDB && AxiomDB.isConfigured()) {
-    renderRows([], 'Loading students...');
-    await loadStudentsFromSupabase();
+    showStudentFilterPending('Select filters and click Filter to load students.');
   } else {
     var registered = [];
     try { registered = JSON.parse(localStorage.getItem('axiom_registered_students') || '[]'); } catch (err) {}
     students = removeDeletedStudents(registered.length ? registered.map(mapDbStudent) : demoStudents.slice());
-    renderRows(students);
+    studentsLoaded = true;
+    showStudentFilterPending('Student records are ready. Select filters and click Filter to display records.');
   }
 }
 initStudentPage();
 
-document.getElementById('tableSearch').addEventListener('input', applySearch);
-document.getElementById('assIdSearch').addEventListener('input', applySearch);
+document.getElementById('tableSearch').addEventListener('input', function() {
+  if (studentFilterApplied) applySearch();
+  else showStudentFilterPending('Search is pending. Click Filter to load students.');
+});
+document.getElementById('assIdSearch').addEventListener('input', function() {
+  if (studentFilterApplied) applySearch();
+  else showStudentFilterPending('Search is pending. Click Filter to load students.');
+});
 document.getElementById('filterBtn').addEventListener('click', function() {
-  Portal.toast('Student list filtered.');
-  applySearch();
+  var button = this;
+  async function filterStudents() {
+    studentFilterApplied = true;
+    if (window.AxiomDB && AxiomDB.isConfigured() && !studentsLoaded) {
+      button.disabled = true;
+      renderRows([], 'Loading students...');
+      await loadStudentsFromSupabase();
+    }
+    applySearch();
+    Portal.toast('Student list filtered.');
+  }
+  filterStudents().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not load students: ' + (err.message || 'Unknown error'), true);
+  }).finally(function() {
+    button.disabled = false;
+  });
 });
 document.getElementById('learningArea').addEventListener('change', function() {
   populateFilterClasses(this.value, '');
-  applySearch();
+  showStudentFilterPending('Selections are pending. Click Filter to load students.');
 });
-document.getElementById('classFilter').addEventListener('change', applySearch);
-document.getElementById('yearFilter').addEventListener('change', applySearch);
+document.getElementById('classFilter').addEventListener('change', function() { showStudentFilterPending('Selections are pending. Click Filter to load students.'); });
+document.getElementById('yearFilter').addEventListener('change', function() { showStudentFilterPending('Selections are pending. Click Filter to load students.'); });
 document.getElementById('progressAll').addEventListener('click', async function() {
   var rows = currentFilteredStudents();
   if (!rows.length) {
@@ -1318,8 +1350,12 @@ document.getElementById('progressAll').addEventListener('click', async function(
       students: transitions
     });
     localStorage.setItem(PROGRESSION_KEY, JSON.stringify(batches));
-    if (window.AxiomDB && AxiomDB.isConfigured()) await loadStudentsFromSupabase();
-    else applySearch();
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      await loadStudentsFromSupabase();
+      applySearch();
+    } else {
+      applySearch();
+    }
     Portal.toast(transitions.length + ' students progressed successfully.');
   } catch (err) {
     console.error(err);
