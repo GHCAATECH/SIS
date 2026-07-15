@@ -641,7 +641,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/supabase-client.js?v=20260715-filter-load2"></script>
-<script src="assets/shell.js?v=20260715-sidebar-drawer2"></script>
+<script src="assets/shell.js?v=20260715-student-archive1"></script>
 <script>
 Portal.init({ active: 'studentperprogram' });
 
@@ -707,6 +707,7 @@ var CLASS_KEY = 'axiom_classes';
 var HOUSE_KEY = 'axiom_houses';
 var PROGRESSION_KEY = 'axiom_student_progressions';
 var STUDENT_LEVELS_KEY = 'axiom_student_levels';
+var STUDENT_ARCHIVE_KEY = 'axiom_student_archive';
 var academicProgrammes = [];
 var academicSubjects = [];
 var academicClasses = [];
@@ -765,6 +766,7 @@ function saveLocalProgression(transitions) {
   var levels = loadStudentLevels();
   transitions.forEach(function(item) { levels[item.assRef] = item.toLevel; });
   localStorage.setItem(STUDENT_LEVELS_KEY, JSON.stringify(levels));
+  saveArchiveTransitions(transitions);
 
   var registered = [];
   try { registered = JSON.parse(localStorage.getItem('axiom_registered_students') || '[]'); } catch (e) {}
@@ -784,6 +786,36 @@ function saveLocalProgression(transitions) {
     if (row && item.toLevel === 'Completed') row[8] = 'Completed';
     if (studentDetails[item.assRef]) studentDetails[item.assRef].studentLevel = item.toLevel;
   });
+}
+
+function saveArchiveTransitions(transitions) {
+  var completed = transitions.filter(function(item) { return item.toLevel === 'Completed'; });
+  if (!completed.length) return;
+  var archive = [];
+  try { archive = JSON.parse(localStorage.getItem(STUDENT_ARCHIVE_KEY) || '[]'); } catch (e) {}
+  if (!Array.isArray(archive)) archive = [];
+  var existing = {};
+  archive.forEach(function(item) { if (item && item.assRef) existing[item.assRef] = true; });
+  var completedOn = new Date().toISOString();
+  var completionYear = String(new Date().getFullYear());
+  completed.forEach(function(item) {
+    if (existing[item.assRef]) return;
+    var row = findStudent(item.assRef) || [];
+    var detail = studentDetails[item.assRef] || {};
+    archive.push({
+      assRef: item.assRef,
+      name: row[1] || studentFullName(detail),
+      gender: row[3] || '',
+      className: row[5] || item.className || '',
+      programme: detail.learningArea || '',
+      guardianPhone: detail.phone || '',
+      completedOn: completedOn,
+      completionYear: completionYear,
+      fromLevel: item.fromLevel,
+      status: 'Completed'
+    });
+  });
+  localStorage.setItem(STUDENT_ARCHIVE_KEY, JSON.stringify(archive));
 }
 
 function mapDbSubject(subject) {

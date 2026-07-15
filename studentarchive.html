@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Archive - AXIOMBYTE SMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="assets/app.css?v=20260715-student-archive1" />
+<style>
+  .archive-shell { padding: 18px; }
+  .archive-card { background:#fff; border:1px solid rgba(148,163,184,.35); border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.06); overflow:hidden; }
+  .archive-toolbar { display:grid; grid-template-columns: 220px 260px auto 1fr; gap:12px; align-items:end; padding:16px; border-bottom:1px solid rgba(148,163,184,.28); background:#f8fafc; }
+  .archive-toolbar label { display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:7px; text-transform:uppercase; }
+  .archive-table-wrap { width:100%; overflow:auto; max-height:calc(100dvh - 260px); }
+  .archive-table { width:100%; min-width:980px; border-collapse:collapse; }
+  .archive-table th, .archive-table td { padding:10px 12px; border:1px solid rgba(148,163,184,.35); font-size:12px; text-align:left; white-space:nowrap; }
+  .archive-table th { position:sticky; top:0; z-index:2; background:#f1f5f9; color:#0f172a; font-weight:900; }
+  .archive-table tbody tr:hover td { background:#f8fafc; }
+  .archive-table .name-cell { white-space:normal; min-width:210px; line-height:1.35; }
+  .archive-summary { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 16px; border-top:1px solid rgba(148,163,184,.25); font-size:12px; font-weight:800; color:#475569; }
+  @media (max-width: 900px) {
+    .archive-shell { padding: 12px; }
+    .archive-toolbar { grid-template-columns:1fr; }
+    .archive-table { min-width:880px; }
+  }
+</style>
+</head>
+<body class="portal-shell footer-shell">
+<div class="main">
+  <main class="content archive-shell">
+    <div class="page-head">
+      <span class="ph-ico"><i class="fas fa-box-archive"></i></span>
+      <div><h2>Student Archive</h2><p>View students who completed school after progressing from Year 3.</p></div>
+    </div>
+
+    <section class="archive-card">
+      <div class="archive-toolbar">
+        <div class="field">
+          <label>Year Completed</label>
+          <select class="select" id="completionYearFilter"><option value="">All Years</option></select>
+        </div>
+        <div class="field">
+          <label>Class</label>
+          <select class="select" id="archiveClassFilter"><option value="">All Classes</option></select>
+        </div>
+        <button class="btn btn--primary" type="button" id="archiveFilterBtn"><i class="fas fa-filter"></i> Filter</button>
+        <div></div>
+      </div>
+
+      <div class="archive-table-wrap">
+        <table class="archive-table">
+          <thead>
+            <tr>
+              <th>STD_ID</th>
+              <th>Student Name</th>
+              <th>Gender</th>
+              <th>Class</th>
+              <th>Programme</th>
+              <th>Parent / Guardian Phone</th>
+              <th>Year Completed</th>
+              <th>Completed On</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="archiveBody"></tbody>
+        </table>
+      </div>
+      <div class="archive-summary">
+        <span>Total Archived Students</span>
+        <span id="archiveTotal">0</span>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js?v=20260715-filter-load2"></script>
+<script src="assets/shell.js?v=20260715-student-archive1"></script>
+<script>
+Portal.init({ active: 'studentarchive', title: 'Student Archive', onReady: startArchive });
+
+var ARCHIVE_KEY = 'axiom_student_archive';
+var archiveRows = [];
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+
+function archiveName(row) {
+  return [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ').toUpperCase();
+}
+
+function localArchiveRows() {
+  try {
+    var rows = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+    if (!Array.isArray(rows)) return [];
+    return rows.map(function(row) {
+      return {
+        assRef: row.assRef || '',
+        name: row.name || '',
+        gender: row.gender || '',
+        className: row.className || '',
+        programme: row.programme || '',
+        guardianPhone: row.guardianPhone || '',
+        completionYear: row.completionYear || '',
+        completedOn: row.completedOn || '',
+        status: row.status || 'Completed'
+      };
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
+function dbArchiveRow(row) {
+  var cls = row.classes || {};
+  var programme = cls.programmes && cls.programmes.name ? cls.programmes.name : (row.programme || '');
+  var completedOn = row.updated_at || row.created_at || '';
+  return {
+    assRef: row.ass_ref_id || '',
+    name: archiveName(row),
+    gender: (row.gender || '').toUpperCase(),
+    className: cls.name || row.class_name || '',
+    programme: programme,
+    guardianPhone: row.phone_number || '',
+    completionYear: completedOn ? String(new Date(completedOn).getFullYear()) : '',
+    completedOn: completedOn,
+    status: row.status || 'Completed'
+  };
+}
+
+function mergeArchiveRows(primary, fallback) {
+  var seen = {};
+  var rows = [];
+  primary.concat(fallback).forEach(function(row) {
+    if (!row || !row.assRef || seen[row.assRef]) return;
+    seen[row.assRef] = true;
+    rows.push(row);
+  });
+  return rows;
+}
+
+function populateFilters() {
+  var yearSelect = document.getElementById('completionYearFilter');
+  var classSelect = document.getElementById('archiveClassFilter');
+  var selectedYear = yearSelect.value;
+  var selectedClass = classSelect.value;
+  var years = {};
+  var classes = {};
+  archiveRows.forEach(function(row) {
+    if (row.completionYear) years[row.completionYear] = true;
+    if (row.className) classes[row.className] = true;
+  });
+  yearSelect.innerHTML = '<option value="">All Years</option>' + Object.keys(years).sort().reverse().map(function(year) {
+    return '<option value="' + escapeHtml(year) + '">' + escapeHtml(year) + '</option>';
+  }).join('');
+  classSelect.innerHTML = '<option value="">All Classes</option>' + Object.keys(classes).sort().map(function(cls) {
+    return '<option value="' + escapeHtml(cls) + '">' + escapeHtml(cls) + '</option>';
+  }).join('');
+  if (selectedYear) yearSelect.value = selectedYear;
+  if (selectedClass) classSelect.value = selectedClass;
+}
+
+function filteredArchiveRows() {
+  var year = document.getElementById('completionYearFilter').value;
+  var cls = document.getElementById('archiveClassFilter').value;
+  return archiveRows.filter(function(row) {
+    return (!year || row.completionYear === year) && (!cls || row.className === cls);
+  });
+}
+
+function renderArchive() {
+  var rows = filteredArchiveRows();
+  document.getElementById('archiveTotal').textContent = rows.length;
+  document.getElementById('archiveBody').innerHTML = rows.length ? rows.map(function(row) {
+    var completedDate = row.completedOn ? String(row.completedOn).slice(0, 10) : '';
+    return '<tr>' +
+      '<td>' + escapeHtml(row.assRef) + '</td>' +
+      '<td class="name-cell">' + escapeHtml(row.name) + '</td>' +
+      '<td>' + escapeHtml(row.gender) + '</td>' +
+      '<td>' + escapeHtml(row.className) + '</td>' +
+      '<td>' + escapeHtml(row.programme) + '</td>' +
+      '<td>' + escapeHtml(row.guardianPhone) + '</td>' +
+      '<td>' + escapeHtml(row.completionYear) + '</td>' +
+      '<td>' + escapeHtml(completedDate) + '</td>' +
+      '<td><span class="badge badge--green">' + escapeHtml(row.status || 'Completed') + '</span></td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:30px;font-weight:800;color:#64748b">No archived students found.</td></tr>';
+}
+
+async function loadArchive() {
+  var localRows = localArchiveRows();
+  var dbRows = [];
+  if (window.AxiomDB && AxiomDB.isConfigured()) {
+    try {
+      var students = await AxiomDB.listStudents();
+      dbRows = (students || []).filter(function(row) {
+        return String(row.status || '').toLowerCase() === 'completed' || String(row.student_level || '').toLowerCase() === 'completed';
+      }).map(dbArchiveRow);
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load archive from Supabase. Showing local archive.', true);
+    }
+  }
+  archiveRows = mergeArchiveRows(dbRows, localRows);
+  populateFilters();
+  renderArchive();
+}
+
+function startArchive() {
+  document.getElementById('archiveFilterBtn').addEventListener('click', renderArchive);
+  loadArchive().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not load student archive: ' + (err.message || 'Unknown error'), true);
+  });
+}
+</script>
+<footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
+  <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>
+</footer>
+</body>
+</html>

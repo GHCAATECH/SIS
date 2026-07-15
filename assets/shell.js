@@ -20,6 +20,7 @@
         { key: 'schemeofwork',           label: 'Scheme of Work',         icon: 'fa-book-open-reader' },
         { key: 'clearance',              label: 'Clearance',              icon: 'fa-clipboard-list' },
         { key: 'studentperprogram',      label: 'Manage Students',        icon: 'fa-users' },
+        { key: 'studentarchive',         label: 'Student Archive',        icon: 'fa-box-archive' },
         { key: 'downloadresult',         label: 'Assessment Records',     icon: 'fa-folder-open' },
         { key: 'qualitativeaccessment',  label: 'Qualitative Assessment', icon: 'fa-star-half-stroke' },
         { key: 'transcript',             label: 'Transcript',             icon: 'fa-file-lines' },
