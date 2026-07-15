@@ -1566,12 +1566,24 @@
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
     filters = filters || {};
+    var resolvedStudentId = filters.studentId || null;
+    if (filters.studentAssRef) {
+      var studentLookup = await c
+        .from('students')
+        .select('id')
+        .eq('school_id', school.id)
+        .eq('ass_ref_id', String(filters.studentAssRef || '').trim())
+        .limit(1)
+        .maybeSingle();
+      if (studentLookup.error) throw studentLookup.error;
+      if (studentLookup.data && studentLookup.data.id) resolvedStudentId = studentLookup.data.id;
+    }
     var query = c
       .from('student_clearances')
       .select('*, students(id, ass_ref_id, first_name, surname, other_names, status, student_level, classes(name, programmes(name))), clearance_requirements(title, is_required), assigned_staff:staff_users!student_clearances_assigned_staff_user_id_fkey(id, full_name, staff_id), reviewer:staff_users!student_clearances_reviewed_by_fkey(id, full_name, staff_id)')
       .eq('school_id', school.id)
       .order('created_at', { ascending: false });
-    if (filters.studentId) query = query.eq('student_id', filters.studentId);
+    if (resolvedStudentId) query = query.eq('student_id', resolvedStudentId);
     if (filters.status) query = query.eq('status', filters.status);
     var result = await query;
     if (result.error) throw result.error;
