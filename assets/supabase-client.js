@@ -1575,6 +1575,16 @@
         throw studentFeed.error;
       }
     }
+    if (!filters.studentAssRef && !filters.studentId) {
+      var staffFeed = await c.rpc('secure_list_staff_clearances', {
+        p_session_token: activeStaffSessionToken() || null
+      });
+      if (!staffFeed.error) return staffFeed.data || [];
+      if (/secure_list_staff_clearances|schema cache|function/i.test(staffFeed.error.message || '')) {
+        throw new Error('Run the clearance assignment scope SQL in Supabase, then refresh this page.');
+      }
+      throw staffFeed.error;
+    }
     var school = await currentSchool();
     if (!school) return null;
     var resolvedStudentId = filters.studentId || null;
@@ -1607,8 +1617,16 @@
     var result = await c.rpc('review_student_clearance', {
       p_clearance_id: clearanceId,
       p_status: status,
-      p_reason: reason || null
+      p_reason: reason || null,
+      p_session_token: activeStaffSessionToken() || null
     });
+    if (result.error && /review_student_clearance|schema cache|function|p_session_token/i.test(result.error.message || '')) {
+      result = await c.rpc('review_student_clearance', {
+        p_clearance_id: clearanceId,
+        p_status: status,
+        p_reason: reason || null
+      });
+    }
     if (result.error) throw result.error;
     return result.data;
   }
