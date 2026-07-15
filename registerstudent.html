@@ -606,10 +606,17 @@ function cell(row, lookup, name) {
   return valueText(row[lookup[String(name).toLowerCase()]]);
 }
 
+function normalizeGender(value) {
+  var text = valueText(value).toLowerCase();
+  if (text === 'm' || text === 'male') return 'Male';
+  if (text === 'f' || text === 'female') return 'Female';
+  return valueText(value);
+}
+
 function payloadFromExcelRow(row, lookup, rowNumber) {
   var surname = cell(row, lookup, 'Surname');
   var firstName = cell(row, lookup, 'First Name');
-  var gender = cell(row, lookup, 'Gender');
+  var gender = normalizeGender(cell(row, lookup, 'Gender'));
   var disability = cell(row, lookup, 'Disability Status') || 'No';
   var dob = excelDate(row[lookup['date of birth']]);
   var guardianName = cell(row, lookup, 'Guardian Name');
