@@ -25,11 +25,10 @@
   }
   .profile-title a { color: #2297ed; font-weight: 800; text-transform: none; }
   .import-strip {
-    display: grid; grid-template-columns: 1fr 1fr 330px 1fr 1fr;
-    gap: 20px; align-items: center;
+    display: flex; justify-content: center; align-items: center;
     padding: 9px 12px; border-bottom: 1px solid #ededed; background: #fff;
   }
-  .import-strip .select, .import-strip .input {
+  .bulk-modal .input {
     border-radius: 3px; min-height: 28px; font-size: 11px; color: #374151;
     padding: 4px 8px;
   }
@@ -39,6 +38,71 @@
   .upload-btn {
     min-height: 30px; border: 0; border-radius: 3px;
     background: #10b5ea; color: #fff; font-size: 12px; font-weight: 800;
+  }
+  .bulk-open-btn {
+    min-height: 32px;
+    min-width: 150px;
+    border: 0;
+    border-radius: 4px;
+    background: #10b5ea;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .bulk-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 18px;
+    background: rgba(15, 23, 42, .45);
+    z-index: 1000;
+  }
+  .bulk-modal-backdrop.active { display: grid; }
+  .bulk-modal {
+    width: min(480px, 100%);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .bulk-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    background: #f8fafc;
+  }
+  .bulk-modal__head h3 { margin: 0; font-size: 15px; color: var(--text); }
+  .bulk-modal__close {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text-soft);
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .bulk-modal__body {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+  }
+  .bulk-modal__body .template-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    background: #eff6ff;
+    text-decoration: none;
   }
   .student-form-shell {
     width: min(900px, 100%);
@@ -157,7 +221,6 @@
   .wizard-actions .btn[hidden] { display: none !important; }
 
   @media (max-width: 1100px) {
-    .import-strip { grid-template-columns: 1fr 1fr; }
     .template-link { text-align: left; }
   }
   @media (max-width: 720px) {
@@ -166,7 +229,6 @@
     .legacy-form { grid-template-columns: 1fr; }
     .photo-column { order: -1; margin-bottom: 10px; }
     .three-grid, .two-grid { grid-template-columns: 1fr; gap: 0; }
-    .import-strip { grid-template-columns: repeat(5, minmax(180px, 1fr)); overflow-x: auto; }
     .registration-progress { grid-template-columns: repeat(4, minmax(42px, 1fr)); }
     .reg-step { justify-content: center; padding: 7px 4px; }
     .reg-step strong { display: none; }
@@ -184,11 +246,7 @@
       </div>
 
       <div class="import-strip">
-        <select class="select" id="topLearningArea"><option value="">***SELECT LEARNING AREA***</option></select>
-        <select class="select" id="topClass"><option value="">***SELECT CLASS***</option></select>
-        <a class="template-link" href="templates/AXIOMBYTE_SMS_student_registration_import_template.xlsx" download>Download Excel Template</a>
-        <input class="input" id="bulkFile" type="file" accept=".xlsx,.xlsm" />
-        <button class="upload-btn" type="button" id="uploadTemplate">Upload</button>
+        <button class="bulk-open-btn" type="button" id="openBulkUpload"><i class="fas fa-file-excel"></i> Bulk Upload</button>
       </div>
 
       <div class="student-form-shell">
@@ -352,6 +410,22 @@
   </main>
 </div>
 
+<div class="bulk-modal-backdrop" id="bulkModal" aria-hidden="true">
+  <div class="bulk-modal" role="dialog" aria-modal="true" aria-labelledby="bulkModalTitle">
+    <div class="bulk-modal__head">
+      <h3 id="bulkModalTitle"><i class="fas fa-file-excel"></i> Bulk Upload Students</h3>
+      <button class="bulk-modal__close" type="button" id="closeBulkUpload" aria-label="Close">&times;</button>
+    </div>
+    <div class="bulk-modal__body">
+      <a class="template-link" href="templates/AXIOMBYTE_SMS_student_registration_import_template.xlsx" download>
+        <i class="fas fa-download"></i> Download Excel Template
+      </a>
+      <input class="input" id="bulkFile" type="file" accept=".xlsx,.xlsm" />
+      <button class="upload-btn" type="button" id="uploadTemplate"><i class="fas fa-upload"></i> Upload</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
 <script src="assets/shell.js?v=20260715-student-archive1"></script>
@@ -508,15 +582,12 @@ function renderSubjects() {
 
 function syncProgramme(source) {
   var value = source.value;
-  document.getElementById('topLearningArea').value = value;
   document.getElementById('studentProgramme').value = value;
-  populateClassSelect(value, document.getElementById('topClass'));
   populateClassSelect(value, document.getElementById('studentClass'));
   renderSubjects();
 }
 
 function syncClass(source) {
-  document.getElementById('topClass').value = source.value;
   document.getElementById('studentClass').value = source.value;
   renderSubjects();
 }
@@ -564,7 +635,6 @@ async function loadRegistrationDataFromSupabase() {
       try { localStorage.setItem('axiom_classes', JSON.stringify(dbClasses)); } catch (e) {}
     }
     if (dbHouses && dbHouses.length) window.liveHouses = dbHouses;
-    populateProgrammeSelect(document.getElementById('topLearningArea'));
     populateProgrammeSelect(document.getElementById('studentProgramme'));
     syncProgramme(document.getElementById('studentProgramme'));
     updateHouseOptions();
@@ -614,9 +684,7 @@ document.getElementById('registrationPrevious').addEventListener('click', functi
   showRegistrationStage(registrationStage - 1);
 });
 
-populateProgrammeSelect(document.getElementById('topLearningArea'));
 populateProgrammeSelect(document.getElementById('studentProgramme'));
-populateClassSelect('', document.getElementById('topClass'));
 populateClassSelect('', document.getElementById('studentClass'));
 populateAdmissionYears();
 renderSubjects();
@@ -625,9 +693,7 @@ updateStudentLevel();
 loadRegistrationDataFromSupabase();
 showRegistrationStage(0);
 
-document.getElementById('topLearningArea').addEventListener('change', function() { syncProgramme(this); });
 document.getElementById('studentProgramme').addEventListener('change', function() { syncProgramme(this); });
-document.getElementById('topClass').addEventListener('change', function() { syncClass(this); });
 document.getElementById('studentClass').addEventListener('change', function() { syncClass(this); });
 document.getElementById('residentialStatus').addEventListener('change', updateHouseOptions);
 document.getElementById('yearAdmitted').addEventListener('change', updateStudentLevel);
@@ -637,6 +703,25 @@ document.getElementById('photo').addEventListener('change', function(e) {
   if (!file) return;
   var url = URL.createObjectURL(file);
   document.getElementById('photoBox').innerHTML = '<img src="'+url+'" alt="Student passport photo">';
+});
+
+function openBulkUploadModal() {
+  document.getElementById('bulkModal').classList.add('active');
+  document.getElementById('bulkModal').setAttribute('aria-hidden', 'false');
+}
+
+function closeBulkUploadModal() {
+  document.getElementById('bulkModal').classList.remove('active');
+  document.getElementById('bulkModal').setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('openBulkUpload').addEventListener('click', openBulkUploadModal);
+document.getElementById('closeBulkUpload').addEventListener('click', closeBulkUploadModal);
+document.getElementById('bulkModal').addEventListener('click', function(e) {
+  if (e.target === this) closeBulkUploadModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeBulkUploadModal();
 });
 
 function fileToDataUrl(file) {
@@ -660,13 +745,12 @@ document.getElementById('uploadTemplate').addEventListener('click', function() {
     return;
   }
   Portal.toast('Excel template uploaded: ' + file.name);
+  closeBulkUploadModal();
 });
 
 document.getElementById('regForm').addEventListener('reset', function() {
   window.setTimeout(function() {
-    populateProgrammeSelect(document.getElementById('topLearningArea'));
     populateProgrammeSelect(document.getElementById('studentProgramme'));
-    populateClassSelect('', document.getElementById('topClass'));
     populateClassSelect('', document.getElementById('studentClass'));
     document.getElementById('photoBox').innerHTML = '<i class="fas fa-image"></i>';
     renderSubjects();
