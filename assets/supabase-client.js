@@ -1563,9 +1563,20 @@
   }
 
   async function listStudentClearances(filters) {
-    var c = db(), school = await currentSchool();
-    if (!c || !school) return null;
+    var c = db();
+    if (!c) return null;
     filters = filters || {};
+    if (filters.studentAssRef || filters.studentId) {
+      var studentFeed = await c.rpc('secure_list_my_student_clearances', {
+        p_ass_ref_id: filters.studentAssRef || null
+      });
+      if (!studentFeed.error) return studentFeed.data || [];
+      if (!/secure_list_my_student_clearances|schema cache|function/i.test(studentFeed.error.message || '')) {
+        throw studentFeed.error;
+      }
+    }
+    var school = await currentSchool();
+    if (!school) return null;
     var resolvedStudentId = filters.studentId || null;
     if (filters.studentAssRef) {
       var studentLookup = await c
