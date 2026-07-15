@@ -10,6 +10,9 @@
   .clearance-wrap { padding: 14px; }
   .clearance-grid { display:grid; grid-template-columns: 420px 1fr; gap:14px; align-items:start; }
   .clearance-grid.staff-clearance-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .clearance-grid.student-clearance-grid { grid-template-columns: 1fr; }
+  .clearance-grid.student-clearance-grid .clearance-card { width:100%; }
+  .clearance-grid.student-clearance-grid .clearance-table { min-width:100%; }
   .clearance-card { background:#fff; border:1px solid rgba(148,163,184,.35); border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,.06); overflow:hidden; }
   .clearance-card__head { padding:12px 14px; border-bottom:1px solid rgba(148,163,184,.25); display:flex; justify-content:space-between; align-items:center; gap:10px; background:#f8fafc; }
   .clearance-card__head h2 { margin:0; font-size:15px; color:#0f172a; }
@@ -34,11 +37,27 @@
   .summary-pill.cleared { background:#dcfce7; color:#166534; }
   .summary-pill.pending { background:#fef3c7; color:#92400e; }
   .summary-pill.declined { background:#fee2e2; color:#991b1b; }
+  .clearance-form-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.55); z-index:2000; }
+  .clearance-form-modal.open { display:flex; }
+  .clearance-form { width:min(980px, 100%); max-height:92vh; overflow:auto; background:#fff; border-radius:14px; box-shadow:0 24px 70px rgba(15,23,42,.25); border:1px solid rgba(148,163,184,.35); }
+  .clearance-form__head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding:18px 20px; border-bottom:1px solid rgba(148,163,184,.28); background:#f8fafc; }
+  .clearance-form__head h2 { margin:0; font-size:20px; color:#0f172a; }
+  .clearance-form__head p { margin:4px 0 0; color:#64748b; font-weight:800; }
+  .clearance-form__body { padding:20px; }
+  .clearance-form-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; margin-bottom:16px; }
+  .clearance-form-tile { border:1px solid rgba(148,163,184,.35); border-radius:10px; padding:10px; background:#fff; }
+  .clearance-form-tile span { display:block; color:#64748b; font-size:11px; font-weight:900; text-transform:uppercase; }
+  .clearance-form-tile b { display:block; color:#0f172a; margin-top:4px; }
+  .clearance-form-table { width:100%; border-collapse:collapse; }
+  .clearance-form-table th, .clearance-form-table td { border:1px solid rgba(148,163,184,.45); padding:9px 10px; font-size:13px; text-align:left; }
+  .clearance-form-table th { background:#eaf2ff; color:#0f172a; }
+  .clearance-form__actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid rgba(148,163,184,.28); background:#fff; }
   .muted { color:#64748b; }
   @media (max-width: 980px) {
-    .clearance-grid, .clearance-grid.staff-clearance-grid { grid-template-columns:1fr; }
+    .clearance-grid, .clearance-grid.staff-clearance-grid, .clearance-grid.student-clearance-grid { grid-template-columns:1fr; }
     .clearance-card__head { align-items:flex-start; flex-direction:column; }
     .clearance-search, #statusFilter { width:100% !important; }
+    .clearance-form-grid { grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -89,6 +108,7 @@
           <div class="action-row">
             <input class="input clearance-search" id="recordSearch" type="search" placeholder="Search by student name or STD_ID" autocomplete="off" />
             <select class="input" id="statusFilter" style="width:150px"><option value="">All Status</option><option>Pending</option><option>Cleared</option><option>Declined</option></select>
+            <button class="btn btn--primary" id="viewClearanceFormBtn" type="button" style="display:none"><i class="fas fa-file-lines"></i> View Clearance Form</button>
             <button class="btn" id="generateBtn" type="button"><i class="fas fa-wand-magic-sparkles"></i> Generate for Completed</button>
           </div>
         </div>
@@ -106,10 +126,26 @@
         </div>
       </div>
     </section>
+
+    <div class="clearance-form-modal" id="clearanceFormModal" aria-hidden="true">
+      <div class="clearance-form" role="dialog" aria-modal="true" aria-labelledby="clearanceFormTitle">
+        <div class="clearance-form__head">
+          <div>
+            <h2 id="clearanceFormTitle">Student Clearance Form</h2>
+            <p id="clearanceFormSubtitle">Clearance status summary</p>
+          </div>
+          <button class="btn" id="closeClearanceFormBtn" type="button"><i class="fas fa-xmark"></i> Close</button>
+        </div>
+        <div class="clearance-form__body" id="clearanceFormBody"></div>
+        <div class="clearance-form__actions">
+          <button class="btn btn--primary" id="printClearanceFormBtn" type="button"><i class="fas fa-print"></i> Print</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260715-student-clearance-session3"></script>
+<script src="assets/supabase-client.js?v=20260716-clearance-form1"></script>
 <script src="assets/shell.js?v=20260715-student-session1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -128,6 +164,16 @@ function clearanceRowTitle(row) {
 }
 function clearanceNames(status) {
   return records.filter(function(row) { return row.status === status; }).map(clearanceRowTitle).filter(Boolean);
+}
+function firstRecordStudent() {
+  for (var i = 0; i < records.length; i++) {
+    if (records[i] && records[i].students) return records[i].students;
+  }
+  return currentUser || {};
+}
+function formatDate(value) {
+  if (!value) return '';
+  try { return new Date(value).toLocaleDateString(); } catch (e) { return String(value); }
 }
 function hasStudentIdentity() {
   return currentUser && (currentUser.type === 'student' || currentUser.category === 'Student' || currentUser.role === 'Student' || currentUser.ass_ref_id);
@@ -240,6 +286,55 @@ function renderRecords() {
   }
   document.querySelectorAll('[data-review]').forEach(function(button) { button.addEventListener('click', function() { reviewRecord(button.dataset.id, button.dataset.review); }); });
 }
+function renderClearanceForm() {
+  var student = firstRecordStudent();
+  var classInfo = student.classes || {};
+  var name = studentName(student) || currentUser.full_name || '';
+  var assRef = student.ass_ref_id || currentUser.ass_ref_id || '';
+  var className = classInfo.name || currentUser.class_name || '';
+  var total = records.length;
+  var cleared = records.filter(function(row) { return row.status === 'Cleared'; }).length;
+  var statusText = total && cleared === total ? 'Cleared' : total ? cleared + ' of ' + total + ' Cleared' : 'Not Started';
+  document.getElementById('clearanceFormSubtitle').textContent = assRef ? assRef + ' - ' + name : 'Clearance status summary';
+  document.getElementById('clearanceFormBody').innerHTML =
+    '<div class="clearance-form-grid">' +
+      '<div class="clearance-form-tile"><span>Student Name</span><b>' + escapeHtml(name || '-') + '</b></div>' +
+      '<div class="clearance-form-tile"><span>STD_ID</span><b>' + escapeHtml(assRef || '-') + '</b></div>' +
+      '<div class="clearance-form-tile"><span>Class</span><b>' + escapeHtml(className || '-') + '</b></div>' +
+      '<div class="clearance-form-tile"><span>Overall Status</span><b>' + escapeHtml(statusText) + '</b></div>' +
+      '<div class="clearance-form-tile"><span>School</span><b>' + escapeHtml((currentUser && currentUser.school_name) || 'ASUOM SENIOR HIGH SCHOOL') + '</b></div>' +
+      '<div class="clearance-form-tile"><span>Generated On</span><b>' + escapeHtml(new Date().toLocaleDateString()) + '</b></div>' +
+    '</div>' +
+    '<table class="clearance-form-table"><thead><tr><th>Clearance</th><th>Position</th><th>Status</th><th>Reviewed By</th><th>Reviewed On</th><th>Reason</th></tr></thead><tbody>' +
+    (records.length ? records.map(function(row) {
+      var req = row.clearance_requirements || {};
+      var reviewer = row.reviewer ? row.reviewer.full_name : '';
+      return '<tr><td>' + escapeHtml(req.title || clearanceRowTitle(row)) + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status || 'Pending') + '</span></td><td>' + escapeHtml(reviewer || '-') + '</td><td>' + escapeHtml(formatDate(row.reviewed_at) || '-') + '</td><td>' + escapeHtml(row.reason || '') + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="muted">No clearance records found.</td></tr>') +
+    '</tbody></table>';
+}
+function openClearanceForm() {
+  renderClearanceForm();
+  var modal = document.getElementById('clearanceFormModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+function closeClearanceForm() {
+  var modal = document.getElementById('clearanceFormModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+function printClearanceForm() {
+  renderClearanceForm();
+  var content = document.getElementById('clearanceFormBody').innerHTML;
+  var title = document.getElementById('clearanceFormSubtitle').textContent;
+  var win = window.open('', '_blank');
+  if (!win) { Portal.toast('Allow popups to print the clearance form.', true); return; }
+  win.document.write('<!doctype html><html><head><title>Clearance Form</title><style>body{font-family:Times New Roman,serif;padding:24px;color:#0f172a}h1{font-size:22px;margin:0 0 4px}p{margin:0 0 18px;color:#64748b;font-weight:700}.clearance-form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.clearance-form-tile{border:1px solid #94a3b8;padding:8px}.clearance-form-tile span{display:block;font-size:11px;text-transform:uppercase;color:#64748b;font-weight:900}.clearance-form-tile b{display:block;margin-top:4px}.clearance-form-table{width:100%;border-collapse:collapse}.clearance-form-table th,.clearance-form-table td{border:1px solid #94a3b8;padding:8px;font-size:13px;text-align:left}.clearance-form-table th{background:#eaf2ff}.status-pill{font-weight:900}</style></head><body><h1>Student Clearance Form</h1><p>' + escapeHtml(title) + '</p>' + content + '</body></html>');
+  win.document.close();
+  win.focus();
+  win.print();
+}
 function clearForm() { document.getElementById('requirementForm').reset(); document.getElementById('requirementId').value = ''; document.getElementById('activeReq').checked = true; renderStaffOptions(); }
 function editRequirement(id) { var row = requirements.find(function(item) { return item.id === id; }); if (!row) return; document.getElementById('requirementId').value = row.id; document.getElementById('clearanceTitle').value = row.title; document.getElementById('positionTitle').value = row.position_title; document.getElementById('sortOrder').value = row.sort_order || 1; document.getElementById('activeReq').checked = row.active !== false; renderStaffOptions(); document.getElementById('assignedStaff').value = row.staff_user_id || ''; }
 async function removeRequirement(id) { if (!confirm('Delete this clearance requirement? Existing student clearance records for it will also be removed.')) return; await AxiomDB.deleteClearanceRequirement(id); Portal.toast('Clearance requirement deleted.'); await loadData(); }
@@ -257,10 +352,12 @@ async function loadData() {
   var staffView = isStaffClearanceView();
   var studentView = isStudentClearanceView();
   document.getElementById('clearanceGrid').classList.toggle('staff-clearance-grid', staffView);
+  document.getElementById('clearanceGrid').classList.toggle('student-clearance-grid', studentView);
   document.getElementById('setupCard').style.display = setupAllowed ? '' : 'none';
   document.getElementById('clearedCard').style.display = staffView ? '' : 'none';
   document.getElementById('recordsTitle').innerHTML = staffView ? '<i class="fas fa-list-check"></i> Clearance To Review' : studentView ? '<i class="fas fa-list-check"></i> My Clearance Records' : '<i class="fas fa-list-check"></i> Clearance Records';
   document.getElementById('generateBtn').style.display = setupAllowed ? '' : 'none';
+  document.getElementById('viewClearanceFormBtn').style.display = studentView ? '' : 'none';
   document.getElementById('statusFilter').style.display = studentView ? 'none' : '';
   document.getElementById('recordSearch').style.display = studentView ? 'none' : '';
   if (!window.AxiomDB || !AxiomDB.isConfigured()) { Portal.toast('Supabase is not configured.', true); return; }
@@ -277,6 +374,10 @@ function startClearance() {
   document.getElementById('refreshBtn').addEventListener('click', loadData);
   document.getElementById('statusFilter').addEventListener('change', renderRecords);
   document.getElementById('recordSearch').addEventListener('input', renderRecords);
+  document.getElementById('viewClearanceFormBtn').addEventListener('click', openClearanceForm);
+  document.getElementById('closeClearanceFormBtn').addEventListener('click', closeClearanceForm);
+  document.getElementById('printClearanceFormBtn').addEventListener('click', printClearanceForm);
+  document.getElementById('clearanceFormModal').addEventListener('click', function(e) { if (e.target.id === 'clearanceFormModal') closeClearanceForm(); });
   document.getElementById('generateBtn').addEventListener('click', function() { generateCompleted().catch(function(err) { console.error(err); Portal.toast('Could not generate clearance: ' + (err.message || 'Unknown error'), true); }); });
   document.getElementById('requirementForm').addEventListener('submit', function(e) { e.preventDefault(); async function save() { await AxiomDB.saveClearanceRequirement({ id: document.getElementById('requirementId').value || null, title: document.getElementById('clearanceTitle').value.trim(), position_title: document.getElementById('positionTitle').value.trim(), staff_user_id: document.getElementById('assignedStaff').value || null, sort_order: document.getElementById('sortOrder').value, active: document.getElementById('activeReq').checked }); Portal.toast('Clearance requirement saved.'); clearForm(); await loadData(); } save().catch(function(err) { console.error(err); Portal.toast('Could not save clearance setup: ' + (err.message || 'Unknown error'), true); }); });
   loadData().catch(function(err) { console.error(err); Portal.toast('Could not load clearance system: ' + (err.message || 'Unknown error'), true); });
