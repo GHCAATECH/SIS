@@ -1352,6 +1352,49 @@
     return result.data || [];
   }
 
+  async function replaceSchemeOfWorkDocument(schemeId, file) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school || !schemeId || !file) return null;
+    var token = activeStaffSessionToken();
+    var safeName = String(file.name || 'scheme-document').replace(/[^a-zA-Z0-9._-]+/g, '-');
+    var path = school.code + '/scheme-replacements/' + schemeId + '/' + Date.now() + '-' + safeName;
+    if (token) {
+      var sessionPayload = {
+        fileName: file.name,
+        filePath: path,
+        fileUrl: await readFileDataUrl(file)
+      };
+      var sessionResult = await c.rpc('secure_replace_scheme_document_with_session', {
+        p_session_token: token,
+        p_scheme_id: schemeId,
+        p_payload: sessionPayload
+      });
+      if (sessionResult.error) throw sessionResult.error;
+      return sessionResult.data;
+    }
+    var uploaded = await c.storage.from('scheme-of-work').upload(path, file, {
+      upsert: true,
+      contentType: file.type || undefined
+    });
+    if (uploaded.error) throw uploaded.error;
+    var signedInfo = await c.storage.from('scheme-of-work').createSignedUrl(path, 315360000);
+    var fileUrl = signedInfo && signedInfo.data ? signedInfo.data.signedUrl : path;
+    var result = await c
+      .from('scheme_of_work')
+      .update({
+        file_name: file.name,
+        file_path: path,
+        file_url: fileUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('school_id', school.id)
+      .eq('id', schemeId)
+      .select('*')
+      .single();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function reviewSchemeOfWork(schemeId, stage, approved, reason, reviewerId) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !schemeId || !reviewerId) return null;
@@ -1627,9 +1670,10 @@
     listQualitativeAssessments: listQualitativeAssessments,
     uploadStudentPassport: uploadStudentPassport,
     uploadStaffProfilePhoto: uploadStaffProfilePhoto,
-    submitSchemeOfWork: submitSchemeOfWork,
-    listSchemeOfWork: listSchemeOfWork,
-    reviewSchemeOfWork: reviewSchemeOfWork,
+      submitSchemeOfWork: submitSchemeOfWork,
+      listSchemeOfWork: listSchemeOfWork,
+      replaceSchemeOfWorkDocument: replaceSchemeOfWorkDocument,
+      reviewSchemeOfWork: reviewSchemeOfWork,
     listSchemeOfWorkHistory: listSchemeOfWorkHistory,
     listClearanceRequirements: listClearanceRequirements,
     saveClearanceRequirement: saveClearanceRequirement,

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scheme of Work - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260715-scheme-doclink1" />
+<link rel="stylesheet" href="assets/app.css?v=20260715-scheme-doclink2" />
 <style>
   .scheme-layout { display:grid; grid-template-columns:minmax(320px, .72fr) minmax(560px, 1.6fr); gap:16px; align-items:start; }
   .scheme-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -108,15 +108,18 @@
   </main>
 </div>
 
+<input type="file" id="schemeReplacementFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" hidden>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260715-scheme-doclink1"></script>
-<script src="assets/shell.js?v=20260715-scheme-doclink1"></script>
+<script src="assets/supabase-client.js?v=20260715-scheme-doclink2"></script>
+<script src="assets/shell.js?v=20260715-scheme-doclink2"></script>
 <script>
 Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
 (function () {
   'use strict';
   var user = Portal.currentUser();
   var profile = null, assignments = [], allClasses = [], allSubjects = [], allRows = [];
+  var pendingReplacementSchemeId = '';
   var form = document.getElementById('schemeForm');
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -149,7 +152,7 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
     if (!url) {
       return '<button class="btn btn--sm" type="button" disabled title="No document was saved for this scheme"><i class="fas fa-file-circle-xmark"></i> Missing</button>';
     }
-    return '<button class="btn btn--sm" type="button" data-open-doc="'+esc(url)+'" data-doc-path="'+esc(path)+'" data-doc-name="'+esc(name)+'"><i class="fas fa-file-arrow-down"></i> Open</button>';
+    return '<button class="btn btn--sm" type="button" data-open-doc="'+esc(url)+'" data-scheme-id="'+esc(row.id || '')+'" data-doc-path="'+esc(path)+'" data-doc-name="'+esc(name)+'"><i class="fas fa-file-arrow-down"></i> Open</button>';
   }
 
   function populateYears() {
@@ -302,12 +305,32 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
           var blob = await response.blob();
           window.open(URL.createObjectURL(blob), '_blank', 'noopener');
         } catch (err) {
-          Portal.toast('This document link points to a missing Supabase bucket or file. Run the scheme-of-work bucket SQL, then re-upload the scheme document if needed.', true);
+          pendingReplacementSchemeId = documentButton.dataset.schemeId || '';
+          if (pendingReplacementSchemeId && AxiomDB.replaceSchemeOfWorkDocument && confirm('The saved document file is missing. Re-upload the document for this scheme now?')) {
+            document.getElementById('schemeReplacementFile').click();
+          } else {
+            Portal.toast('This document file is missing. Re-upload the scheme document from the original file.', true);
+          }
         }
         return;
       }
       window.open(url, '_blank', 'noopener');
     }
+  });
+
+  document.getElementById('schemeReplacementFile').addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    var schemeId = pendingReplacementSchemeId;
+    this.value = '';
+    pendingReplacementSchemeId = '';
+    if (!file || !schemeId) return;
+    AxiomDB.replaceSchemeOfWorkDocument(schemeId, file).then(function () {
+      Portal.toast('Scheme document re-uploaded.');
+      return loadRows();
+    }).catch(function (err) {
+      console.error(err);
+      Portal.toast('Could not re-upload scheme document: '+(err.message || 'Unknown error'), true);
+    });
   });
 
   var footerYear = document.getElementById('yr');
