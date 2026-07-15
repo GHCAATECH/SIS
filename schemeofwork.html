@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scheme of Work - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260714-scheme-years3" />
+<link rel="stylesheet" href="assets/app.css?v=20260715-scheme-classes1" />
 <style>
   .scheme-layout { display:grid; grid-template-columns:minmax(320px, .72fr) minmax(560px, 1.6fr); gap:16px; align-items:start; }
   .scheme-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -109,14 +109,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260714-scheme-years3"></script>
-<script src="assets/shell.js?v=20260714-scheme-years3"></script>
+<script src="assets/supabase-client.js?v=20260715-scheme-classes1"></script>
+<script src="assets/shell.js?v=20260715-scheme-classes1"></script>
 <script>
 Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
 (function () {
   'use strict';
   var user = Portal.currentUser();
-  var profile = null, assignments = [], allRows = [];
+  var profile = null, assignments = [], allClasses = [], allSubjects = [], allRows = [];
   var form = document.getElementById('schemeForm');
 
   function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -152,13 +152,21 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
   }
   function populateClasses() {
     var seen = {}, options = ['<option value="">Select class</option>'];
-    assignments.forEach(function (a) { if (a.className && !seen[a.className]) { seen[a.className] = true; options.push('<option value="'+esc(a.className)+'">'+esc(a.className)+'</option>'); } });
+    allClasses.forEach(function (cls) { if (cls.name && !seen[cls.name]) { seen[cls.name] = true; options.push('<option value="'+esc(cls.name)+'">'+esc(cls.name)+'</option>'); } });
+    if (options.length === 1) {
+      assignments.forEach(function (a) { if (a.className && !seen[a.className]) { seen[a.className] = true; options.push('<option value="'+esc(a.className)+'">'+esc(a.className)+'</option>'); } });
+    }
     document.getElementById('className').innerHTML = options.join('');
     document.getElementById('subjectName').innerHTML = '<option value="">Select subject</option>';
   }
   function populateSubjects() {
     var selected = document.getElementById('className').value, seen = {}, options = ['<option value="">Select subject</option>'];
-    assignments.forEach(function (a) { if (a.className === selected && a.subjectName && !seen[a.subjectName]) { seen[a.subjectName] = true; options.push('<option value="'+esc(a.subjectName)+'">'+esc(a.subjectName)+'</option>'); } });
+    var cls = allClasses.find(function (item) { return item.name === selected; });
+    var classSubjects = cls && cls.subjectLinks && cls.subjectLinks.length
+      ? cls.subjectLinks.map(function (subject) { return subject.name; })
+      : cls && cls.subjects && cls.subjects.length ? cls.subjects : [];
+    var source = classSubjects.length ? classSubjects : allSubjects.map(function (subject) { return subject.name; });
+    source.forEach(function (subjectName) { if (subjectName && !seen[subjectName]) { seen[subjectName] = true; options.push('<option value="'+esc(subjectName)+'">'+esc(subjectName)+'</option>'); } });
     document.getElementById('subjectName').innerHTML = options.join('');
   }
 
@@ -222,9 +230,11 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
     document.getElementById('finalTab').hidden = !isHeadAcademic();
     if (!profile.department) { form.querySelectorAll('input, select, button').forEach(function (el) { el.disabled = true; }); Portal.toast('Your department must be assigned before submitting a scheme of work.', true); }
     assignments = await AxiomDB.listStaffSubjectClasses(profile.id) || [];
-    if (!assignments.length) {
-      var classes = await AxiomDB.listClasses() || [], subjects = await AxiomDB.listSubjects() || [];
-      classes.forEach(function (cls) { subjects.forEach(function (subject) { assignments.push({ className: cls.name, subjectName: subject.name }); }); });
+    allClasses = await AxiomDB.listClasses() || [];
+    allSubjects = await AxiomDB.listSubjects() || [];
+    if (!allClasses.length && assignments.length) {
+      var seenClasses = {};
+      assignments.forEach(function (a) { if (a.className && !seenClasses[a.className]) { seenClasses[a.className] = true; allClasses.push({ name: a.className, subjects: [] }); } });
     }
     populateClasses();
     await loadRows();
