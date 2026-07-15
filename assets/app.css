@@ -921,19 +921,26 @@ table.users-table {
 }
 
 @media (min-width: 769px) {
-  body.portal-shell .sidebar {
+  body.portal-shell:not(.sidebar-collapsed) .sidebar {
     transform: none !important;
   }
 
-  body.portal-shell > .main,
-  body.portal-shell.sidebar-collapsed > .main {
+  body.portal-shell:not(.sidebar-collapsed) > .main {
     margin-left: var(--sidebar-w) !important;
     width: calc(100% - var(--sidebar-w)) !important;
   }
 
-  body.portal-shell .hamburger,
-  body.portal-shell.sidebar-collapsed .hamburger {
+  body.portal-shell.sidebar-collapsed > .main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  body.portal-shell:not(.sidebar-collapsed) .hamburger {
     display: none !important;
+  }
+
+  body.portal-shell.sidebar-collapsed .hamburger {
+    display: grid !important;
   }
 
   body.portal-shell.nav-open .overlay {
