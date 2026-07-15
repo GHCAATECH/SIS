@@ -1244,9 +1244,43 @@
     return photoUrl;
   }
 
+  function readFileDataUrl(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function submitSchemeOfWorkWithSession(token, payload, file, fileInfo) {
+    var c = db(), school = await currentSchool();
+    if (!c || !token || !payload || !file) return null;
+    fileInfo = fileInfo || {};
+    var safeName = String(file.name || 'scheme-of-work').replace(/[^a-zA-Z0-9._-]+/g, '-');
+    var path = fileInfo.filePath || ((school && school.code ? school.code : activeSchoolCode()) + '/' + (payload.teacher_id || 'staff') + '/' + Date.now() + '-' + safeName);
+    var rpcPayload = Object.assign({}, payload, {
+      fileName: file.name,
+      filePath: path,
+      fileUrl: fileInfo.fileUrl || await readFileDataUrl(file)
+    });
+    var result = await c.rpc('secure_submit_scheme_of_work_with_session', {
+      p_session_token: token,
+      p_payload: rpcPayload
+    });
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function submitSchemeOfWork(payload, file) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !payload || !payload.teacher_id || !file) return null;
+    var token = activeStaffSessionToken();
+    var session = null;
+    try { session = await authSession(); } catch (e) { session = null; }
+    if (token && !session) {
+      return submitSchemeOfWorkWithSession(token, payload, file);
+    }
     var teacherResult = await c
       .from('staff_users')
       .select('id, category, department, position_responsibility')
@@ -1279,6 +1313,17 @@
     });
     var result = await c.from('scheme_of_work').insert(row).select('*').single();
     if (result.error) {
+      if (token) {
+        try {
+          return await submitSchemeOfWorkWithSession(token, payload, file, {
+            filePath: path,
+            fileUrl: publicInfo && publicInfo.data ? publicInfo.data.signedUrl : path
+          });
+        } catch (rpcErr) {
+          await c.storage.from('scheme-of-work').remove([path]);
+          throw rpcErr;
+        }
+      }
       await c.storage.from('scheme-of-work').remove([path]);
       throw result.error;
     }
