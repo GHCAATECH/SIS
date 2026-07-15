@@ -150,6 +150,16 @@
     }).filter(function (group) { return group.items.length; });
   }
 
+  function allowedPageKeys() {
+    var keys = [];
+    allowedNav().forEach(function (group) {
+      group.items.forEach(function (item) {
+        if (keys.indexOf(item.key) === -1) keys.push(item.key);
+      });
+    });
+    return keys;
+  }
+
   function pageBase() {
     return location.pathname.replace(/\\/g, '/').indexOf('/admin/') > -1 ? '../' : '';
   }
@@ -405,7 +415,7 @@
           if (opts.onReady) opts.onReady();
           return;
         }
-        if (user && !isSchoolAdminPortal(user) && active && active !== 'mydocuments' && (user.privileges || []).indexOf(active) === -1) {
+        if (user && !isSchoolAdminPortal(user) && active && allowedPageKeys().indexOf(active) === -1) {
           Portal.toast('You do not have access to this module.', true);
           setTimeout(function () { location.href = route('mydocuments.html'); }, 900);
           return;

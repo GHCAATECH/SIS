@@ -76,7 +76,7 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
-<script src="assets/shell.js?v=20260714-capture-flow5"></script>
+<script src="assets/shell.js?v=20260715-clearance-access1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
 var currentUser = null;
@@ -138,12 +138,13 @@ async function generateCompleted() {
 }
 async function loadData() {
   currentUser = Portal.currentUser();
-  document.getElementById('setupCard').style.display = canSetup() ? '' : 'none';
-  document.getElementById('generateBtn').style.display = canSetup() ? '' : 'none';
+  var setupAllowed = canSetup();
+  document.getElementById('setupCard').style.display = setupAllowed ? '' : 'none';
+  document.getElementById('generateBtn').style.display = setupAllowed ? '' : 'none';
   if (!window.AxiomDB || !AxiomDB.isConfigured()) { Portal.toast('Supabase is not configured.', true); return; }
-  staff = AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
-  students = AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
-  requirements = AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
+  staff = setupAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
+  students = setupAllowed && AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
+  requirements = setupAllowed && AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
   records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(currentUser && currentUser.type === 'student' ? { studentId: currentUser.id } : {}) || [] : [];
   renderStaffOptions(); renderRequirements(); renderRecords();
 }
