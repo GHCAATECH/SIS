@@ -26,6 +26,14 @@
   .status-declined { background:#fee2e2; color:#991b1b; }
   .action-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .clearance-search { width:250px; max-width:100%; }
+  .student-clearance-summary { display:none; margin-bottom:14px; padding:14px; border:1px solid rgba(148,163,184,.35); border-radius:12px; background:#fff; box-shadow:0 8px 24px rgba(15,23,42,.06); }
+  .student-clearance-summary__row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .student-clearance-summary h3 { margin:0; font-size:16px; color:#0f172a; }
+  .student-clearance-summary p { margin:4px 0 0; color:#64748b; font-weight:700; }
+  .summary-pill { display:inline-flex; align-items:center; gap:7px; padding:8px 12px; border-radius:999px; font-size:12px; font-weight:900; }
+  .summary-pill.cleared { background:#dcfce7; color:#166534; }
+  .summary-pill.pending { background:#fef3c7; color:#92400e; }
+  .summary-pill.declined { background:#fee2e2; color:#991b1b; }
   .muted { color:#64748b; }
   @media (max-width: 980px) {
     .clearance-grid, .clearance-grid.staff-clearance-grid { grid-template-columns:1fr; }
@@ -41,6 +49,16 @@
       <span class="ph-ico"><i class="fas fa-clipboard-list"></i></span>
       <div><h2>Student Clearance</h2><p>Assign clearance checkpoints to staff positions and clear completed students.</p></div>
       <button class="btn btn--primary" id="refreshBtn" type="button"><i class="fas fa-rotate"></i> Refresh</button>
+    </div>
+
+    <div class="student-clearance-summary" id="studentClearanceSummary">
+      <div class="student-clearance-summary__row">
+        <div>
+          <h3 id="studentClearanceTitle">Clearance Status</h3>
+          <p id="studentClearanceText">Your clearance status will appear here.</p>
+        </div>
+        <span class="summary-pill pending" id="studentClearanceBadge"><i class="fas fa-clock"></i> Pending</span>
+      </div>
     </div>
 
     <section class="clearance-grid" id="clearanceGrid">
@@ -106,6 +124,38 @@ function studentName(student) { return [student && student.first_name, student &
 function statusClass(status) { return status === 'Cleared' ? 'status-cleared' : status === 'Declined' ? 'status-declined' : 'status-pending'; }
 function canSetup() { return currentUser && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator'); }
 function isStaffClearanceView() { return currentUser && currentUser.type !== 'student' && !canSetup(); }
+function isStudentClearanceView() { return currentUser && currentUser.type === 'student'; }
+function renderStudentClearanceSummary() {
+  var box = document.getElementById('studentClearanceSummary');
+  if (!isStudentClearanceView()) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  var total = records.length;
+  var cleared = records.filter(function(row) { return row.status === 'Cleared'; }).length;
+  var declined = records.filter(function(row) { return row.status === 'Declined'; }).length;
+  var pending = records.filter(function(row) { return row.status === 'Pending'; }).length;
+  var badge = document.getElementById('studentClearanceBadge');
+  if (!total) {
+    document.getElementById('studentClearanceText').textContent = 'No clearance records have been generated for your account yet.';
+    badge.className = 'summary-pill pending';
+    badge.innerHTML = '<i class="fas fa-clock"></i> Not Started';
+    return;
+  }
+  if (cleared === total) {
+    document.getElementById('studentClearanceText').textContent = 'All clearance requirements have been approved.';
+    badge.className = 'summary-pill cleared';
+    badge.innerHTML = '<i class="fas fa-circle-check"></i> Cleared';
+    return;
+  }
+  if (declined > 0) {
+    document.getElementById('studentClearanceText').textContent = cleared + ' of ' + total + ' cleared. ' + declined + ' declined item(s) need attention.';
+    badge.className = 'summary-pill declined';
+    badge.innerHTML = '<i class="fas fa-circle-xmark"></i> Declined';
+    return;
+  }
+  document.getElementById('studentClearanceText').textContent = cleared + ' of ' + total + ' cleared. ' + pending + ' item(s) still pending.';
+  badge.className = 'summary-pill pending';
+  badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+}
 function renderStaffOptions() {
   var selectedPosition = document.getElementById('positionTitle').value.trim().toLowerCase();
   var matching = staff.filter(function(row) {
@@ -189,17 +239,20 @@ async function loadData() {
   currentUser = Portal.currentUser();
   var setupAllowed = canSetup();
   var staffView = isStaffClearanceView();
+  var studentView = isStudentClearanceView();
   document.getElementById('clearanceGrid').classList.toggle('staff-clearance-grid', staffView);
   document.getElementById('setupCard').style.display = setupAllowed ? '' : 'none';
   document.getElementById('clearedCard').style.display = staffView ? '' : 'none';
-  document.getElementById('recordsTitle').innerHTML = staffView ? '<i class="fas fa-list-check"></i> Clearance To Review' : '<i class="fas fa-list-check"></i> Clearance Records';
+  document.getElementById('recordsTitle').innerHTML = staffView ? '<i class="fas fa-list-check"></i> Clearance To Review' : studentView ? '<i class="fas fa-list-check"></i> My Clearance Records' : '<i class="fas fa-list-check"></i> Clearance Records';
   document.getElementById('generateBtn').style.display = setupAllowed ? '' : 'none';
+  document.getElementById('statusFilter').style.display = studentView ? 'none' : '';
+  document.getElementById('recordSearch').style.display = studentView ? 'none' : '';
   if (!window.AxiomDB || !AxiomDB.isConfigured()) { Portal.toast('Supabase is not configured.', true); return; }
   staff = setupAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
   students = setupAllowed && AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
   requirements = setupAllowed && AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
   records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(currentUser && currentUser.type === 'student' ? { studentId: currentUser.id } : {}) || [] : [];
-  renderStaffOptions(); renderRequirements(); renderRecords();
+  renderStaffOptions(); renderRequirements(); renderStudentClearanceSummary(); renderRecords();
 }
 function startClearance() {
   currentUser = Portal.currentUser();
