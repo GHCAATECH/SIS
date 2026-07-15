@@ -1276,9 +1276,7 @@
     var c = db(), school = await currentSchool();
     if (!c || !school || !payload || !payload.teacher_id || !file) return null;
     var token = activeStaffSessionToken();
-    var session = null;
-    try { session = await authSession(); } catch (e) { session = null; }
-    if (token && !session) {
+    if (token) {
       return submitSchemeOfWorkWithSession(token, payload, file);
     }
     var teacherResult = await c
