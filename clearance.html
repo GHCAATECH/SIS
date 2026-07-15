@@ -24,8 +24,13 @@
   .status-cleared { background:#dcfce7; color:#166534; }
   .status-declined { background:#fee2e2; color:#991b1b; }
   .action-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .clearance-search { width:250px; max-width:100%; }
   .muted { color:#64748b; }
-  @media (max-width: 980px) { .clearance-grid { grid-template-columns:1fr; } }
+  @media (max-width: 980px) {
+    .clearance-grid { grid-template-columns:1fr; }
+    .clearance-card__head { align-items:flex-start; flex-direction:column; }
+    .clearance-search, #statusFilter { width:100% !important; }
+  }
 </style>
 </head>
 <body class="portal-shell footer-shell">
@@ -63,6 +68,7 @@
         <div class="clearance-card__head">
           <h2><i class="fas fa-list-check"></i> Clearance Records</h2>
           <div class="action-row">
+            <input class="input clearance-search" id="recordSearch" type="search" placeholder="Search by student name or STD_ID" autocomplete="off" />
             <select class="input" id="statusFilter" style="width:150px"><option value="">All Status</option><option>Pending</option><option>Cleared</option><option>Declined</option></select>
             <button class="btn" id="generateBtn" type="button"><i class="fas fa-wand-magic-sparkles"></i> Generate for Completed</button>
           </div>
@@ -114,6 +120,21 @@ function renderRequirements() {
 function renderRecords() {
   var status = document.getElementById('statusFilter').value;
   var rows = status ? records.filter(function(row) { return row.status === status; }) : records;
+  var search = String(document.getElementById('recordSearch').value || '').trim().toLowerCase();
+  if (search) {
+    rows = rows.filter(function(row) {
+      var student = row.students || {};
+      var haystack = [
+        student.ass_ref_id,
+        student.std_id,
+        studentName(student),
+        student.first_name,
+        student.surname,
+        student.other_names
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.indexOf(search) > -1;
+    });
+  }
   document.getElementById('recordsBody').innerHTML = rows.length ? rows.map(function(row) {
     var student = row.students || {};
     var cls = student.classes || {};
@@ -154,6 +175,7 @@ function startClearance() {
   document.getElementById('cancelEdit').addEventListener('click', clearForm);
   document.getElementById('refreshBtn').addEventListener('click', loadData);
   document.getElementById('statusFilter').addEventListener('change', renderRecords);
+  document.getElementById('recordSearch').addEventListener('input', renderRecords);
   document.getElementById('generateBtn').addEventListener('click', function() { generateCompleted().catch(function(err) { console.error(err); Portal.toast('Could not generate clearance: ' + (err.message || 'Unknown error'), true); }); });
   document.getElementById('requirementForm').addEventListener('submit', function(e) { e.preventDefault(); async function save() { await AxiomDB.saveClearanceRequirement({ id: document.getElementById('requirementId').value || null, title: document.getElementById('clearanceTitle').value.trim(), position_title: document.getElementById('positionTitle').value.trim(), staff_user_id: document.getElementById('assignedStaff').value || null, sort_order: document.getElementById('sortOrder').value, active: document.getElementById('activeReq').checked }); Portal.toast('Clearance requirement saved.'); clearForm(); await loadData(); } save().catch(function(err) { console.error(err); Portal.toast('Could not save clearance setup: ' + (err.message || 'Unknown error'), true); }); });
   loadData().catch(function(err) { console.error(err); Portal.toast('Could not load clearance system: ' + (err.message || 'Unknown error'), true); });
