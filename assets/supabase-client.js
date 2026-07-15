@@ -1601,9 +1601,19 @@
     if (!c) return null;
     filters = filters || {};
     if (filters.studentAssRef || filters.studentId) {
+      var studentToken = activeStudentSessionToken();
+      var currentAuthSession = null;
+      try {
+        currentAuthSession = await authSession();
+      } catch (e) {
+        currentAuthSession = null;
+      }
+      if (!studentToken && !(currentAuthSession && currentAuthSession.user)) {
+        throw new Error('Student session expired. Please logout and login again to view clearance status.');
+      }
       var studentFeed = await c.rpc('secure_list_my_student_clearances', {
         p_ass_ref_id: filters.studentAssRef || null,
-        p_session_token: activeStudentSessionToken() || null
+        p_session_token: studentToken || null
       });
       if (!studentFeed.error) return studentFeed.data || [];
       if (/p_session_token|Could not find the function|schema cache|function/i.test(studentFeed.error.message || '')) {
