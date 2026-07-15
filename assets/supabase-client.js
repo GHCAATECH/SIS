@@ -1602,25 +1602,16 @@
     filters = filters || {};
     if (filters.studentAssRef || filters.studentId) {
       var studentToken = activeStudentSessionToken();
-      var currentAuthSession = null;
-      try {
-        currentAuthSession = await authSession();
-      } catch (e) {
-        currentAuthSession = null;
-      }
-      if (!studentToken && !(currentAuthSession && currentAuthSession.user)) {
+      if (!studentToken) {
         throw new Error('Student session expired. Please logout and login again to view clearance status.');
       }
       var studentFeed = await c.rpc('secure_list_my_student_clearances', {
         p_ass_ref_id: filters.studentAssRef || null,
-        p_session_token: studentToken || null
+        p_session_token: studentToken
       });
       if (!studentFeed.error) return studentFeed.data || [];
       if (/p_session_token|Could not find the function|schema cache|function/i.test(studentFeed.error.message || '')) {
-        studentFeed = await c.rpc('secure_list_my_student_clearances', {
-          p_ass_ref_id: filters.studentAssRef || null
-        });
-        if (!studentFeed.error) return studentFeed.data || [];
+        throw new Error('Run the student clearance session SQL in Supabase, then logout and login again.');
       }
       if (!/secure_list_my_student_clearances|schema cache|function/i.test(studentFeed.error.message || '')) {
         throw studentFeed.error;
