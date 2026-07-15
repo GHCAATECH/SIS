@@ -9,6 +9,7 @@
 <style>
   .clearance-wrap { padding: 14px; }
   .clearance-grid { display:grid; grid-template-columns: 420px 1fr; gap:14px; align-items:start; }
+  .clearance-grid.staff-clearance-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .clearance-card { background:#fff; border:1px solid rgba(148,163,184,.35); border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,.06); overflow:hidden; }
   .clearance-card__head { padding:12px 14px; border-bottom:1px solid rgba(148,163,184,.25); display:flex; justify-content:space-between; align-items:center; gap:10px; background:#f8fafc; }
   .clearance-card__head h2 { margin:0; font-size:15px; color:#0f172a; }
@@ -27,7 +28,7 @@
   .clearance-search { width:250px; max-width:100%; }
   .muted { color:#64748b; }
   @media (max-width: 980px) {
-    .clearance-grid { grid-template-columns:1fr; }
+    .clearance-grid, .clearance-grid.staff-clearance-grid { grid-template-columns:1fr; }
     .clearance-card__head { align-items:flex-start; flex-direction:column; }
     .clearance-search, #statusFilter { width:100% !important; }
   }
@@ -42,7 +43,7 @@
       <button class="btn btn--primary" id="refreshBtn" type="button"><i class="fas fa-rotate"></i> Refresh</button>
     </div>
 
-    <section class="clearance-grid">
+    <section class="clearance-grid" id="clearanceGrid">
       <div class="clearance-card" id="setupCard">
         <div class="clearance-card__head"><h2><i class="fas fa-sliders"></i> Clearance Setup</h2></div>
         <div class="clearance-card__body">
@@ -66,7 +67,7 @@
 
       <div class="clearance-card">
         <div class="clearance-card__head">
-          <h2><i class="fas fa-list-check"></i> Clearance Records</h2>
+          <h2 id="recordsTitle"><i class="fas fa-list-check"></i> Clearance Records</h2>
           <div class="action-row">
             <input class="input clearance-search" id="recordSearch" type="search" placeholder="Search by student name or STD_ID" autocomplete="off" />
             <select class="input" id="statusFilter" style="width:150px"><option value="">All Status</option><option>Pending</option><option>Cleared</option><option>Declined</option></select>
@@ -75,6 +76,15 @@
         </div>
         <div class="clearance-card__body">
           <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Reason</th><th>Reviewed By</th><th>Action</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="clearance-card" id="clearedCard" style="display:none">
+        <div class="clearance-card__head">
+          <h2><i class="fas fa-circle-check"></i> Cleared Students</h2>
+        </div>
+        <div class="clearance-card__body">
+          <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Reason</th><th>Reviewed By</th><th>Action</th></tr></thead><tbody id="clearedBody"></tbody></table></div>
         </div>
       </div>
     </section>
@@ -95,6 +105,7 @@ function escapeHtml(value) { return String(value == null ? '' : value).replace(/
 function studentName(student) { return [student && student.first_name, student && student.surname, student && student.other_names].filter(Boolean).join(' ').toUpperCase(); }
 function statusClass(status) { return status === 'Cleared' ? 'status-cleared' : status === 'Declined' ? 'status-declined' : 'status-pending'; }
 function canSetup() { return currentUser && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator'); }
+function isStaffClearanceView() { return currentUser && currentUser.type !== 'student' && !canSetup(); }
 function renderStaffOptions() {
   var selectedPosition = document.getElementById('positionTitle').value.trim().toLowerCase();
   var matching = staff.filter(function(row) {
@@ -119,10 +130,11 @@ function renderRequirements() {
 }
 function renderRecords() {
   var status = document.getElementById('statusFilter').value;
-  var rows = status ? records.filter(function(row) { return row.status === status; }) : records;
+  var staffView = isStaffClearanceView();
+  var searchedRows = records.slice();
   var search = String(document.getElementById('recordSearch').value || '').trim().toLowerCase();
   if (search) {
-    rows = rows.filter(function(row) {
+    searchedRows = searchedRows.filter(function(row) {
       var student = row.students || {};
       var haystack = [
         student.ass_ref_id,
@@ -135,6 +147,12 @@ function renderRecords() {
       return haystack.indexOf(search) > -1;
     });
   }
+  var rows = status ? searchedRows.filter(function(row) { return row.status === status; }) : searchedRows;
+  var clearedRows = [];
+  if (staffView) {
+    clearedRows = searchedRows.filter(function(row) { return row.status === 'Cleared'; });
+    rows = rows.filter(function(row) { return row.status !== 'Cleared'; });
+  }
   document.getElementById('recordsBody').innerHTML = rows.length ? rows.map(function(row) {
     var student = row.students || {};
     var cls = student.classes || {};
@@ -144,6 +162,16 @@ function renderRecords() {
     var action = row.status === 'Pending' ? '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '">Clear</button> <button class="btn btn--danger" data-review="Declined" data-id="' + row.id + '">Decline</button>' : '<span class="muted">Reviewed</span>';
     return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls.name || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td>' + action + '</td></tr>';
   }).join('') : '<tr><td colspan="10" class="muted">No clearance records found.</td></tr>';
+  if (staffView) {
+    document.getElementById('clearedBody').innerHTML = clearedRows.length ? clearedRows.map(function(row) {
+      var student = row.students || {};
+      var cls = student.classes || {};
+      var req = row.clearance_requirements || {};
+      var assigned = row.assigned_staff ? row.assigned_staff.full_name : 'Any matching staff';
+      var reviewer = row.reviewer ? row.reviewer.full_name : '';
+      return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls.name || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td><span class="muted">Reviewed</span></td></tr>';
+    }).join('') : '<tr><td colspan="10" class="muted">No cleared students found.</td></tr>';
+  }
   document.querySelectorAll('[data-review]').forEach(function(button) { button.addEventListener('click', function() { reviewRecord(button.dataset.id, button.dataset.review); }); });
 }
 function clearForm() { document.getElementById('requirementForm').reset(); document.getElementById('requirementId').value = ''; document.getElementById('activeReq').checked = true; renderStaffOptions(); }
@@ -160,7 +188,11 @@ async function generateCompleted() {
 async function loadData() {
   currentUser = Portal.currentUser();
   var setupAllowed = canSetup();
+  var staffView = isStaffClearanceView();
+  document.getElementById('clearanceGrid').classList.toggle('staff-clearance-grid', staffView);
   document.getElementById('setupCard').style.display = setupAllowed ? '' : 'none';
+  document.getElementById('clearedCard').style.display = staffView ? '' : 'none';
+  document.getElementById('recordsTitle').innerHTML = staffView ? '<i class="fas fa-list-check"></i> Clearance To Review' : '<i class="fas fa-list-check"></i> Clearance Records';
   document.getElementById('generateBtn').style.display = setupAllowed ? '' : 'none';
   if (!window.AxiomDB || !AxiomDB.isConfigured()) { Portal.toast('Supabase is not configured.', true); return; }
   staff = setupAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
