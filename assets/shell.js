@@ -75,6 +75,13 @@
         if (!user.type) user.type = 'staff';
         localStorage.setItem('axiom_current_user', JSON.stringify(user));
       }
+      if (user && user.ass_ref_id && norm(user.type) !== 'student') {
+        user.type = 'student';
+        user.category = user.category || 'Student';
+        user.role = user.role || 'Student';
+        user.privileges = user.privileges || ['dashboard', 'mydocuments', 'transcript', 'clearance'];
+        localStorage.setItem('axiom_current_user', JSON.stringify(user));
+      }
       return user;
     }
     catch (e) { return null; }
