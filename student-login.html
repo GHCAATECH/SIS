@@ -23,16 +23,16 @@
 <a class="home-link" href="index.html"><i class="fas fa-house"></i> Back to Home</a>
 <div class="login-shell">
   <form class="login-card" id="studentLoginForm">
-    <div class="login-brand"><span class="logo"><i class="fas fa-user-graduate"></i></span><div><h1>Student Login</h1><small>Use STD_ID and account password</small></div></div>
+    <div class="login-brand"><span class="logo"><i class="fas fa-user-graduate"></i></span><div><h1>Student Login</h1><small>Use STD_ID and DOB password</small></div></div>
     <div class="grid" style="gap:14px">
       <div class="field"><label>STD_ID <span class="req">*</span></label><input class="input" id="studentId" required autocomplete="username" placeholder="e.g. ASS-1782255777715" /></div>
-      <div class="field"><label>Account Password <span class="req">*</span></label><input class="input" id="studentPassword" type="password" required autocomplete="current-password" /></div>
+      <div class="field"><label>DOB Password <span class="req">*</span></label><input class="input" id="studentPassword" type="password" required autocomplete="current-password" placeholder="MMDDYYYY or DDMMYYYY" /></div>
     </div>
     <div class="login-actions"><a href="login.html"><i class="fas fa-arrow-left"></i> All portals</a><button class="btn btn--primary" type="submit"><i class="fas fa-right-to-bracket"></i> Login</button></div>
   </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
+<script src="assets/supabase-client.js?v=20260715-student-auth1"></script>
 <script src="assets/shell.js?v=20260715-student-archive1"></script>
 <script>
 document.body.appendChild(document.createElement('div')).outerHTML = '<div class="toast-host" id="toastHost"></div>';

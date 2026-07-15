@@ -428,7 +428,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
+<script src="assets/supabase-client.js?v=20260715-student-auth1"></script>
 <script src="assets/shell.js?v=20260715-student-archive1"></script>
 <script>
 Portal.init({ active: 'registerstudent' });
@@ -576,9 +576,20 @@ function excelDate(value) {
   }
   var text = String(value).trim();
   if (!text) return '';
+  var parts = text.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (parts) {
+    return parts[3] + '-' + String(parts[2]).padStart(2, '0') + '-' + String(parts[1]).padStart(2, '0');
+  }
   var date = new Date(text);
   if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
   return text;
+}
+
+function studentDefaultPassword(dateValue) {
+  if (!dateValue) return '';
+  var parts = excelDate(dateValue).slice(0, 10).split('-');
+  if (parts.length !== 3 || parts[0].length !== 4) return '';
+  return parts[1] + parts[2] + parts[0];
 }
 
 function findClassByName(className, programme) {
@@ -689,7 +700,12 @@ async function importStudentsFromWorkbook(file) {
   for (var i = 0; i < payloads.length; i++) {
     var payload = payloads[i];
     var saved = null;
-    if (window.AxiomDB && AxiomDB.isConfigured()) saved = await AxiomDB.createStudent(payload);
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      saved = await AxiomDB.createStudent(payload);
+      if (AxiomDB.ensureStudentAccount) {
+        await AxiomDB.ensureStudentAccount((saved && saved.ass_ref_id) || payload.ass_ref_id, studentDefaultPassword(payload.date_of_birth));
+      }
+    }
     saveLocalRegisteredStudent(Object.assign({}, payload, saved || {}));
     savedCount++;
   }
@@ -967,6 +983,9 @@ document.getElementById('regForm').addEventListener('submit', function(e) {
       inserted_by: 'Admin'
     };
     var saved = await AxiomDB.createStudent(payload);
+    if (AxiomDB.ensureStudentAccount) {
+      await AxiomDB.ensureStudentAccount((saved && saved.ass_ref_id) || payload.ass_ref_id, studentDefaultPassword(payload.date_of_birth));
+    }
     if (photoFile && AxiomDB.uploadStudentPassport) {
       var passportUrl = await AxiomDB.uploadStudentPassport(payload.ass_ref_id, photoFile);
       payload.passport_url = passportUrl;

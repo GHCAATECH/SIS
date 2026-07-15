@@ -930,8 +930,49 @@
     return [];
   }
 
+  async function ensureStudentAccount(assRefId, password) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school || !assRefId) return null;
+    var result = await c.rpc('ensure_student_auth_account', {
+      p_school_id: school.id,
+      p_ass_ref_id: String(assRefId || '').trim(),
+      p_password: String(password || '').trim()
+    });
+    if (!result.error) return result.data;
+    if (/ensure_student_auth_account|schema cache|function/i.test(result.error.message || '')) {
+      throw new Error('Run the student account SQL in Supabase, then upload/register students again.');
+    }
+    throw result.error;
+  }
+
   async function loginStudent(assRefId, password) {
-    return loginWithAuth('student', assRefId, password);
+    var profile = await loginWithAuth('student', assRefId, password);
+    if (profile && !profile.error) return profile;
+    if (profile && profile.error !== 'auth_not_linked' && profile.error !== 'auth_failed') return profile;
+
+    var c = db();
+    if (!c) return profile;
+    var repair = await c.rpc('resolve_student_auth_login', {
+      p_ass_ref_id: String(assRefId || '').trim(),
+      p_password: String(password || '').trim()
+    });
+    if (repair.error) {
+      if (/resolve_student_auth_login|schema cache|function/i.test(repair.error.message || '')) return profile;
+      return { error: 'auth_failed', message: repair.error.message };
+    }
+    if (!repair.data) return profile || { error: 'auth_failed' };
+
+    var signedIn = await c.auth.signInWithPassword({
+      email: repair.data,
+      password: String(password || '').trim()
+    });
+    if (signedIn.error) return { error: 'auth_failed', message: signedIn.error.message };
+    var repairedProfile = await loadAuthProfile(signedIn.data && signedIn.data.user, 'student');
+    if (!repairedProfile) {
+      await c.auth.signOut();
+      return { error: 'profile_not_found' };
+    }
+    return repairedProfile;
   }
 
   async function listUserPrivileges(staffUserId) {
@@ -1645,6 +1686,7 @@
     deleteHouse: deleteHouse,
     listStudents: listStudents,
     createStudent: createStudent,
+    ensureStudentAccount: ensureStudentAccount,
     updateStudentByAssRef: updateStudentByAssRef,
     progressStudents: progressStudents,
     deleteStudentByAssRef: deleteStudentByAssRef,
