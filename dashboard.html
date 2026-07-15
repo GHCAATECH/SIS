@@ -95,6 +95,15 @@
   .clearance-badge.cleared { background:#dcfce7; color:#166534; }
   .clearance-badge.pending { background:#fef3c7; color:#92400e; }
   .clearance-badge.declined { background:#fee2e2; color:#991b1b; }
+  .clearance-items { display:grid; gap:8px; margin-top:14px; }
+  .clearance-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid rgba(148,163,184,.35); border-radius:12px; background:#fff; }
+  .clearance-item__title { min-width:0; }
+  .clearance-item__title b { display:block; color:var(--text); font-size:13px; }
+  .clearance-item__title span { display:block; color:var(--text-soft); font-size:12px; font-weight:700; margin-top:2px; }
+  .clearance-item__status { display:inline-flex; align-items:center; justify-content:center; min-width:84px; padding:6px 10px; border-radius:999px; font-size:11px; font-weight:900; white-space:nowrap; }
+  .clearance-item__status.cleared { background:#dcfce7; color:#166534; }
+  .clearance-item__status.pending { background:#fef3c7; color:#92400e; }
+  .clearance-item__status.declined { background:#fee2e2; color:#991b1b; }
   @media (max-width:760px) { .scheme-summary { grid-template-columns:1fr 1fr; } .scheme-progress-row { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -119,6 +128,7 @@
             </div>
             <span class="clearance-badge pending" id="dashboardClearanceBadge"><i class="fas fa-clock"></i> Pending</span>
           </div>
+          <div class="clearance-items" id="dashboardClearanceItems"></div>
         </section>
         <section class="scheme-dashboard" id="schemeDashboard">
           <div class="scheme-dashboard__head"><h3><i class="fas fa-book-open-reader"></i> Scheme of Work Progress</h3><a class="btn btn--primary btn--sm" href="schemeofwork.html">Open Scheme of Work</a></div>
@@ -224,6 +234,37 @@ $(function () {
   function isStudentUser(user) {
     return !!(user && (user.type === 'student' || user.category === 'Student' || user.role === 'Student' || user.ass_ref_id));
   }
+  function clearanceTitle(row) {
+    var requirement = row && row.clearance_requirements ? row.clearance_requirements : {};
+    return firstValue(requirement.title, row && row.clearance_title, row && row.position_title, 'Clearance');
+  }
+  function clearanceMeta(row) {
+    var parts = [];
+    if (row && row.position_title) parts.push(row.position_title);
+    if (row && row.reviewed_by_name) parts.push('Reviewed by ' + row.reviewed_by_name);
+    if (row && row.reviewed_at) parts.push(new Date(row.reviewed_at).toLocaleDateString());
+    return parts.join(' - ');
+  }
+  function clearanceStatusClass(status) {
+    return status === 'Cleared' ? 'cleared' : status === 'Declined' ? 'declined' : 'pending';
+  }
+  function renderDashboardClearanceItems(rows) {
+    var box = document.getElementById('dashboardClearanceItems');
+    if (!box) return;
+    if (!rows || !rows.length) {
+      box.innerHTML = '';
+      return;
+    }
+    box.innerHTML = rows.map(function(row) {
+      var status = row.status || 'Pending';
+      var meta = clearanceMeta(row);
+      return '<div class="clearance-item">' +
+        '<div class="clearance-item__title"><b>' + escapeHtml(clearanceTitle(row)) + '</b>' +
+        (meta ? '<span>' + escapeHtml(meta) + '</span>' : '') + '</div>' +
+        '<span class="clearance-item__status ' + clearanceStatusClass(status) + '">' + escapeHtml(status) + '</span>' +
+        '</div>';
+    }).join('');
+  }
   function renderPortalDashboard() {
     if (!currentUser) return;
     var card = document.getElementById('portalDashboard');
@@ -270,10 +311,12 @@ $(function () {
       text.textContent = 'Clearance status is not available yet.';
       badge.className = 'clearance-badge pending';
       badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+      renderDashboardClearanceItems([]);
       return;
     }
     try {
       var rows = await AxiomDB.listStudentClearances({ studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id }) || [];
+      renderDashboardClearanceItems(rows);
       var total = rows.length;
       var cleared = rows.filter(function(row) { return row.status === 'Cleared'; }).length;
       var declined = rows.filter(function(row) { return row.status === 'Declined'; }).length;
@@ -300,6 +343,7 @@ $(function () {
       text.textContent = 'Could not load clearance status. Run the student clearance portal SQL if this remains.';
       badge.className = 'clearance-badge pending';
       badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+      renderDashboardClearanceItems([]);
     }
   }
   loadStudentClearanceDashboard();

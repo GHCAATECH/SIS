@@ -122,6 +122,13 @@ var defaultPositions = ['Administrator','Headmaster','Assistant Headmaster (Admi
 function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]; }); }
 function studentName(student) { return [student && student.first_name, student && student.surname, student && student.other_names].filter(Boolean).join(' ').toUpperCase(); }
 function statusClass(status) { return status === 'Cleared' ? 'status-cleared' : status === 'Declined' ? 'status-declined' : 'status-pending'; }
+function clearanceRowTitle(row) {
+  var requirement = row && row.clearance_requirements ? row.clearance_requirements : {};
+  return requirement.title || row.clearance_title || row.position_title || 'Clearance';
+}
+function clearanceNames(status) {
+  return records.filter(function(row) { return row.status === status; }).map(clearanceRowTitle).filter(Boolean);
+}
 function canSetup() { return currentUser && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator'); }
 function isStaffClearanceView() { return currentUser && currentUser.type !== 'student' && !canSetup(); }
 function isStudentClearanceView() { return currentUser && (currentUser.type === 'student' || currentUser.category === 'Student' || currentUser.role === 'Student' || currentUser.ass_ref_id); }
@@ -147,12 +154,15 @@ function renderStudentClearanceSummary() {
     return;
   }
   if (declined > 0) {
-    document.getElementById('studentClearanceText').textContent = cleared + ' of ' + total + ' cleared. ' + declined + ' declined item(s) need attention.';
+    var declinedList = clearanceNames('Declined').slice(0, 3).join(', ');
+    document.getElementById('studentClearanceText').textContent = cleared + ' of ' + total + ' cleared. ' + (declinedList ? 'Declined: ' + declinedList + '.' : declined + ' declined item(s) need attention.');
     badge.className = 'summary-pill declined';
     badge.innerHTML = '<i class="fas fa-circle-xmark"></i> Declined';
     return;
   }
-  document.getElementById('studentClearanceText').textContent = cleared + ' of ' + total + ' cleared. ' + pending + ' item(s) still pending.';
+  var clearedList = clearanceNames('Cleared').slice(0, 3).join(', ');
+  var pendingList = clearanceNames('Pending').slice(0, 3).join(', ');
+  document.getElementById('studentClearanceText').textContent = cleared + ' of ' + total + ' cleared.' + (clearedList ? ' Cleared: ' + clearedList + '.' : '') + (pendingList ? ' Pending: ' + pendingList + '.' : '');
   badge.className = 'summary-pill pending';
   badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
 }
