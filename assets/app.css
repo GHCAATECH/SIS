@@ -2265,22 +2265,31 @@ table tbody tr:hover,
   }
 }
 
-/* Final portal sidebar guard: desktop and tablet portal pages must keep the side navigation visible. */
-@media screen and (min-width: 700px) {
-  body.portal-shell .sidebar#sidebar {
+/* Final portal sidebar behavior: desktop pages can collapse to full width. */
+@media screen and (min-width: 1280px) {
+  body.portal-shell:not(.sidebar-collapsed) .sidebar#sidebar {
     display: flex !important;
     transform: none !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
 
-  body.portal-shell > .main {
+  body.portal-shell:not(.sidebar-collapsed) > .main {
     margin-left: var(--sidebar-w) !important;
     width: calc(100% - var(--sidebar-w)) !important;
   }
 
-  body.portal-shell .hamburger {
+  body.portal-shell.sidebar-collapsed > .main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  body.portal-shell:not(.sidebar-collapsed) .hamburger {
     display: none !important;
+  }
+
+  body.portal-shell.sidebar-collapsed .hamburger {
+    display: grid !important;
   }
 }
 

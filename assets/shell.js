@@ -82,12 +82,19 @@
   function setSidebarCollapsed(collapsed) {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
     try {
+      if (collapsed) sessionStorage.setItem('axiom_sidebar_hidden_after_nav', '1');
+      else sessionStorage.removeItem('axiom_sidebar_hidden_after_nav');
       localStorage.removeItem('axiom_sidebar_collapsed');
     } catch (e) {}
   }
 
   function savedSidebarCollapsed() {
     return false;
+  }
+
+  function sidebarHiddenAfterNavigation() {
+    try { return sessionStorage.getItem('axiom_sidebar_hidden_after_nav') === '1'; }
+    catch (e) { return false; }
   }
 
   function allowedNav() {
@@ -223,11 +230,8 @@
   }
 
   function hideSidebarTemporarily() {
-    document.body.classList.add('sidebar-temporary-hidden');
+    setSidebarCollapsed(true);
     document.body.classList.remove('nav-open');
-    setTimeout(function () {
-      document.body.classList.remove('sidebar-temporary-hidden');
-    }, 900);
   }
 
   function activeSchoolLabel() {
@@ -270,8 +274,7 @@
     var bootUser = currentUser();
     var adminUser = isSchoolAdminPortal(bootUser);
     if (adminUser) document.body.classList.add('school-admin-portal');
-    // School admins should keep the navigation visible while moving between modules.
-    setSidebarCollapsed(adminUser ? false : (window.innerWidth < 700 ? true : savedSidebarCollapsed()));
+    setSidebarCollapsed(sidebarHiddenAfterNavigation() || window.innerWidth < 700 || savedSidebarCollapsed());
 
     // mount sidebar + overlay
     ensureSidebar(active);
@@ -296,16 +299,21 @@
     var hamburger = document.getElementById('hamburger');
     var overlay = document.getElementById('overlay');
     if (hamburger) hamburger.addEventListener('click', function () {
+      if (window.innerWidth >= 1280) {
+        setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+        document.body.classList.remove('nav-open');
+        forceDesktopSidebar();
+        return;
+      }
       setSidebarCollapsed(false);
       document.body.classList.toggle('nav-open');
     });
     if (overlay) overlay.addEventListener('click', function () {
-      if (!isSchoolAdminPortal(currentUser())) document.body.classList.remove('nav-open');
+      document.body.classList.remove('nav-open');
     });
     document.querySelectorAll('.sidebar a[href]').forEach(function (link) {
       link.addEventListener('click', function () {
         hideSidebarTemporarily();
-        setTimeout(function () { ensureSidebar(active); }, 950);
       });
     });
 
@@ -344,18 +352,13 @@
     var main = document.querySelector('.main');
     if (!sidebar || !main) return;
     function apply() {
-      if (window.innerWidth >= 700) {
-        sidebar.style.transform = 'none';
-        sidebar.style.display = 'flex';
-        main.style.marginLeft = 'var(--sidebar-w)';
-        main.style.width = 'calc(100% - var(--sidebar-w))';
-        document.body.classList.remove('sidebar-collapsed', 'nav-open');
-      } else {
+      sidebar.style.transform = '';
+      sidebar.style.display = '';
+      main.style.marginLeft = '';
+      main.style.width = '';
+      if (window.innerWidth < 700) {
         setSidebarCollapsed(true);
-        sidebar.style.transform = '';
-        sidebar.style.display = '';
-        main.style.marginLeft = '';
-        main.style.width = '';
+        document.body.classList.remove('nav-open');
       }
     }
     apply();
