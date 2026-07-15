@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scheme of Work - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260715-scheme-submit2" />
+<link rel="stylesheet" href="assets/app.css?v=20260715-scheme-history-doc1" />
 <style>
   .scheme-layout { display:grid; grid-template-columns:minmax(320px, .72fr) minmax(560px, 1.6fr); gap:16px; align-items:start; }
   .scheme-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -93,13 +93,13 @@
             <h4 class="review-section-title"><i class="fas fa-hourglass-half"></i> Pending Department Review</h4>
             <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Submitted</th><th>Scheme</th><th>Class / Subject</th><th>Document</th><th>Decision</th></tr></thead><tbody id="hodRows"></tbody></table></div>
             <h4 class="review-section-title"><i class="fas fa-clock-rotate-left"></i> HOD Review History</h4>
-            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Scheme</th><th>Decision</th><th>Reason / Outcome</th><th>Reviewed On</th><th>Current Status</th><th>History</th></tr></thead><tbody id="hodHistoryRows"></tbody></table></div>
+            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Scheme</th><th>Decision</th><th>Reason / Outcome</th><th>Reviewed On</th><th>Current Status</th><th>Document</th><th>History</th></tr></thead><tbody id="hodHistoryRows"></tbody></table></div>
           </div>
           <div class="workflow-panel" data-panel="final">
             <h4 class="review-section-title"><i class="fas fa-hourglass-half"></i> Pending Final Review</h4>
             <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Department</th><th>HOD Route</th><th>Scheme</th><th>Class / Subject</th><th>Document</th><th>Decision</th></tr></thead><tbody id="finalRows"></tbody></table></div>
             <h4 class="review-section-title"><i class="fas fa-clock-rotate-left"></i> Head Academic Review History</h4>
-            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Department</th><th>Scheme</th><th>Final Decision</th><th>Reason / Outcome</th><th>Reviewed On</th><th>History</th></tr></thead><tbody id="finalHistoryRows"></tbody></table></div>
+            <div class="table-scroll"><table><thead><tr><th>Teacher</th><th>Department</th><th>Scheme</th><th>Final Decision</th><th>Reason / Outcome</th><th>Reviewed On</th><th>Document</th><th>History</th></tr></thead><tbody id="finalHistoryRows"></tbody></table></div>
           </div>
         </div>
       </section>
@@ -109,8 +109,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260715-scheme-submit2"></script>
-<script src="assets/shell.js?v=20260715-scheme-submit2"></script>
+<script src="assets/supabase-client.js?v=20260715-scheme-history-doc1"></script>
+<script src="assets/shell.js?v=20260715-scheme-history-doc1"></script>
 <script>
 Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
 (function () {
@@ -201,14 +201,14 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
     var hodHistory = isHod() ? allRows.filter(function (row) { return row.hod_reviewer_id === profile.id; }) : [];
     document.getElementById('hodHistoryRows').innerHTML = hodHistory.length ? hodHistory.map(function (row) {
       var rejected = !!row.hod_reason;
-      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+decisionPill(rejected ? 'Rejected by HOD' : 'Approved by HOD', !rejected)+'</td><td class="wrap">'+esc(rejected ? row.hod_reason : 'Approved and forwarded to Head Academic')+'</td><td>'+dateText(row.hod_decision_at)+'</td><td>'+statusPill(row.status)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
-    }).join('') : emptyRow(7, 'No HOD review decisions have been recorded yet.');
+      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+decisionPill(rejected ? 'Rejected by HOD' : 'Approved by HOD', !rejected)+'</td><td class="wrap">'+esc(rejected ? row.hod_reason : 'Approved and forwarded to Head Academic')+'</td><td>'+dateText(row.hod_decision_at)+'</td><td>'+statusPill(row.status)+'</td><td>'+documentLink(row)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
+    }).join('') : emptyRow(8, 'No HOD review decisions have been recorded yet.');
 
     var finalHistory = isHeadAcademic() ? allRows.filter(function (row) { return row.head_academic_reviewer_id === profile.id; }) : [];
     document.getElementById('finalHistoryRows').innerHTML = finalHistory.length ? finalHistory.map(function (row) {
       var rejected = !!row.head_academic_reason;
-      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td>'+esc(row.department)+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+statusPill(rejected ? 'Declined by Head Academic' : 'Final Approved')+'</td><td class="wrap">'+esc(rejected ? row.head_academic_reason : 'Final approval granted')+'</td><td>'+dateText(row.head_academic_decision_at)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
-    }).join('') : emptyRow(7, 'No Head Academic review decisions have been recorded yet.');
+      return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td>'+esc(row.department)+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+statusPill(rejected ? 'Declined by Head Academic' : 'Final Approved')+'</td><td class="wrap">'+esc(rejected ? row.head_academic_reason : 'Final approval granted')+'</td><td>'+dateText(row.head_academic_decision_at)+'</td><td>'+documentLink(row)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
+    }).join('') : emptyRow(8, 'No Head Academic review decisions have been recorded yet.');
   }
   function renderAll() { renderMine(); renderQueues(); }
 
