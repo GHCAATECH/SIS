@@ -528,7 +528,6 @@
               <th>Candidate Name</th>
               <th>Parent / Guardian Phone</th>
               <th>Gender</th>
-              <th>Date of Birth</th>
               <th>Class</th>
               <th>Created Date</th>
               <th>Inserted By</th>
@@ -1008,7 +1007,7 @@ function initials(name) {
 
 function renderRows(data, message) {
   if (!data.length) {
-    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
+    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
     document.getElementById('studentTotal').textContent = 0;
     return;
   }
@@ -1023,7 +1022,6 @@ function renderRows(data, message) {
       '<td class="wrap-text">'+r[1]+'</td>'+
       '<td class="nowrap">'+guardianPhone+'</td>'+
       '<td>'+r[3]+'</td>'+
-      '<td class="nowrap">'+r[4]+'</td>'+
       '<td>'+r[5]+'</td>'+
       '<td>'+r[6]+'</td>'+
       '<td>'+r[7]+'</td>'+
