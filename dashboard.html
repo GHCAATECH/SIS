@@ -87,6 +87,14 @@
   .scheme-status { padding:5px 8px; border-radius:999px; font-size:11px; font-weight:800; white-space:nowrap; background:#fef3c7; color:#92400e; }
   .scheme-status.approved { background:#dcfce7; color:#166534; }
   .scheme-status.declined { background:#fee2e2; color:#991b1b; }
+  .clearance-dashboard { display:none; margin-top:18px; padding:14px; border:1px solid var(--border); border-radius:10px; background:var(--surface-2); }
+  .clearance-dashboard__row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .clearance-dashboard h3 { margin:0; font-size:16px; color:var(--text); }
+  .clearance-dashboard p { margin:4px 0 0; color:var(--text-soft); font-weight:700; }
+  .clearance-badge { display:inline-flex; align-items:center; gap:7px; padding:8px 12px; border-radius:999px; font-size:12px; font-weight:900; }
+  .clearance-badge.cleared { background:#dcfce7; color:#166534; }
+  .clearance-badge.pending { background:#fef3c7; color:#92400e; }
+  .clearance-badge.declined { background:#fee2e2; color:#991b1b; }
   @media (max-width:760px) { .scheme-summary { grid-template-columns:1fr 1fr; } .scheme-progress-row { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -103,6 +111,15 @@
           </div>
         </div>
         <div class="grid cols-4" id="portalProfileGrid"></div>
+        <section class="clearance-dashboard" id="clearanceDashboard">
+          <div class="clearance-dashboard__row">
+            <div>
+              <h3><i class="fas fa-clipboard-check"></i> Clearance Status</h3>
+              <p id="dashboardClearanceText">Checking your clearance status...</p>
+            </div>
+            <span class="clearance-badge pending" id="dashboardClearanceBadge"><i class="fas fa-clock"></i> Pending</span>
+          </div>
+        </section>
         <section class="scheme-dashboard" id="schemeDashboard">
           <div class="scheme-dashboard__head"><h3><i class="fas fa-book-open-reader"></i> Scheme of Work Progress</h3><a class="btn btn--primary btn--sm" href="schemeofwork.html">Open Scheme of Work</a></div>
           <div class="scheme-summary">
@@ -186,7 +203,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
+<script src="assets/supabase-client.js?v=20260715-clearance-rpc1"></script>
 <script src="assets/shell.js?v=20260715-student-archive1"></script>
 <script>
 var dashboardUser = Portal.currentUser();
@@ -236,6 +253,53 @@ $(function () {
     }
   }
   renderPortalDashboard();
+
+  async function loadStudentClearanceDashboard() {
+    var panel = document.getElementById('clearanceDashboard');
+    if (!currentUser || currentUser.type !== 'student') {
+      if (panel) panel.style.display = 'none';
+      return;
+    }
+    panel.style.display = 'block';
+    var badge = document.getElementById('dashboardClearanceBadge');
+    var text = document.getElementById('dashboardClearanceText');
+    if (!window.AxiomDB || !AxiomDB.listStudentClearances) {
+      text.textContent = 'Clearance status is not available yet.';
+      badge.className = 'clearance-badge pending';
+      badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+      return;
+    }
+    try {
+      var rows = await AxiomDB.listStudentClearances({ studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id }) || [];
+      var total = rows.length;
+      var cleared = rows.filter(function(row) { return row.status === 'Cleared'; }).length;
+      var declined = rows.filter(function(row) { return row.status === 'Declined'; }).length;
+      var pending = rows.filter(function(row) { return row.status === 'Pending'; }).length;
+      if (!total) {
+        text.textContent = 'No clearance records have been generated for your account yet.';
+        badge.className = 'clearance-badge pending';
+        badge.innerHTML = '<i class="fas fa-clock"></i> Not Started';
+      } else if (cleared === total) {
+        text.textContent = 'All clearance requirements have been approved.';
+        badge.className = 'clearance-badge cleared';
+        badge.innerHTML = '<i class="fas fa-circle-check"></i> Cleared';
+      } else if (declined > 0) {
+        text.textContent = cleared + ' of ' + total + ' cleared. ' + declined + ' declined item(s) need attention.';
+        badge.className = 'clearance-badge declined';
+        badge.innerHTML = '<i class="fas fa-circle-xmark"></i> Declined';
+      } else {
+        text.textContent = cleared + ' of ' + total + ' cleared. ' + pending + ' item(s) still pending.';
+        badge.className = 'clearance-badge pending';
+        badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+      }
+    } catch (err) {
+      console.error(err);
+      text.textContent = 'Could not load clearance status. Run the student clearance portal SQL if this remains.';
+      badge.className = 'clearance-badge pending';
+      badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+    }
+  }
+  loadStudentClearanceDashboard();
 
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
