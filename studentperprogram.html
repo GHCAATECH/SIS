@@ -207,15 +207,12 @@
     z-index: 2;
   }
   .student-table tbody tr:hover td { background: #f8fafc; }
-  .student-table th:nth-child(2),
-  .student-table td:nth-child(2),
-  .student-table th:nth-child(4),
-  .student-table td:nth-child(4) {
+  .student-table th:nth-child(3),
+  .student-table td:nth-child(3) {
     min-width: 170px;
     max-width: 250px;
   }
-  .student-table td:nth-child(2),
-  .student-table td:nth-child(4) {
+  .student-table td:nth-child(3) {
     white-space: normal;
     line-height: 1.4;
   }
@@ -527,7 +524,6 @@
           <thead>
             <tr>
               <th>PPT PIC</th>
-              <th>School Name</th>
               <th>Student ID</th>
               <th>Candidate Name</th>
               <th>National ID</th>
@@ -1012,7 +1008,7 @@ function initials(name) {
 
 function renderRows(data, message) {
   if (!data.length) {
-    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="11" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
+    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
     document.getElementById('studentTotal').textContent = 0;
     return;
   }
@@ -1021,7 +1017,6 @@ function renderRows(data, message) {
     var passport = r[10] ? '<img src="'+String(r[10]).replace(/"/g, '&quot;')+'" alt="'+String(r[1]).replace(/"/g, '&quot;')+' passport" onerror="this.remove()">' : '';
     return '<tr data-ass-ref="'+String(r[0]).replace(/"/g, '&quot;')+'" data-name="'+String(r[1]).replace(/"/g, '&quot;')+'">'+
       '<td><div class="student-photo'+genderClass+'">'+passport+'<span>'+initials(r[1])+'</span></div></td>'+
-      '<td class="nowrap">ASUOM SENIOR HIGH SCHOOL</td>'+
       '<td class="nowrap">'+r[0]+'</td>'+
       '<td class="wrap-text">'+r[1]+'</td>'+
       '<td>'+r[2]+'</td>'+
