@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Scheme of Work - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<link rel="stylesheet" href="assets/app.css?v=20260715-scheme-history-doc1" />
+<link rel="stylesheet" href="assets/app.css?v=20260715-scheme-doclink1" />
 <style>
   .scheme-layout { display:grid; grid-template-columns:minmax(320px, .72fr) minmax(560px, 1.6fr); gap:16px; align-items:start; }
   .scheme-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -109,8 +109,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260715-scheme-history-doc1"></script>
-<script src="assets/shell.js?v=20260715-scheme-history-doc1"></script>
+<script src="assets/supabase-client.js?v=20260715-scheme-doclink1"></script>
+<script src="assets/shell.js?v=20260715-scheme-doclink1"></script>
 <script>
 Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
 (function () {
@@ -142,7 +142,15 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
       '<div class="progress-step '+(hodFailed ? 'failed' : hodDone ? 'done' : '')+'"><span>2</span></div>'+
       '<div class="progress-step '+(finalFailed ? 'failed' : finalDone ? 'done' : '')+'"><span>3</span></div></div>';
   }
-  function documentLink(row) { return '<a class="btn btn--sm" href="'+esc(row.file_url)+'" target="_blank" rel="noopener"><i class="fas fa-file-arrow-down"></i> Open</a>'; }
+  function documentLink(row) {
+    var url = String(row.file_url || '').trim();
+    var path = String(row.file_path || '').trim();
+    var name = String(row.file_name || row.file_title || 'scheme document').trim();
+    if (!url) {
+      return '<button class="btn btn--sm" type="button" disabled title="No document was saved for this scheme"><i class="fas fa-file-circle-xmark"></i> Missing</button>';
+    }
+    return '<button class="btn btn--sm" type="button" data-open-doc="'+esc(url)+'" data-doc-path="'+esc(path)+'" data-doc-name="'+esc(name)+'"><i class="fas fa-file-arrow-down"></i> Open</button>';
+  }
 
   function populateYears() {
     var html = ['2030/2031','2029/2030','2028/2029','2027/2028','2026/2027','2025/2026','2024/2025','2023/2024','2022/2023','2021/2022','2020/2021'].map(function(year) {
@@ -278,6 +286,27 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
         var items = await AxiomDB.listSchemeOfWorkHistory(historyButton.dataset.history) || [];
         alert(items.length ? items.map(function (item) { return dateText(item.created_at)+' - '+item.action+(item.actor && item.actor.full_name ? ' by '+item.actor.full_name : '')+(item.reason ? '\nReason: '+item.reason : ''); }).join('\n\n') : 'No workflow history is available.');
       } catch (err) { Portal.toast('Could not load history: '+err.message, true); }
+      return;
+    }
+    var documentButton = event.target.closest('[data-open-doc]');
+    if (documentButton) {
+      var url = documentButton.dataset.openDoc || '';
+      if (/^data:/i.test(url) || /^blob:/i.test(url)) {
+        window.open(url, '_blank', 'noopener');
+        return;
+      }
+      if (/\/storage\/v1\/object\/(?:sign|public)\/scheme-of-work\//i.test(url)) {
+        try {
+          var response = await fetch(url);
+          if (!response.ok) throw new Error('Storage document could not be opened.');
+          var blob = await response.blob();
+          window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+        } catch (err) {
+          Portal.toast('This document link points to a missing Supabase bucket or file. Run the scheme-of-work bucket SQL, then re-upload the scheme document if needed.', true);
+        }
+        return;
+      }
+      window.open(url, '_blank', 'noopener');
     }
   });
 
