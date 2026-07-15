@@ -109,7 +109,7 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260715-clearance-rpc1"></script>
+<script src="assets/supabase-client.js?v=20260715-clearance-student-detect1"></script>
 <script src="assets/shell.js?v=20260715-student-archive1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -124,7 +124,7 @@ function studentName(student) { return [student && student.first_name, student &
 function statusClass(status) { return status === 'Cleared' ? 'status-cleared' : status === 'Declined' ? 'status-declined' : 'status-pending'; }
 function canSetup() { return currentUser && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator'); }
 function isStaffClearanceView() { return currentUser && currentUser.type !== 'student' && !canSetup(); }
-function isStudentClearanceView() { return currentUser && currentUser.type === 'student'; }
+function isStudentClearanceView() { return currentUser && (currentUser.type === 'student' || currentUser.category === 'Student' || currentUser.role === 'Student' || currentUser.ass_ref_id); }
 function renderStudentClearanceSummary() {
   var box = document.getElementById('studentClearanceSummary');
   if (!isStudentClearanceView()) { box.style.display = 'none'; return; }
@@ -251,7 +251,7 @@ async function loadData() {
   staff = setupAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
   students = setupAllowed && AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
   requirements = setupAllowed && AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
-  records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(currentUser && currentUser.type === 'student' ? { studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id } : {}) || [] : [];
+  records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(isStudentClearanceView() ? { studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id } : {}) || [] : [];
   renderStaffOptions(); renderRequirements(); renderStudentClearanceSummary(); renderRecords();
 }
 function startClearance() {

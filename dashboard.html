@@ -203,7 +203,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260715-clearance-rpc1"></script>
+<script src="assets/supabase-client.js?v=20260715-clearance-student-detect1"></script>
 <script src="assets/shell.js?v=20260715-student-archive1"></script>
 <script>
 var dashboardUser = Portal.currentUser();
@@ -221,6 +221,9 @@ $(function () {
     }
     return '';
   }
+  function isStudentUser(user) {
+    return !!(user && (user.type === 'student' || user.category === 'Student' || user.role === 'Student' || user.ass_ref_id));
+  }
   function renderPortalDashboard() {
     if (!currentUser) return;
     var card = document.getElementById('portalDashboard');
@@ -231,7 +234,7 @@ $(function () {
     });
     card.style.display = 'block';
     document.getElementById('portalName').textContent = currentUser.full_name || 'Portal User';
-    if (currentUser.type === 'student') {
+    if (isStudentUser(currentUser)) {
       document.getElementById('portalIcon').innerHTML = '<i class="fas fa-user-graduate"></i>';
       document.getElementById('portalSubtitle').textContent = 'Student Portal';
       grid.innerHTML = [
@@ -256,7 +259,7 @@ $(function () {
 
   async function loadStudentClearanceDashboard() {
     var panel = document.getElementById('clearanceDashboard');
-    if (!currentUser || currentUser.type !== 'student') {
+    if (!isStudentUser(currentUser)) {
       if (panel) panel.style.display = 'none';
       return;
     }
