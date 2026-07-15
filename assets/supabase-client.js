@@ -46,6 +46,15 @@
     }
   }
 
+  function activeStudentSessionToken() {
+    try {
+      var user = JSON.parse(w.localStorage.getItem('axiom_current_user') || 'null');
+      return user && user.type === 'student' && user.session_token ? String(user.session_token) : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
   async function authSession() {
     var c = db();
     if (!c) return null;
@@ -908,6 +917,27 @@
     return loginWithAuth('staff', login, password);
   }
 
+  async function loginStudentWithPasswordSession(assRefId, password) {
+    var c = db();
+    if (!c) return null;
+    var result = await c.rpc('resolve_student_password_login', {
+      p_ass_ref_id: String(assRefId || '').trim(),
+      p_password: String(password || '').trim()
+    });
+    if (result.error) {
+      if (/resolve_student_password_login|schema cache|function/i.test(result.error.message || '')) return null;
+      return { error: 'auth_failed', message: result.error.message };
+    }
+    if (!result.data) return { error: 'auth_failed' };
+    var profile = result.data;
+    if (profile.school_code) setActiveSchool(profile.school_code, profile.school_id, profile.school_name);
+    profile.type = 'student';
+    profile.category = 'Student';
+    profile.role = 'Student';
+    profile.privileges = profile.privileges || ['dashboard', 'mydocuments', 'transcript', 'clearance'];
+    return profile;
+  }
+
   function dobPassword(dateValue) {
     if (!dateValue) return '';
     var parts = String(dateValue).slice(0, 10).split('-');
@@ -946,6 +976,9 @@
   }
 
   async function loginStudent(assRefId, password) {
+    var sessionProfile = await loginStudentWithPasswordSession(assRefId, password);
+    if (sessionProfile && !sessionProfile.error) return sessionProfile;
+
     var profile = await loginWithAuth('student', assRefId, password);
     if (profile && !profile.error) return profile;
     if (profile && profile.error !== 'auth_not_linked' && profile.error !== 'auth_failed') return profile;
@@ -972,6 +1005,7 @@
       await c.auth.signOut();
       return { error: 'profile_not_found' };
     }
+    if (sessionProfile && sessionProfile.session_token) repairedProfile.session_token = sessionProfile.session_token;
     return repairedProfile;
   }
 
@@ -1568,9 +1602,16 @@
     filters = filters || {};
     if (filters.studentAssRef || filters.studentId) {
       var studentFeed = await c.rpc('secure_list_my_student_clearances', {
-        p_ass_ref_id: filters.studentAssRef || null
+        p_ass_ref_id: filters.studentAssRef || null,
+        p_session_token: activeStudentSessionToken() || null
       });
       if (!studentFeed.error) return studentFeed.data || [];
+      if (/p_session_token|Could not find the function|schema cache|function/i.test(studentFeed.error.message || '')) {
+        studentFeed = await c.rpc('secure_list_my_student_clearances', {
+          p_ass_ref_id: filters.studentAssRef || null
+        });
+        if (!studentFeed.error) return studentFeed.data || [];
+      }
       if (!/secure_list_my_student_clearances|schema cache|function/i.test(studentFeed.error.message || '')) {
         throw studentFeed.error;
       }
