@@ -109,7 +109,7 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260715-student-clearance-session2"></script>
+<script src="assets/supabase-client.js?v=20260715-clearance-student-view1"></script>
 <script src="assets/shell.js?v=20260715-student-session1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -129,9 +129,14 @@ function clearanceRowTitle(row) {
 function clearanceNames(status) {
   return records.filter(function(row) { return row.status === status; }).map(clearanceRowTitle).filter(Boolean);
 }
-function canSetup() { return currentUser && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator'); }
-function isStaffClearanceView() { return currentUser && currentUser.type !== 'student' && !canSetup(); }
-function isStudentClearanceView() { return currentUser && (currentUser.type === 'student' || currentUser.category === 'Student' || currentUser.role === 'Student' || currentUser.ass_ref_id); }
+function hasStudentIdentity() {
+  return currentUser && (currentUser.type === 'student' || currentUser.category === 'Student' || currentUser.role === 'Student' || currentUser.ass_ref_id);
+}
+function canSetup() {
+  return currentUser && !hasStudentIdentity() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator');
+}
+function isStaffClearanceView() { return currentUser && !hasStudentIdentity() && !canSetup(); }
+function isStudentClearanceView() { return !!hasStudentIdentity(); }
 function renderStudentClearanceSummary() {
   var box = document.getElementById('studentClearanceSummary');
   if (!isStudentClearanceView()) { box.style.display = 'none'; return; }
@@ -191,6 +196,7 @@ function renderRequirements() {
 function renderRecords() {
   var status = document.getElementById('statusFilter').value;
   var staffView = isStaffClearanceView();
+  var studentView = isStudentClearanceView();
   var searchedRows = records.slice();
   var search = String(document.getElementById('recordSearch').value || '').trim().toLowerCase();
   if (search) {
@@ -219,7 +225,7 @@ function renderRecords() {
     var req = row.clearance_requirements || {};
     var assigned = row.assigned_staff ? row.assigned_staff.full_name : 'Any matching staff';
     var reviewer = row.reviewer ? row.reviewer.full_name : '';
-    var action = row.status === 'Pending' ? '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '">Clear</button> <button class="btn btn--danger" data-review="Declined" data-id="' + row.id + '">Decline</button>' : '<span class="muted">Reviewed</span>';
+    var action = studentView ? '<span class="muted">View only</span>' : row.status === 'Pending' ? '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '">Clear</button> <button class="btn btn--danger" data-review="Declined" data-id="' + row.id + '">Decline</button>' : '<span class="muted">Reviewed</span>';
     return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls.name || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(row.status) + '">' + escapeHtml(row.status) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td>' + action + '</td></tr>';
   }).join('') : '<tr><td colspan="10" class="muted">No clearance records found.</td></tr>';
   if (staffView) {
