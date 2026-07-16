@@ -9,7 +9,7 @@
 <style>
   .archive-shell { padding: 18px; }
   .archive-card { background:#fff; border:1px solid rgba(148,163,184,.35); border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.06); overflow:hidden; }
-  .archive-toolbar { display:grid; grid-template-columns: 220px 260px auto 1fr; gap:12px; align-items:end; padding:16px; border-bottom:1px solid rgba(148,163,184,.28); background:#f8fafc; }
+  .archive-toolbar { display:grid; grid-template-columns: 220px 260px 300px auto 1fr; gap:12px; align-items:end; padding:16px; border-bottom:1px solid rgba(148,163,184,.28); background:#f8fafc; }
   .archive-toolbar label { display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:7px; text-transform:uppercase; }
   .archive-table-wrap { width:100%; overflow:auto; max-height:calc(100dvh - 260px); }
   .archive-table { width:100%; min-width:1260px; border-collapse:collapse; }
@@ -116,6 +116,10 @@
         <div class="field">
           <label>Class</label>
           <select class="select" id="archiveClassFilter"><option value="">All Classes</option></select>
+        </div>
+        <div class="field">
+          <label>Search Student</label>
+          <input class="input" id="archiveStudentSearch" type="search" placeholder="Search by STD_ID or name" autocomplete="off">
         </div>
         <button class="btn btn--primary" type="button" id="archiveFilterBtn"><i class="fas fa-filter"></i> Filter</button>
         <div></div>
@@ -287,8 +291,12 @@ function populateFilters() {
 function filteredArchiveRows() {
   var year = document.getElementById('completionYearFilter').value;
   var cls = document.getElementById('archiveClassFilter').value;
+  var query = String(document.getElementById('archiveStudentSearch').value || '').trim().toLowerCase();
   return archiveRows.filter(function(row) {
-    return (!year || row.completionYear === year) && (!cls || row.className === cls);
+    var haystack = [row.assRef, row.name].join(' ').toLowerCase();
+    return (!year || row.completionYear === year) &&
+      (!cls || row.className === cls) &&
+      (!query || haystack.indexOf(query) > -1);
   });
 }
 
@@ -534,6 +542,12 @@ async function loadArchive() {
 
 function startArchive() {
   document.getElementById('archiveFilterBtn').addEventListener('click', renderArchive);
+  document.getElementById('archiveStudentSearch').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      renderArchive();
+    }
+  });
   document.getElementById('archiveBody').addEventListener('click', function(e) {
     var btn = e.target.closest('button[data-archive-act]');
     if (!btn) return;
