@@ -12,16 +12,30 @@
   .archive-toolbar { display:grid; grid-template-columns: 220px 260px auto 1fr; gap:12px; align-items:end; padding:16px; border-bottom:1px solid rgba(148,163,184,.28); background:#f8fafc; }
   .archive-toolbar label { display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:7px; text-transform:uppercase; }
   .archive-table-wrap { width:100%; overflow:auto; max-height:calc(100dvh - 260px); }
-  .archive-table { width:100%; min-width:980px; border-collapse:collapse; }
+  .archive-table { width:100%; min-width:1120px; border-collapse:collapse; }
   .archive-table th, .archive-table td { padding:10px 12px; border:1px solid rgba(148,163,184,.35); font-size:12px; text-align:left; white-space:nowrap; }
   .archive-table th { position:sticky; top:0; z-index:2; background:#f1f5f9; color:#0f172a; font-weight:900; }
   .archive-table tbody tr:hover td { background:#f8fafc; }
   .archive-table .name-cell { white-space:normal; min-width:210px; line-height:1.35; }
+  .archive-actions { display:flex; align-items:center; gap:8px; justify-content:flex-start; flex-wrap:nowrap; }
+  .archive-actions .btn { min-height:32px; padding:6px 10px; font-size:12px; white-space:nowrap; }
   .archive-summary { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 16px; border-top:1px solid rgba(148,163,184,.25); font-size:12px; font-weight:800; color:#475569; }
+  .archive-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.55); z-index:2000; }
+  .archive-modal.open { display:flex; }
+  .archive-modal__card { width:min(920px, 100%); max-height:90vh; overflow:auto; background:#fff; border-radius:14px; box-shadow:0 24px 70px rgba(15,23,42,.25); border:1px solid rgba(148,163,184,.35); }
+  .archive-modal__head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 18px; background:#f8fafc; border-bottom:1px solid rgba(148,163,184,.28); }
+  .archive-modal__head h3 { margin:0; color:#0f172a; font-size:18px; }
+  .archive-modal__body { padding:18px; }
+  .archive-profile-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+  .archive-profile-tile { border:1px solid rgba(148,163,184,.35); border-radius:10px; padding:10px 12px; background:#fff; min-width:0; }
+  .archive-profile-tile span { display:block; color:#64748b; font-size:11px; font-weight:900; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .archive-profile-tile b { display:block; margin-top:5px; color:#0f172a; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .archive-profile-actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid rgba(148,163,184,.28); }
   @media (max-width: 900px) {
     .archive-shell { padding: 12px; }
     .archive-toolbar { grid-template-columns:1fr; }
-    .archive-table { min-width:880px; }
+    .archive-table { min-width:1040px; }
+    .archive-profile-grid { grid-template-columns:1fr; }
   }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
@@ -61,6 +75,7 @@
               <th>Year Completed</th>
               <th>Completed On</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="archiveBody"></tbody>
@@ -71,6 +86,19 @@
         <span id="archiveTotal">0</span>
       </div>
     </section>
+
+    <div class="archive-modal" id="archiveViewModal" aria-hidden="true">
+      <div class="archive-modal__card" role="dialog" aria-modal="true" aria-labelledby="archiveViewTitle">
+        <div class="archive-modal__head">
+          <h3 id="archiveViewTitle">Archived Student Information</h3>
+          <button class="btn" id="archiveCloseBtn" type="button"><i class="fas fa-xmark"></i> Close</button>
+        </div>
+        <div class="archive-modal__body" id="archiveViewBody"></div>
+        <div class="archive-profile-actions">
+          <button class="btn btn--primary" id="archiveModalTranscriptBtn" type="button"><i class="fas fa-file-lines"></i> Transcript</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -128,7 +156,15 @@ function dbArchiveRow(row) {
     guardianPhone: row.phone_number || '',
     completionYear: completedOn ? String(new Date(completedOn).getFullYear()) : '',
     completedOn: completedOn,
-    status: row.status || 'Completed'
+    status: row.status || 'Completed',
+    dateOfBirth: row.date_of_birth || '',
+    admissionYear: row.year_admitted || row.admission_year || '',
+    houseName: row.houses && row.houses.name ? row.houses.name : (row.house_name || ''),
+    residentialStatus: row.residential_status || '',
+    disabilityStatus: row.disability_status || '',
+    guardianName: row.guardian_name || '',
+    relationship: row.relationship || '',
+    residentialAddress: row.residential_address || ''
   };
 }
 
@@ -187,8 +223,81 @@ function renderArchive() {
       '<td>' + escapeHtml(row.completionYear) + '</td>' +
       '<td>' + escapeHtml(completedDate) + '</td>' +
       '<td><span class="badge badge--green">' + escapeHtml(row.status || 'Completed') + '</span></td>' +
+      '<td><div class="archive-actions">' +
+        '<button class="btn btn--primary" type="button" data-archive-act="view" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-eye"></i> View</button>' +
+        '<button class="btn" type="button" data-archive-act="transcript" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-file-lines"></i> Transcript</button>' +
+      '</div></td>' +
     '</tr>';
-  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:30px;font-weight:800;color:#64748b">No archived students found.</td></tr>';
+  }).join('') : '<tr><td colspan="10" style="text-align:center;padding:30px;font-weight:800;color:#64748b">No archived students found.</td></tr>';
+}
+
+function findArchiveRow(assRef) {
+  assRef = String(assRef || '').trim().toUpperCase();
+  return archiveRows.find(function(row) { return String(row.assRef || '').trim().toUpperCase() === assRef; }) || null;
+}
+
+function profileTile(label, value) {
+  return '<div class="archive-profile-tile"><span>' + escapeHtml(label) + '</span><b title="' + escapeHtml(value || '-') + '">' + escapeHtml(value || '-') + '</b></div>';
+}
+
+function openArchiveView(assRef) {
+  var row = findArchiveRow(assRef);
+  if (!row) { Portal.toast('Archived student record was not found.', true); return; }
+  var fields = [
+    ['STD_ID', row.assRef],
+    ['Student Name', row.name],
+    ['Gender', row.gender],
+    ['Date of Birth', row.dateOfBirth],
+    ['Class', row.className],
+    ['Programme', row.programme],
+    ['Parent / Guardian Phone', row.guardianPhone],
+    ['Guardian Name', row.guardianName],
+    ['Relationship', row.relationship],
+    ['House', row.houseName],
+    ['Residential Status', row.residentialStatus],
+    ['Disability Status', row.disabilityStatus],
+    ['Admission Year', row.admissionYear],
+    ['Year Completed', row.completionYear],
+    ['Completed On', row.completedOn ? String(row.completedOn).slice(0, 10) : ''],
+    ['Status', row.status || 'Completed'],
+    ['Residential Address', row.residentialAddress]
+  ];
+  document.getElementById('archiveViewTitle').textContent = row.name || 'Archived Student Information';
+  document.getElementById('archiveViewBody').innerHTML = '<div class="archive-profile-grid">' + fields.map(function(field) {
+    return profileTile(field[0], field[1]);
+  }).join('') + '</div>';
+  document.getElementById('archiveModalTranscriptBtn').dataset.ref = row.assRef;
+  document.getElementById('archiveViewModal').classList.add('open');
+  document.getElementById('archiveViewModal').setAttribute('aria-hidden', 'false');
+}
+
+function closeArchiveView() {
+  document.getElementById('archiveViewModal').classList.remove('open');
+  document.getElementById('archiveViewModal').setAttribute('aria-hidden', 'true');
+}
+
+function printArchiveTranscript(assRef) {
+  assRef = String(assRef || '').trim();
+  if (!assRef) { Portal.toast('No STD_ID found for this archived student.', true); return; }
+  var existingFrame = document.getElementById('archiveTranscriptFrame');
+  if (existingFrame) existingFrame.remove();
+  var frame = document.createElement('iframe');
+  frame.id = 'archiveTranscriptFrame';
+  frame.title = 'Archived student transcript';
+  frame.style.position = 'fixed';
+  frame.style.left = '-10000px';
+  frame.style.top = '0';
+  frame.style.width = '1px';
+  frame.style.height = '1px';
+  frame.style.border = '0';
+  frame.style.opacity = '0';
+  frame.src = 'transcript.html?ref=' + encodeURIComponent(assRef) + '&download=1&embedded=1';
+  document.body.appendChild(frame);
+  Portal.toast('Preparing transcript for ' + assRef + '...');
+  setTimeout(function() {
+    var staleFrame = document.getElementById('archiveTranscriptFrame');
+    if (staleFrame) staleFrame.remove();
+  }, 120000);
 }
 
 async function loadArchive() {
@@ -212,6 +321,24 @@ async function loadArchive() {
 
 function startArchive() {
   document.getElementById('archiveFilterBtn').addEventListener('click', renderArchive);
+  document.getElementById('archiveBody').addEventListener('click', function(e) {
+    var btn = e.target.closest('button[data-archive-act]');
+    if (!btn) return;
+    if (btn.dataset.archiveAct === 'view') openArchiveView(btn.dataset.ref);
+    if (btn.dataset.archiveAct === 'transcript') printArchiveTranscript(btn.dataset.ref);
+  });
+  document.getElementById('archiveCloseBtn').addEventListener('click', closeArchiveView);
+  document.getElementById('archiveViewModal').addEventListener('click', function(e) {
+    if (e.target.id === 'archiveViewModal') closeArchiveView();
+  });
+  document.getElementById('archiveModalTranscriptBtn').addEventListener('click', function() {
+    printArchiveTranscript(this.dataset.ref);
+  });
+  window.addEventListener('message', function(event) {
+    if (!event.data || event.data.type !== 'axiom-transcript-finished') return;
+    var frame = document.getElementById('archiveTranscriptFrame');
+    if (frame) frame.remove();
+  });
   loadArchive().catch(function(err) {
     console.error(err);
     Portal.toast('Could not load student archive: ' + (err.message || 'Unknown error'), true);
