@@ -12,7 +12,7 @@
   .archive-toolbar { display:grid; grid-template-columns: 220px 260px 300px auto 1fr; gap:12px; align-items:end; padding:16px; border-bottom:1px solid rgba(148,163,184,.28); background:#f8fafc; }
   .archive-toolbar label { display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:7px; text-transform:uppercase; }
   .archive-table-wrap { width:100%; overflow:auto; max-height:calc(100dvh - 260px); }
-  .archive-table { width:100%; min-width:1260px; border-collapse:collapse; }
+  .archive-table { width:100%; min-width:1360px; border-collapse:collapse; }
   .archive-table th, .archive-table td { padding:10px 12px; border:1px solid rgba(148,163,184,.35); font-size:12px; text-align:left; white-space:nowrap; }
   .archive-table th { position:sticky; top:0; z-index:2; background:#f1f5f9; color:#0f172a; font-weight:900; }
   .archive-table tbody tr:hover td { background:#f8fafc; }
@@ -45,7 +45,7 @@
   @media (max-width: 900px) {
     .archive-shell { padding: 12px; }
     .archive-toolbar { grid-template-columns:1fr; }
-    .archive-table { min-width:1180px; }
+    .archive-table { min-width:1280px; }
     .archive-profile-grid { grid-template-columns:1fr; }
     .archive-doc-toolbar { align-items:stretch; flex-direction:column; }
   }
@@ -80,7 +80,7 @@
     justify-content: flex-start !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;
-    min-width: 288px !important;
+    min-width: 382px !important;
   }
   .archive-table .archive-actions .btn {
     display: inline-flex !important;
@@ -317,6 +317,7 @@ function renderArchive() {
       '<td><span class="badge badge--green">' + escapeHtml(row.status || 'Completed') + '</span></td>' +
       '<td><div class="archive-actions">' +
         '<button class="btn btn--primary" type="button" data-archive-act="view" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-eye"></i> View</button>' +
+        '<button class="btn btn--primary" type="button" data-archive-act="account" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-user-check"></i> Account</button>' +
         '<button class="btn" type="button" data-archive-act="transcript" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-file-lines"></i> Transcript</button>' +
         '<button class="btn btn--success" type="button" data-archive-act="documents" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-file-arrow-down"></i> Documents</button>' +
       '</div></td>' +
@@ -367,6 +368,29 @@ function openArchiveView(assRef) {
 function closeArchiveView() {
   document.getElementById('archiveViewModal').classList.remove('open');
   document.getElementById('archiveViewModal').setAttribute('aria-hidden', 'true');
+}
+
+function studentDefaultPassword(dateValue) {
+  if (!dateValue) return '';
+  var parts = String(dateValue).slice(0, 10).split('-');
+  if (parts.length === 3 && parts[0].length === 4) return parts[1] + parts[2] + parts[0];
+  return String(dateValue).replace(/\D/g, '');
+}
+
+async function ensureArchivedStudentAccount(assRef) {
+  var row = findArchiveRow(assRef);
+  if (!row) { Portal.toast('Archived student record was not found.', true); return; }
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.ensureStudentAccount) {
+    Portal.toast('Supabase student account setup is not available on this page.', true);
+    return;
+  }
+  var password = studentDefaultPassword(row.dateOfBirth);
+  if (!password) {
+    Portal.toast('This archived student has no date of birth for account password setup.', true);
+    return;
+  }
+  await AxiomDB.ensureStudentAccount(row.assRef, password);
+  Portal.toast('Student account access is ready. Login with STD_ID and date of birth password.');
 }
 
 function printArchiveTranscript(assRef) {
@@ -552,6 +576,12 @@ function startArchive() {
     var btn = e.target.closest('button[data-archive-act]');
     if (!btn) return;
     if (btn.dataset.archiveAct === 'view') openArchiveView(btn.dataset.ref);
+    if (btn.dataset.archiveAct === 'account') {
+      ensureArchivedStudentAccount(btn.dataset.ref).catch(function(err) {
+        console.error(err);
+        Portal.toast('Could not prepare student account: ' + (err.message || 'Unknown error'), true);
+      });
+    }
     if (btn.dataset.archiveAct === 'transcript') printArchiveTranscript(btn.dataset.ref);
     if (btn.dataset.archiveAct === 'documents') {
       openArchiveDocuments(btn.dataset.ref).catch(function(err) {
