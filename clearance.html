@@ -223,7 +223,7 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260716-clearance-generate1"></script>
+<script src="assets/supabase-client.js?v=20260716-clearance-completed1"></script>
 <script src="assets/shell.js?v=20260716-no-help1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -263,6 +263,18 @@ function studentAssRef(student) {
 function studentIsCompleted(student) {
   return String(student && student.status || '').trim().toLowerCase() === 'completed' ||
     String(student && student.student_level || '').trim().toLowerCase() === 'completed';
+}
+function recordIsCompleted(row) {
+  var student = row && row.students ? row.students : null;
+  if (student && (student.status || student.student_level)) return studentIsCompleted(student);
+  var assRef = recordStudentAssRef(row).toLowerCase();
+  if (!assRef) return false;
+  return students.some(function(student) {
+    return studentAssRef(student).toLowerCase() === assRef && studentIsCompleted(student);
+  });
+}
+function completedClearanceRows(sourceRows) {
+  return (sourceRows || []).filter(recordIsCompleted);
 }
 function studentClassName(student) {
   var cls = student && student.classes ? student.classes : {};
@@ -313,7 +325,7 @@ function renderStudentClearanceSummary() {
   var pending = records.filter(function(row) { return normalizeStatus(row.status) === 'Pending'; }).length;
   var badge = document.getElementById('studentClearanceBadge');
   if (!total) {
-    document.getElementById('studentClearanceText').textContent = 'No clearance records have been generated for your account yet.';
+    document.getElementById('studentClearanceText').textContent = 'Clearance is available after completion / archive only.';
     badge.className = 'summary-pill pending';
     badge.innerHTML = '<i class="fas fa-clock"></i> Not Started';
     return;
@@ -502,6 +514,10 @@ async function openClearanceForm() {
     activeFormRecords = studentRecordsByAssRef(assRef);
     if (!activeFormRecords.length) {
       var student = students.find(function(item) { return studentAssRef(item).toLowerCase() === assRef.toLowerCase(); });
+      if (student && !studentIsCompleted(student)) {
+        Portal.toast('Clearance is only available for completed / archived students.', true);
+        return;
+      }
       if (student && student.id && AxiomDB.initializeStudentClearance) {
         await AxiomDB.initializeStudentClearance(student.id);
         await loadData();
@@ -538,7 +554,18 @@ function printClearanceForm() {
 function clearForm() { document.getElementById('requirementForm').reset(); document.getElementById('requirementId').value = ''; document.getElementById('activeReq').checked = true; renderStaffOptions(); }
 function editRequirement(id) { var row = requirements.find(function(item) { return item.id === id; }); if (!row) return; document.getElementById('requirementId').value = row.id; document.getElementById('clearanceTitle').value = row.title; document.getElementById('positionTitle').value = row.position_title; document.getElementById('sortOrder').value = row.sort_order || 1; document.getElementById('activeReq').checked = row.active !== false; renderStaffOptions(); document.getElementById('assignedStaff').value = row.staff_user_id || ''; }
 async function removeRequirement(id) { if (!confirm('Delete this clearance requirement? Existing student clearance records for it will also be removed.')) return; await AxiomDB.deleteClearanceRequirement(id); Portal.toast('Clearance requirement deleted.'); await loadData(); }
-async function reviewRecord(id, status) { var reason = ''; if (status === 'Declined') { reason = prompt('Remarks for declining this clearance:') || ''; if (!reason.trim()) { Portal.toast('Decline remarks are required.', true); return; } } await AxiomDB.reviewStudentClearance(id, status, reason); Portal.toast(status === 'Cleared' ? 'Student cleared.' : 'Clearance declined.'); await loadData(); }
+async function reviewRecord(id, status) {
+  var row = records.find(function(item) { return item.id === id; });
+  if (row && !recordIsCompleted(row)) {
+    Portal.toast('Clearance is only available for completed / archived students.', true);
+    return;
+  }
+  var reason = '';
+  if (status === 'Declined') { reason = prompt('Remarks for declining this clearance:') || ''; if (!reason.trim()) { Portal.toast('Decline remarks are required.', true); return; } }
+  await AxiomDB.reviewStudentClearance(id, status, reason);
+  Portal.toast(status === 'Cleared' ? 'Student cleared.' : 'Clearance declined.');
+  await loadData();
+}
 function populateGenerateClassFilter() {
   var completed = students.filter(studentIsCompleted);
   var classes = {};
@@ -641,6 +668,7 @@ async function loadData() {
   students = adminToolsAllowed && AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
   requirements = adminToolsAllowed && AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
   records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(isStudentClearanceView() ? { studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id } : {}) || [] : [];
+  records = completedClearanceRows(records);
   renderStaffOptions(); renderRequirements(); renderStudentClearanceSummary(); renderRecords();
 }
 function startClearance() {

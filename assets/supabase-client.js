@@ -1596,6 +1596,18 @@
     return result.data;
   }
 
+  function clearanceStudentIsCompleted(row) {
+    var student = row && row.students ? row.students : null;
+    if (!student) return false;
+    var status = String(student.status || '').trim().toLowerCase();
+    var level = String(student.student_level || '').trim().toLowerCase();
+    return status === 'completed' || level === 'completed';
+  }
+
+  function completedClearanceRows(rows) {
+    return (rows || []).filter(clearanceStudentIsCompleted);
+  }
+
   async function listStudentClearances(filters) {
     var c = db();
     if (!c) return null;
@@ -1610,7 +1622,7 @@
         p_ass_ref_id: filters.studentAssRef || null,
         p_session_token: studentToken
       });
-      if (!studentFeed.error) return studentFeed.data || [];
+      if (!studentFeed.error) return completedClearanceRows(studentFeed.data || []);
       if (/p_session_token|Could not find the function|schema cache|function/i.test(studentFeed.error.message || '')) {
         throw new Error('Run the student clearance session SQL in Supabase, then logout and login again.');
       }
@@ -1622,7 +1634,7 @@
       var staffFeed = await c.rpc('secure_list_staff_clearances', {
         p_session_token: activeStaffSessionToken() || null
       });
-      if (!staffFeed.error) return staffFeed.data || [];
+      if (!staffFeed.error) return completedClearanceRows(staffFeed.data || []);
       if (/secure_list_staff_clearances|schema cache|function/i.test(staffFeed.error.message || '')) {
         throw new Error('Run the clearance assignment scope SQL in Supabase, then refresh this page.');
       }
@@ -1651,7 +1663,7 @@
     if (filters.status) query = query.eq('status', filters.status);
     var result = await query;
     if (result.error) throw result.error;
-    return result.data || [];
+    return completedClearanceRows(result.data || []);
   }
 
   async function reviewStudentClearance(clearanceId, status, reason) {
