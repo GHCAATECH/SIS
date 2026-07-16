@@ -1600,7 +1600,8 @@
     var c = db();
     if (!c) return null;
     filters = filters || {};
-    if (filters.studentAssRef || filters.studentId) {
+    var adminMode = filters.admin === true;
+    if (!adminMode && (filters.studentAssRef || filters.studentId)) {
       var studentToken = activeStudentSessionToken();
       if (!studentToken) {
         throw new Error('Student session expired. Please logout and login again to view clearance status.');
@@ -1617,7 +1618,7 @@
         throw studentFeed.error;
       }
     }
-    if (!filters.studentAssRef && !filters.studentId) {
+    if (!adminMode && !filters.studentAssRef && !filters.studentId) {
       var staffFeed = await c.rpc('secure_list_staff_clearances', {
         p_session_token: activeStaffSessionToken() || null
       });

@@ -183,7 +183,7 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260716-clearance-form2"></script>
+<script src="assets/supabase-client.js?v=20260716-clearance-generate1"></script>
 <script src="assets/shell.js?v=20260716-no-help1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -503,20 +503,21 @@ async function generateCompleted() {
   if (!printWin) { Portal.toast('Allow popups to print completed clearance forms.', true); return; }
   printWin.document.write('<!doctype html><html><head><title>Preparing Clearance Forms</title></head><body style="font-family:Arial,sans-serif;padding:24px">Preparing completed clearance forms...</body></html>');
   printWin.document.close();
-  for (var i = 0; i < completed.length; i++) await AxiomDB.initializeStudentClearance(completed[i].id);
+  var forms = [];
+  for (var i = 0; i < completed.length; i++) {
+    var student = completed[i];
+    if (!student || !student.id) continue;
+    await AxiomDB.initializeStudentClearance(student.id);
+    var studentRows = [];
+    if (AxiomDB.listStudentClearances) {
+      studentRows = await AxiomDB.listStudentClearances({ admin: true, studentId: student.id }) || [];
+    }
+    if (!studentRows.length && studentAssRef(student) && AxiomDB.listStudentClearances) {
+      studentRows = await AxiomDB.listStudentClearances({ admin: true, studentAssRef: studentAssRef(student) }) || [];
+    }
+    if (studentRows.length) forms.push(renderPrintableClearanceForm(studentRows));
+  }
   await loadData();
-  var completedRefs = {};
-  completed.forEach(function(student) { completedRefs[studentAssRef(student).toLowerCase()] = true; });
-  var grouped = {};
-  records.forEach(function(row) {
-    var ref = recordStudentAssRef(row).toLowerCase();
-    if (!completedRefs[ref]) return;
-    if (!grouped[ref]) grouped[ref] = [];
-    grouped[ref].push(row);
-  });
-  var forms = Object.keys(grouped).map(function(ref) {
-    return renderPrintableClearanceForm(grouped[ref]);
-  }).filter(Boolean);
   if (!forms.length) { printWin.close(); Portal.toast('No completed clearance forms were found to print.', true); return; }
   printClearanceForms(forms.join('<div class="print-page-break"></div>'), 'Completed Student Clearance Forms', printWin);
   Portal.toast('Completed clearance forms ready. Choose Save as PDF in the print dialog.');
