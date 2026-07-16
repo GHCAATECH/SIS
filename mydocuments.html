@@ -29,52 +29,8 @@
     margin-top: 4px;
     font-weight: 800;
   }
-  .document-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(148,163,184,.25);
-    background: #f8fafc;
-  }
-  .document-toolbar__left,
-  .document-toolbar__right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: nowrap;
-  }
-  .document-toolbar label {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-weight: 800;
-    color: var(--text);
-    white-space: nowrap;
-  }
-  .doc-check {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--brand);
-  }
-  #docTable th,
-  #docTable td {
-    white-space: nowrap !important;
-  }
-  #docTable th:nth-child(2),
-  #docTable td:nth-child(2),
-  #docTable th:nth-child(3),
-  #docTable td:nth-child(3) {
-    max-width: 260px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   @media (max-width: 900px) {
     .student-profile-strip { grid-template-columns: repeat(2, 1fr); }
-    .document-toolbar { align-items: stretch; flex-direction: column; }
-    .document-toolbar__left,
-    .document-toolbar__right { width: 100%; justify-content: space-between; }
   }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
@@ -89,18 +45,9 @@
 
     <div class="card card--pad-0">
       <div class="card__head"><i class="fas fa-folder-open"></i> <span id="docHeadTitle">My Documents</span></div>
-      <div class="document-toolbar">
-        <div class="document-toolbar__left">
-          <label><input class="doc-check" type="checkbox" id="selectAllDocs"> Select All</label>
-          <span class="badge badge--gray" id="selectedDocCount">0 selected</span>
-        </div>
-        <div class="document-toolbar__right">
-          <button class="btn btn--primary" id="printSelectedDocs" type="button"><i class="fas fa-print"></i> Download / Print Selected</button>
-        </div>
-      </div>
       <div class="table-wrap">
         <table class="tbl" id="docTable">
-          <thead><tr><th>Select</th><th>Title</th><th>File Name</th><th>Type</th><th>Uploaded</th><th>Action</th></tr></thead>
+          <thead><tr><th>Title</th><th>File Name</th><th>Type</th><th>Uploaded</th><th>Action</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -145,86 +92,18 @@ if (!currentUser || !currentUser.id) {
   location.href = 'login.html';
 }
 var ownerType = currentUser.type === 'student' ? 'student' : 'staff';
-var currentDocuments = [];
 document.getElementById('docSubtitle').textContent = ownerType === 'student' ? 'View documents uploaded to your student account.' : 'View documents uploaded to your staff account.';
 document.getElementById('docHeadTitle').textContent = ownerType === 'student' ? 'Student Documents' : 'Staff Documents';
 document.getElementById('studentTranscriptCard').style.display = 'none';
 
-function escapeHtml(value) {
-  return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
-    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
-  });
-}
-
-function updateSelectedDocCount() {
-  var selected = document.querySelectorAll('.doc-row-check:checked').length;
-  var total = document.querySelectorAll('.doc-row-check').length;
-  document.getElementById('selectedDocCount').textContent = selected + ' selected';
-  document.getElementById('selectAllDocs').checked = total > 0 && selected === total;
-  document.getElementById('selectAllDocs').indeterminate = selected > 0 && selected < total;
-}
-
 function renderDocuments(docs) {
   docs = docs || [];
-  currentDocuments = docs;
-  document.querySelector('#docTable tbody').innerHTML = docs.map(function(doc, index) {
+  document.querySelector('#docTable tbody').innerHTML = docs.map(function(doc) {
     var date = doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : '-';
-    var action = doc.file_url ? '<a class="btn btn--sm btn--primary" href="'+escapeHtml(doc.file_url)+'" target="_blank" rel="noopener"><i class="fas fa-eye"></i> View</a>' : '<span class="badge badge--gray">Stored</span>';
-    var disabled = doc.file_url ? '' : ' disabled';
-    return '<tr>' +
-      '<td><input class="doc-check doc-row-check" type="checkbox" data-doc-index="'+index+'"'+disabled+'></td>' +
-      '<td style="font-weight:700" title="'+escapeHtml(doc.title)+'">'+escapeHtml(doc.title)+'</td>' +
-      '<td title="'+escapeHtml(doc.file_name)+'">'+escapeHtml(doc.file_name)+'</td>' +
-      '<td><span class="badge badge--gray">'+escapeHtml(doc.file_type || 'FILE')+'</span></td>' +
-      '<td>'+escapeHtml(date)+'</td>' +
-      '<td>'+action+'</td>' +
-    '</tr>';
+    var action = doc.file_url ? '<a class="btn btn--sm btn--primary" href="'+doc.file_url+'" target="_blank"><i class="fas fa-eye"></i> View</a>' : '<span class="badge badge--gray">Stored</span>';
+    return '<tr><td style="font-weight:700">'+doc.title+'</td><td>'+doc.file_name+'</td><td><span class="badge badge--gray">'+(doc.file_type || 'FILE')+'</span></td><td>'+date+'</td><td>'+action+'</td></tr>';
   }).join('');
   document.getElementById('docEmpty').style.display = docs.length ? 'none' : 'block';
-  updateSelectedDocCount();
-}
-
-function documentPreviewHtml(doc) {
-  var url = doc.file_url || '';
-  var title = doc.title || doc.file_name || 'Document';
-  var type = String(doc.file_type || doc.file_name || '').toLowerCase();
-  var safeUrl = escapeHtml(url);
-  var header = '<h2>'+escapeHtml(title)+'</h2><p>'+escapeHtml(doc.file_name || '')+'</p>';
-  if (/\.(png|jpe?g|gif|webp|bmp)$/i.test(url) || /^(png|jpe?g|gif|webp|bmp)$/i.test(type)) {
-    return '<section class="doc-page">'+header+'<img src="'+safeUrl+'" alt="'+escapeHtml(title)+'"></section>';
-  }
-  if (/\.pdf(\?|#|$)/i.test(url) || type === 'pdf') {
-    return '<section class="doc-page">'+header+'<iframe src="'+safeUrl+'" title="'+escapeHtml(title)+'"></iframe><p class="fallback"><a href="'+safeUrl+'" target="_blank" rel="noopener">Open PDF</a></p></section>';
-  }
-  return '<section class="doc-page">'+header+'<div class="file-card"><i class="fas fa-file-lines"></i><p>This file type should be opened directly before printing.</p><a href="'+safeUrl+'" target="_blank" rel="noopener">Open Document</a></div></section>';
-}
-
-function printSelectedDocuments() {
-  var selected = Array.from(document.querySelectorAll('.doc-row-check:checked')).map(function(box) {
-    return currentDocuments[Number(box.dataset.docIndex)];
-  }).filter(function(doc) { return doc && doc.file_url; });
-  if (!selected.length) {
-    Portal.toast('Select at least one document to download or print.', true);
-    return;
-  }
-  var printWin = window.open('', '_blank');
-  if (!printWin) {
-    Portal.toast('Allow pop-ups to print the selected documents.', true);
-    return;
-  }
-  printWin.document.write('<!doctype html><html><head><title>Selected Documents</title><style>' +
-    'body{margin:0;background:#f8fafc;color:#111827;font-family:Arial,Helvetica,sans-serif;}' +
-    '.toolbar{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;background:#fff;border-bottom:1px solid #dbe3ef;}' +
-    '.toolbar h1{margin:0;font-size:18px}.toolbar button{border:0;border-radius:8px;background:#0b3d91;color:#fff;padding:10px 14px;font-weight:800;cursor:pointer}' +
-    '.doc-page{page-break-after:always;margin:16px auto;padding:18px;max-width:980px;min-height:90vh;background:#fff;border:1px solid #dbe3ef;box-shadow:0 8px 24px rgba(15,23,42,.08)}' +
-    '.doc-page:last-child{page-break-after:auto}.doc-page h2{margin:0 0 4px;font-size:18px}.doc-page p{margin:0 0 14px;color:#64748b;font-weight:700}' +
-    '.doc-page img{display:block;max-width:100%;max-height:78vh;margin:0 auto;object-fit:contain}.doc-page iframe{width:100%;height:78vh;border:1px solid #dbe3ef}' +
-    '.file-card{display:grid;place-items:center;gap:12px;min-height:55vh;border:1px dashed #94a3b8;border-radius:12px;color:#475569;text-align:center}.file-card i{font-size:46px}.file-card a,.fallback a{color:#0b3d91;font-weight:800}' +
-    '@media print{.toolbar{display:none}.doc-page{margin:0;border:0;box-shadow:none;max-width:none;min-height:0}.doc-page iframe{height:92vh}}' +
-    '</style></head><body><div class="toolbar"><h1>Selected Documents ('+selected.length+')</h1><button onclick="window.print()">Print</button></div>' +
-    selected.map(documentPreviewHtml).join('') +
-    '<script>setTimeout(function(){window.print()},900)<\/script></body></html>');
-  printWin.document.close();
 }
 
 async function loadMyDocuments() {
@@ -348,15 +227,6 @@ async function loadStudentTranscript() {
 
 renderDocuments([]);
 loadMyDocuments();
-document.getElementById('selectAllDocs').addEventListener('change', function() {
-  var checked = this.checked;
-  document.querySelectorAll('.doc-row-check:not(:disabled)').forEach(function(box) { box.checked = checked; });
-  updateSelectedDocCount();
-});
-document.getElementById('docTable').addEventListener('change', function(e) {
-  if (e.target.classList.contains('doc-row-check')) updateSelectedDocCount();
-});
-document.getElementById('printSelectedDocs').addEventListener('click', printSelectedDocuments);
 </script>
 <footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
   <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>
