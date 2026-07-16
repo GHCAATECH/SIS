@@ -188,6 +188,7 @@ var requirements = [];
 var records = [];
 var staff = [];
 var students = [];
+var activeFormRecords = null;
 var defaultPositions = ['Administrator','Headmaster','Assistant Headmaster (Administration)','Assistant Headmaster (Academics)','Head of Department (HOD)','Form Master/Form Mistress','House Staff','Senior Housemaster','Senior Housemistress','Bursar','Accountant','Librarian','Storekeeper','School Nurse','Laboratory Technician','ICT Coordinator','Examinations Officer','Secretary','Other'];
 function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]; }); }
 function studentName(student) { return [student && student.first_name, student && student.surname, student && student.other_names].filter(Boolean).join(' ').toUpperCase(); }
@@ -208,9 +209,21 @@ function clearanceRowTitle(row) {
 function clearanceNames(status) {
   return records.filter(function(row) { return normalizeStatus(row.status) === status; }).map(clearanceRowTitle).filter(Boolean);
 }
-function firstRecordStudent() {
-  for (var i = 0; i < records.length; i++) {
-    if (records[i] && records[i].students) return records[i].students;
+function recordStudentAssRef(row) {
+  var student = row && row.students ? row.students : {};
+  return String(student.ass_ref_id || student.std_id || '').trim();
+}
+function studentAssRef(student) {
+  return String(student && (student.ass_ref_id || student.std_id) || '').trim();
+}
+function studentIsCompleted(student) {
+  return String(student && student.status || '').trim().toLowerCase() === 'completed' ||
+    String(student && student.student_level || '').trim().toLowerCase() === 'completed';
+}
+function firstRecordStudent(sourceRecords) {
+  sourceRecords = sourceRecords || records;
+  for (var i = 0; i < sourceRecords.length; i++) {
+    if (sourceRecords[i] && sourceRecords[i].students) return sourceRecords[i].students;
   }
   return currentUser || {};
 }
@@ -338,14 +351,21 @@ function renderRecords() {
   }
   document.querySelectorAll('[data-review]').forEach(function(button) { button.addEventListener('click', function() { reviewRecord(button.dataset.id, button.dataset.review); }); });
 }
-function renderClearanceForm() {
-  var student = firstRecordStudent();
+function studentRecordsByAssRef(assRef, sourceRecords) {
+  var wanted = String(assRef || '').trim().toLowerCase();
+  sourceRecords = sourceRecords || records;
+  if (!wanted) return [];
+  return sourceRecords.filter(function(row) { return recordStudentAssRef(row).toLowerCase() === wanted; });
+}
+function renderClearanceForm(sourceRecords) {
+  sourceRecords = sourceRecords || activeFormRecords || records;
+  var student = firstRecordStudent(sourceRecords);
   var classInfo = student.classes || {};
   var name = studentName(student) || currentUser.full_name || '';
   var assRef = student.ass_ref_id || currentUser.ass_ref_id || '';
   var className = classInfo.name || currentUser.class_name || '';
-  var total = records.length;
-  var cleared = records.filter(function(row) { return normalizeStatus(row.status) === 'Cleared'; }).length;
+  var total = sourceRecords.length;
+  var cleared = sourceRecords.filter(function(row) { return normalizeStatus(row.status) === 'Cleared'; }).length;
   var statusText = total && cleared === total ? 'Cleared' : total ? cleared + ' of ' + total + ' Cleared' : 'Not Started';
   document.getElementById('clearanceFormSubtitle').textContent = assRef ? assRef + ' - ' + name : 'Clearance status summary';
   document.getElementById('clearanceFormBody').innerHTML =
@@ -358,7 +378,7 @@ function renderClearanceForm() {
       '<div class="clearance-form-tile"><span>Generated On</span><b>' + escapeHtml(new Date().toLocaleDateString()) + '</b></div>' +
     '</div>' +
     '<table class="clearance-form-table"><thead><tr><th>Clearance</th><th>Position</th><th>Status</th><th>Cleared By</th><th>Cleared On</th><th>Remarks</th></tr></thead><tbody>' +
-    (records.length ? records.map(function(row) {
+    (sourceRecords.length ? sourceRecords.map(function(row) {
       var rowStatus = normalizeStatus(row.status);
       var req = row.clearance_requirements || {};
       var reviewer = row.reviewer ? row.reviewer.full_name : '';
@@ -368,8 +388,68 @@ function renderClearanceForm() {
     }).join('') : '<tr><td colspan="6" class="muted">No clearance records found.</td></tr>') +
     '</tbody></table>';
 }
-function openClearanceForm() {
-  renderClearanceForm();
+function renderPrintableClearanceForm(sourceRecords) {
+  sourceRecords = sourceRecords || [];
+  if (!sourceRecords.length) return '';
+  var student = firstRecordStudent(sourceRecords);
+  var classInfo = student.classes || {};
+  var name = studentName(student) || '-';
+  var assRef = student.ass_ref_id || student.std_id || '-';
+  var className = classInfo.name || '-';
+  var total = sourceRecords.length;
+  var cleared = sourceRecords.filter(function(row) { return normalizeStatus(row.status) === 'Cleared'; }).length;
+  var statusText = total && cleared === total ? 'Cleared' : cleared + ' of ' + total + ' Cleared';
+  return '<section class="print-clearance-form">' +
+    '<h2>Student Clearance Form</h2>' +
+    '<div class="clearance-form-grid">' +
+      '<div class="clearance-form-tile"><span>Student Name</span><b>' + escapeHtml(name) + '</b></div>' +
+      '<div class="clearance-form-tile"><span>STD_ID</span><b>' + escapeHtml(assRef) + '</b></div>' +
+      '<div class="clearance-form-tile"><span>Class</span><b>' + escapeHtml(className) + '</b></div>' +
+      '<div class="clearance-form-tile"><span>Overall Status</span><b>' + escapeHtml(statusText) + '</b></div>' +
+      '<div class="clearance-form-tile"><span>School</span><b>' + escapeHtml((currentUser && currentUser.school_name) || 'ASUOM SENIOR HIGH SCHOOL') + '</b></div>' +
+      '<div class="clearance-form-tile"><span>Generated On</span><b>' + escapeHtml(new Date().toLocaleDateString()) + '</b></div>' +
+    '</div>' +
+    '<table class="clearance-form-table"><thead><tr><th>Clearance</th><th>Position</th><th>Status</th><th>Cleared By</th><th>Cleared On</th><th>Remarks</th></tr></thead><tbody>' +
+    sourceRecords.map(function(row) {
+      var rowStatus = normalizeStatus(row.status);
+      var req = row.clearance_requirements || {};
+      var reviewer = row.reviewer ? row.reviewer.full_name : '';
+      var assigned = row.assigned_staff ? row.assigned_staff.full_name : '';
+      var clearedBy = reviewer || (rowStatus === 'Cleared' && row.reviewed_at ? assigned || row.position_title || 'Admin update' : '-');
+      return '<tr><td>' + escapeHtml(req.title || clearanceRowTitle(row)) + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(rowStatus) + '</td><td>' + escapeHtml(clearedBy) + '</td><td>' + escapeHtml(formatDate(row.reviewed_at) || '-') + '</td><td>' + escapeHtml(row.reason || '') + '</td></tr>';
+    }).join('') +
+    '</tbody></table>' +
+  '</section>';
+}
+function printClearanceForms(content, title, existingWindow) {
+  var win = existingWindow || window.open('', '_blank');
+  if (!win) { Portal.toast('Allow popups to print the clearance forms.', true); return; }
+  win.document.write('<!doctype html><html><head><title>' + escapeHtml(title || 'Clearance Forms') + '</title><style>body{font-family:Times New Roman,serif;padding:24px;color:#0f172a}h1{font-size:22px;margin:0 0 18px}.print-clearance-form{margin-bottom:22px}.print-clearance-form h2{font-size:18px;margin:0 0 12px}.clearance-form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.clearance-form-tile{border:1px solid #94a3b8;padding:8px}.clearance-form-tile span{display:block;font-size:11px;text-transform:uppercase;color:#64748b;font-weight:900}.clearance-form-tile b{display:block;margin-top:4px}.clearance-form-table{width:100%;border-collapse:collapse}.clearance-form-table th,.clearance-form-table td{border:1px solid #94a3b8;padding:8px;font-size:13px;text-align:left;white-space:nowrap}.clearance-form-table th{background:#eaf2ff}.print-page-break{break-after:page;page-break-after:always;height:0}@media print{body{padding:12px}.print-clearance-form{page-break-inside:avoid}}</style></head><body><h1>' + escapeHtml(title || 'Clearance Forms') + '</h1>' + content + '</body></html>');
+  win.document.close();
+  win.focus();
+  win.print();
+}
+async function openClearanceForm() {
+  activeFormRecords = records;
+  if (canSetup()) {
+    var assRef = prompt('Enter student STD_ID / Ass Ref.ID:');
+    if (!assRef || !assRef.trim()) return;
+    assRef = assRef.trim();
+    activeFormRecords = studentRecordsByAssRef(assRef);
+    if (!activeFormRecords.length) {
+      var student = students.find(function(item) { return studentAssRef(item).toLowerCase() === assRef.toLowerCase(); });
+      if (student && student.id && AxiomDB.initializeStudentClearance) {
+        await AxiomDB.initializeStudentClearance(student.id);
+        await loadData();
+        activeFormRecords = studentRecordsByAssRef(assRef);
+      }
+    }
+    if (!activeFormRecords.length) {
+      Portal.toast('No clearance records found for ' + assRef + '.', true);
+      return;
+    }
+  }
+  renderClearanceForm(activeFormRecords);
   var modal = document.getElementById('clearanceFormModal');
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
@@ -378,9 +458,10 @@ function closeClearanceForm() {
   var modal = document.getElementById('clearanceFormModal');
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
+  activeFormRecords = null;
 }
 function printClearanceForm() {
-  renderClearanceForm();
+  renderClearanceForm(activeFormRecords || records);
   var content = document.getElementById('clearanceFormBody').innerHTML;
   var title = document.getElementById('clearanceFormSubtitle').textContent;
   var win = window.open('', '_blank');
@@ -395,11 +476,30 @@ function editRequirement(id) { var row = requirements.find(function(item) { retu
 async function removeRequirement(id) { if (!confirm('Delete this clearance requirement? Existing student clearance records for it will also be removed.')) return; await AxiomDB.deleteClearanceRequirement(id); Portal.toast('Clearance requirement deleted.'); await loadData(); }
 async function reviewRecord(id, status) { var reason = ''; if (status === 'Declined') { reason = prompt('Remarks for declining this clearance:') || ''; if (!reason.trim()) { Portal.toast('Decline remarks are required.', true); return; } } await AxiomDB.reviewStudentClearance(id, status, reason); Portal.toast(status === 'Cleared' ? 'Student cleared.' : 'Clearance declined.'); await loadData(); }
 async function generateCompleted() {
-  var completed = students.filter(function(student) { return student.status === 'Completed' || student.student_level === 'Completed'; });
+  if (!canSetup()) { Portal.toast('Only administrators can generate completed clearance forms.', true); return; }
+  var completed = students.filter(studentIsCompleted);
   if (!completed.length) { Portal.toast('No completed students found.', true); return; }
+  var printWin = window.open('', '_blank');
+  if (!printWin) { Portal.toast('Allow popups to print completed clearance forms.', true); return; }
+  printWin.document.write('<!doctype html><html><head><title>Preparing Clearance Forms</title></head><body style="font-family:Arial,sans-serif;padding:24px">Preparing completed clearance forms...</body></html>');
+  printWin.document.close();
   for (var i = 0; i < completed.length; i++) await AxiomDB.initializeStudentClearance(completed[i].id);
-  Portal.toast('Clearance generated for completed students.');
   await loadData();
+  var completedRefs = {};
+  completed.forEach(function(student) { completedRefs[studentAssRef(student).toLowerCase()] = true; });
+  var grouped = {};
+  records.forEach(function(row) {
+    var ref = recordStudentAssRef(row).toLowerCase();
+    if (!completedRefs[ref]) return;
+    if (!grouped[ref]) grouped[ref] = [];
+    grouped[ref].push(row);
+  });
+  var forms = Object.keys(grouped).map(function(ref) {
+    return renderPrintableClearanceForm(grouped[ref]);
+  }).filter(Boolean);
+  if (!forms.length) { printWin.close(); Portal.toast('No completed clearance forms were found to print.', true); return; }
+  printClearanceForms(forms.join('<div class="print-page-break"></div>'), 'Completed Student Clearance Forms', printWin);
+  Portal.toast('Completed clearance forms ready. Choose Save as PDF in the print dialog.');
 }
 async function loadData() {
   currentUser = Portal.currentUser();
@@ -412,7 +512,7 @@ async function loadData() {
   document.getElementById('clearedCard').style.display = staffView ? '' : 'none';
   document.getElementById('recordsTitle').innerHTML = staffView ? '<i class="fas fa-list-check"></i> Clearance To Review' : studentView ? '<i class="fas fa-list-check"></i> My Clearance Records' : '<i class="fas fa-list-check"></i> Clearance Records';
   document.getElementById('generateBtn').style.display = setupAllowed ? '' : 'none';
-  document.getElementById('viewClearanceFormBtn').style.display = studentView ? '' : 'none';
+  document.getElementById('viewClearanceFormBtn').style.display = (setupAllowed || studentView) ? '' : 'none';
   document.getElementById('statusFilter').style.display = studentView ? 'none' : '';
   document.getElementById('recordSearch').style.display = studentView ? 'none' : '';
   if (!window.AxiomDB || !AxiomDB.isConfigured()) { Portal.toast('Supabase is not configured.', true); return; }
@@ -429,7 +529,7 @@ function startClearance() {
   document.getElementById('refreshBtn').addEventListener('click', loadData);
   document.getElementById('statusFilter').addEventListener('change', renderRecords);
   document.getElementById('recordSearch').addEventListener('input', renderRecords);
-  document.getElementById('viewClearanceFormBtn').addEventListener('click', openClearanceForm);
+  document.getElementById('viewClearanceFormBtn').addEventListener('click', function() { openClearanceForm().catch(function(err) { console.error(err); Portal.toast('Could not open clearance form: ' + (err.message || 'Unknown error'), true); }); });
   document.getElementById('closeClearanceFormBtn').addEventListener('click', closeClearanceForm);
   document.getElementById('printClearanceFormBtn').addEventListener('click', printClearanceForm);
   document.getElementById('clearanceFormModal').addEventListener('click', function(e) { if (e.target.id === 'clearanceFormModal') closeClearanceForm(); });
