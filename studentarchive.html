@@ -12,7 +12,7 @@
   .archive-toolbar { display:grid; grid-template-columns: 220px 260px auto 1fr; gap:12px; align-items:end; padding:16px; border-bottom:1px solid rgba(148,163,184,.28); background:#f8fafc; }
   .archive-toolbar label { display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:7px; text-transform:uppercase; }
   .archive-table-wrap { width:100%; overflow:auto; max-height:calc(100dvh - 260px); }
-  .archive-table { width:100%; min-width:1120px; border-collapse:collapse; }
+  .archive-table { width:100%; min-width:1260px; border-collapse:collapse; }
   .archive-table th, .archive-table td { padding:10px 12px; border:1px solid rgba(148,163,184,.35); font-size:12px; text-align:left; white-space:nowrap; }
   .archive-table th { position:sticky; top:0; z-index:2; background:#f1f5f9; color:#0f172a; font-weight:900; }
   .archive-table tbody tr:hover td { background:#f8fafc; }
@@ -23,6 +23,7 @@
   .archive-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.55); z-index:2000; }
   .archive-modal.open { display:flex; }
   .archive-modal__card { width:min(920px, 100%); max-height:90vh; overflow:auto; background:#fff; border-radius:14px; box-shadow:0 24px 70px rgba(15,23,42,.25); border:1px solid rgba(148,163,184,.35); }
+  .archive-modal__card.wide { width:min(1080px, 100%); }
   .archive-modal__head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 18px; background:#f8fafc; border-bottom:1px solid rgba(148,163,184,.28); }
   .archive-modal__head h3 { margin:0; color:#0f172a; font-size:18px; }
   .archive-modal__body { padding:18px; }
@@ -31,11 +32,22 @@
   .archive-profile-tile span { display:block; color:#64748b; font-size:11px; font-weight:900; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .archive-profile-tile b { display:block; margin-top:5px; color:#0f172a; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .archive-profile-actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid rgba(148,163,184,.28); }
+  .archive-doc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .archive-doc-toolbar label { display:inline-flex; align-items:center; gap:7px; font-weight:900; white-space:nowrap; }
+  .archive-doc-table-wrap { overflow:auto; border:1px solid rgba(148,163,184,.35); border-radius:10px; }
+  .archive-doc-table { width:100%; min-width:860px; border-collapse:collapse; }
+  .archive-doc-table th,
+  .archive-doc-table td { padding:9px 10px; border:1px solid rgba(148,163,184,.28); font-size:12px; text-align:left; white-space:nowrap; }
+  .archive-doc-table th { background:#f1f5f9; color:#0f172a; font-weight:900; }
+  .archive-doc-table td:nth-child(2),
+  .archive-doc-table td:nth-child(3) { max-width:260px; overflow:hidden; text-overflow:ellipsis; }
+  .archive-doc-check { width:16px; height:16px; accent-color:var(--brand); }
   @media (max-width: 900px) {
     .archive-shell { padding: 12px; }
     .archive-toolbar { grid-template-columns:1fr; }
-    .archive-table { min-width:1040px; }
+    .archive-table { min-width:1180px; }
     .archive-profile-grid { grid-template-columns:1fr; }
+    .archive-doc-toolbar { align-items:stretch; flex-direction:column; }
   }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
@@ -68,7 +80,7 @@
     justify-content: flex-start !important;
     flex-wrap: nowrap !important;
     gap: 8px !important;
-    min-width: 178px !important;
+    min-width: 288px !important;
   }
   .archive-table .archive-actions .btn {
     display: inline-flex !important;
@@ -146,6 +158,28 @@
         </div>
       </div>
     </div>
+
+    <div class="archive-modal" id="archiveDocumentsModal" aria-hidden="true">
+      <div class="archive-modal__card wide" role="dialog" aria-modal="true" aria-labelledby="archiveDocumentsTitle">
+        <div class="archive-modal__head">
+          <h3 id="archiveDocumentsTitle">Student Documents</h3>
+          <button class="btn" id="archiveDocsCloseBtn" type="button"><i class="fas fa-xmark"></i> Close</button>
+        </div>
+        <div class="archive-modal__body">
+          <div class="archive-doc-toolbar">
+            <label><input class="archive-doc-check" type="checkbox" id="archiveDocsSelectAll"> Select All Documents</label>
+            <span class="badge badge--gray" id="archiveDocsSelectedCount">0 selected</span>
+            <button class="btn btn--primary" id="archiveDocsPrintBtn" type="button"><i class="fas fa-print"></i> Download / Print Selected</button>
+          </div>
+          <div class="archive-doc-table-wrap">
+            <table class="archive-doc-table">
+              <thead><tr><th>Select</th><th>Title</th><th>File Name</th><th>Type</th><th>Uploaded</th><th>Action</th></tr></thead>
+              <tbody id="archiveDocumentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -157,6 +191,7 @@ Portal.init({ active: 'studentarchive', title: 'Student Archive', onReady: start
 
 var ARCHIVE_KEY = 'axiom_student_archive';
 var archiveRows = [];
+var archiveDocumentRows = [];
 
 function escapeHtml(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
@@ -175,6 +210,7 @@ function localArchiveRows() {
     return rows.map(function(row) {
       return {
         assRef: row.assRef || '',
+        studentId: row.studentId || row.id || '',
         name: row.name || '',
         gender: row.gender || '',
         className: row.className || '',
@@ -195,6 +231,7 @@ function dbArchiveRow(row) {
   var programme = cls.programmes && cls.programmes.name ? cls.programmes.name : (row.programme || '');
   var completedOn = row.updated_at || row.created_at || '';
   return {
+    studentId: row.id || '',
     assRef: row.ass_ref_id || '',
     name: archiveName(row),
     gender: (row.gender || '').toUpperCase(),
@@ -273,6 +310,7 @@ function renderArchive() {
       '<td><div class="archive-actions">' +
         '<button class="btn btn--primary" type="button" data-archive-act="view" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-eye"></i> View</button>' +
         '<button class="btn" type="button" data-archive-act="transcript" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-file-lines"></i> Transcript</button>' +
+        '<button class="btn btn--success" type="button" data-archive-act="documents" data-ref="' + escapeHtml(row.assRef) + '"><i class="fas fa-file-arrow-down"></i> Documents</button>' +
       '</div></td>' +
     '</tr>';
   }).join('') : '<tr><td colspan="10" style="text-align:center;padding:30px;font-weight:800;color:#64748b">No archived students found.</td></tr>';
@@ -347,6 +385,134 @@ function printArchiveTranscript(assRef) {
   }, 120000);
 }
 
+function normalizeArchiveDocument(doc) {
+  return {
+    id: doc.id || ('DOC-' + Math.random().toString(36).slice(2)),
+    title: doc.title || doc.file_name || doc.fileName || 'Document',
+    fileName: doc.file_name || doc.fileName || '',
+    fileType: doc.file_type || doc.fileType || 'FILE',
+    uploadedAt: doc.uploaded_at || doc.created_at || '',
+    fileUrl: doc.file_url || doc.fileUrl || ''
+  };
+}
+
+function localArchiveDocuments(row) {
+  try {
+    var docs = JSON.parse(localStorage.getItem('axiom_documents') || '[]');
+    if (!Array.isArray(docs)) return [];
+    return docs.filter(function(doc) {
+      if (!doc || doc.ownerType !== 'student') return false;
+      return doc.ownerId === row.studentId || doc.ownerId === row.assRef;
+    }).map(normalizeArchiveDocument);
+  } catch (e) {
+    return [];
+  }
+}
+
+async function loadArchiveDocuments(row) {
+  var docs = [];
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listDocuments && row.studentId) {
+    try {
+      docs = await AxiomDB.listDocuments('student', row.studentId) || [];
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load documents from Supabase. Showing local documents if available.', true);
+    }
+  }
+  var localDocs = localArchiveDocuments(row);
+  var seen = {};
+  return docs.map(normalizeArchiveDocument).concat(localDocs).filter(function(doc) {
+    var key = doc.id || doc.fileUrl || doc.fileName;
+    if (!key || seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+}
+
+function updateArchiveDocumentSelection() {
+  var selected = document.querySelectorAll('.archive-doc-row-check:checked').length;
+  var total = document.querySelectorAll('.archive-doc-row-check').length;
+  document.getElementById('archiveDocsSelectedCount').textContent = selected + ' selected';
+  document.getElementById('archiveDocsSelectAll').checked = total > 0 && selected === total;
+  document.getElementById('archiveDocsSelectAll').indeterminate = selected > 0 && selected < total;
+}
+
+function renderArchiveDocuments(docs) {
+  archiveDocumentRows = docs || [];
+  document.getElementById('archiveDocumentsBody').innerHTML = archiveDocumentRows.length ? archiveDocumentRows.map(function(doc, index) {
+    var date = doc.uploadedAt ? String(doc.uploadedAt).slice(0, 10) : '-';
+    var disabled = doc.fileUrl ? '' : ' disabled';
+    var action = doc.fileUrl ? '<a class="btn btn--sm btn--primary" href="' + escapeHtml(doc.fileUrl) + '" target="_blank" rel="noopener"><i class="fas fa-eye"></i> View</a>' : '<span class="badge badge--gray">Stored</span>';
+    return '<tr>' +
+      '<td><input class="archive-doc-check archive-doc-row-check" type="checkbox" data-doc-index="' + index + '"' + disabled + '></td>' +
+      '<td title="' + escapeHtml(doc.title) + '">' + escapeHtml(doc.title) + '</td>' +
+      '<td title="' + escapeHtml(doc.fileName) + '">' + escapeHtml(doc.fileName) + '</td>' +
+      '<td><span class="badge badge--gray">' + escapeHtml(doc.fileType || 'FILE') + '</span></td>' +
+      '<td>' + escapeHtml(date) + '</td>' +
+      '<td>' + action + '</td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;font-weight:800;color:#64748b">No documents found for this archived student.</td></tr>';
+  updateArchiveDocumentSelection();
+}
+
+function archiveDocumentPreviewHtml(doc) {
+  var url = doc.fileUrl || '';
+  var title = doc.title || doc.fileName || 'Document';
+  var type = String(doc.fileType || doc.fileName || '').toLowerCase();
+  var safeUrl = escapeHtml(url);
+  var header = '<h2>' + escapeHtml(title) + '</h2><p>' + escapeHtml(doc.fileName || '') + '</p>';
+  if (/\.(png|jpe?g|gif|webp|bmp)$/i.test(url) || /^(png|jpe?g|gif|webp|bmp)$/i.test(type)) {
+    return '<section class="doc-page">' + header + '<img src="' + safeUrl + '" alt="' + escapeHtml(title) + '"></section>';
+  }
+  if (/\.pdf(\?|#|$)/i.test(url) || type === 'pdf') {
+    return '<section class="doc-page">' + header + '<iframe src="' + safeUrl + '" title="' + escapeHtml(title) + '"></iframe><p class="fallback"><a href="' + safeUrl + '" target="_blank" rel="noopener">Open PDF</a></p></section>';
+  }
+  return '<section class="doc-page">' + header + '<div class="file-card"><i class="fas fa-file-lines"></i><p>This file type should be opened directly before printing.</p><a href="' + safeUrl + '" target="_blank" rel="noopener">Open Document</a></div></section>';
+}
+
+function printSelectedArchiveDocuments() {
+  var selected = Array.from(document.querySelectorAll('.archive-doc-row-check:checked')).map(function(box) {
+    return archiveDocumentRows[Number(box.dataset.docIndex)];
+  }).filter(function(doc) { return doc && doc.fileUrl; });
+  if (!selected.length) {
+    Portal.toast('Select at least one document to download or print.', true);
+    return;
+  }
+  var printWin = window.open('', '_blank');
+  if (!printWin) {
+    Portal.toast('Allow pop-ups to print the selected documents.', true);
+    return;
+  }
+  printWin.document.write('<!doctype html><html><head><title>Archived Student Documents</title><style>' +
+    'body{margin:0;background:#f8fafc;color:#111827;font-family:Arial,Helvetica,sans-serif;}' +
+    '.toolbar{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;background:#fff;border-bottom:1px solid #dbe3ef;}' +
+    '.toolbar h1{margin:0;font-size:18px}.toolbar button{border:0;border-radius:8px;background:#0b3d91;color:#fff;padding:10px 14px;font-weight:800;cursor:pointer}' +
+    '.doc-page{page-break-after:always;margin:16px auto;padding:18px;max-width:980px;min-height:90vh;background:#fff;border:1px solid #dbe3ef;box-shadow:0 8px 24px rgba(15,23,42,.08)}' +
+    '.doc-page:last-child{page-break-after:auto}.doc-page h2{margin:0 0 4px;font-size:18px}.doc-page p{margin:0 0 14px;color:#64748b;font-weight:700}' +
+    '.doc-page img{display:block;max-width:100%;max-height:78vh;margin:0 auto;object-fit:contain}.doc-page iframe{width:100%;height:78vh;border:1px solid #dbe3ef}' +
+    '.file-card{display:grid;place-items:center;gap:12px;min-height:55vh;border:1px dashed #94a3b8;border-radius:12px;color:#475569;text-align:center}.file-card i{font-size:46px}.file-card a,.fallback a{color:#0b3d91;font-weight:800}' +
+    '@media print{.toolbar{display:none}.doc-page{margin:0;border:0;box-shadow:none;max-width:none;min-height:0}.doc-page iframe{height:92vh}}' +
+    '</style></head><body><div class="toolbar"><h1>Selected Documents (' + selected.length + ')</h1><button onclick="window.print()">Print</button></div>' +
+    selected.map(archiveDocumentPreviewHtml).join('') +
+    '<script>setTimeout(function(){window.print()},900)<\/script></body></html>');
+  printWin.document.close();
+}
+
+async function openArchiveDocuments(assRef) {
+  var row = findArchiveRow(assRef);
+  if (!row) { Portal.toast('Archived student record was not found.', true); return; }
+  document.getElementById('archiveDocumentsTitle').textContent = 'Documents - ' + (row.name || row.assRef);
+  document.getElementById('archiveDocumentsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;font-weight:800;color:#64748b">Loading documents...</td></tr>';
+  document.getElementById('archiveDocumentsModal').classList.add('open');
+  document.getElementById('archiveDocumentsModal').setAttribute('aria-hidden', 'false');
+  renderArchiveDocuments(await loadArchiveDocuments(row));
+}
+
+function closeArchiveDocuments() {
+  document.getElementById('archiveDocumentsModal').classList.remove('open');
+  document.getElementById('archiveDocumentsModal').setAttribute('aria-hidden', 'true');
+}
+
 async function loadArchive() {
   var localRows = localArchiveRows();
   var dbRows = [];
@@ -373,11 +539,30 @@ function startArchive() {
     if (!btn) return;
     if (btn.dataset.archiveAct === 'view') openArchiveView(btn.dataset.ref);
     if (btn.dataset.archiveAct === 'transcript') printArchiveTranscript(btn.dataset.ref);
+    if (btn.dataset.archiveAct === 'documents') {
+      openArchiveDocuments(btn.dataset.ref).catch(function(err) {
+        console.error(err);
+        Portal.toast('Could not load student documents: ' + (err.message || 'Unknown error'), true);
+      });
+    }
   });
   document.getElementById('archiveCloseBtn').addEventListener('click', closeArchiveView);
   document.getElementById('archiveViewModal').addEventListener('click', function(e) {
     if (e.target.id === 'archiveViewModal') closeArchiveView();
   });
+  document.getElementById('archiveDocsCloseBtn').addEventListener('click', closeArchiveDocuments);
+  document.getElementById('archiveDocumentsModal').addEventListener('click', function(e) {
+    if (e.target.id === 'archiveDocumentsModal') closeArchiveDocuments();
+  });
+  document.getElementById('archiveDocsSelectAll').addEventListener('change', function() {
+    var checked = this.checked;
+    document.querySelectorAll('.archive-doc-row-check:not(:disabled)').forEach(function(box) { box.checked = checked; });
+    updateArchiveDocumentSelection();
+  });
+  document.getElementById('archiveDocumentsBody').addEventListener('change', function(e) {
+    if (e.target.classList.contains('archive-doc-row-check')) updateArchiveDocumentSelection();
+  });
+  document.getElementById('archiveDocsPrintBtn').addEventListener('click', printSelectedArchiveDocuments);
   document.getElementById('archiveModalTranscriptBtn').addEventListener('click', function() {
     printArchiveTranscript(this.dataset.ref);
   });
