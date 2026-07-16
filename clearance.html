@@ -85,6 +85,9 @@
   .clearance-form-table th, .clearance-form-table td { border:1px solid rgba(148,163,184,.45); padding:9px 10px; font-size:13px; text-align:left; }
   .clearance-form-table th { background:#eaf2ff; color:#0f172a; }
   .clearance-form__actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid rgba(148,163,184,.28); background:#fff; }
+  .generate-filter-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; align-items:end; }
+  .generate-filter-grid .field { min-width:0; }
+  .generate-filter-hint { margin:12px 0 0; color:#64748b; font-size:12px; font-weight:800; }
   .muted { color:#64748b; }
   #viewClearanceFormBtn,
   #generateBtn { display:none; }
@@ -95,6 +98,7 @@
     .clearance-card__head { align-items:flex-start; flex-direction:column; }
     .clearance-search, #statusFilter { width:100% !important; }
     .clearance-form-grid { grid-template-columns:1fr; }
+    .generate-filter-grid { grid-template-columns:1fr; }
   }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
@@ -180,6 +184,42 @@
         </div>
       </div>
     </div>
+
+    <div class="clearance-form-modal" id="generateClearanceModal" aria-hidden="true">
+      <div class="clearance-form" role="dialog" aria-modal="true" aria-labelledby="generateClearanceTitle">
+        <div class="clearance-form__head">
+          <div>
+            <h2 id="generateClearanceTitle">Generate Completed Clearance Forms</h2>
+            <p>Select which completed students should be included.</p>
+          </div>
+          <button class="btn" id="closeGenerateClearanceBtn" type="button"><i class="fas fa-xmark"></i> Close</button>
+        </div>
+        <div class="clearance-form__body">
+          <div class="generate-filter-grid">
+            <div class="field">
+              <label>Generate For</label>
+              <select class="input" id="generateFilterType">
+                <option value="all">All Completed Students</option>
+                <option value="class">Completed Students By Class</option>
+                <option value="student">Individual Student</option>
+              </select>
+            </div>
+            <div class="field" id="generateClassField" style="display:none">
+              <label>Class</label>
+              <select class="input" id="generateClassSelect"><option value="">Select class...</option></select>
+            </div>
+            <div class="field" id="generateStudentField" style="display:none">
+              <label>STD_ID / Ass Ref.ID</label>
+              <input class="input" id="generateStudentRef" type="search" placeholder="Enter student STD_ID" autocomplete="off">
+            </div>
+          </div>
+          <p class="generate-filter-hint" id="generateFilterHint">This will generate clearance forms for all completed students.</p>
+        </div>
+        <div class="clearance-form__actions">
+          <button class="btn btn--primary" id="runGenerateClearanceBtn" type="button"><i class="fas fa-print"></i> Generate Forms</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -223,6 +263,10 @@ function studentAssRef(student) {
 function studentIsCompleted(student) {
   return String(student && student.status || '').trim().toLowerCase() === 'completed' ||
     String(student && student.student_level || '').trim().toLowerCase() === 'completed';
+}
+function studentClassName(student) {
+  var cls = student && student.classes ? student.classes : {};
+  return cls.name || student.class_name || student.className || '';
 }
 function firstRecordStudent(sourceRecords) {
   sourceRecords = sourceRecords || records;
@@ -495,10 +539,64 @@ function clearForm() { document.getElementById('requirementForm').reset(); docum
 function editRequirement(id) { var row = requirements.find(function(item) { return item.id === id; }); if (!row) return; document.getElementById('requirementId').value = row.id; document.getElementById('clearanceTitle').value = row.title; document.getElementById('positionTitle').value = row.position_title; document.getElementById('sortOrder').value = row.sort_order || 1; document.getElementById('activeReq').checked = row.active !== false; renderStaffOptions(); document.getElementById('assignedStaff').value = row.staff_user_id || ''; }
 async function removeRequirement(id) { if (!confirm('Delete this clearance requirement? Existing student clearance records for it will also be removed.')) return; await AxiomDB.deleteClearanceRequirement(id); Portal.toast('Clearance requirement deleted.'); await loadData(); }
 async function reviewRecord(id, status) { var reason = ''; if (status === 'Declined') { reason = prompt('Remarks for declining this clearance:') || ''; if (!reason.trim()) { Portal.toast('Decline remarks are required.', true); return; } } await AxiomDB.reviewStudentClearance(id, status, reason); Portal.toast(status === 'Cleared' ? 'Student cleared.' : 'Clearance declined.'); await loadData(); }
-async function generateCompleted() {
+function populateGenerateClassFilter() {
+  var completed = students.filter(studentIsCompleted);
+  var classes = {};
+  completed.forEach(function(student) {
+    var name = studentClassName(student);
+    if (name) classes[name] = true;
+  });
+  var select = document.getElementById('generateClassSelect');
+  var current = select.value;
+  select.innerHTML = '<option value="">Select class...</option>' + Object.keys(classes).sort().map(function(name) {
+    return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
+  }).join('');
+  if (current && classes[current]) select.value = current;
+}
+function updateGenerateFilterUi() {
+  var type = document.getElementById('generateFilterType').value;
+  document.getElementById('generateClassField').style.display = type === 'class' ? '' : 'none';
+  document.getElementById('generateStudentField').style.display = type === 'student' ? '' : 'none';
+  var hint = 'This will generate clearance forms for all completed students.';
+  if (type === 'class') hint = 'This will generate clearance forms for completed students in the selected class.';
+  if (type === 'student') hint = 'This will generate one completed student clearance form by STD_ID / Ass Ref.ID.';
+  document.getElementById('generateFilterHint').textContent = hint;
+}
+function openGenerateClearanceModal() {
   if (!canSetup()) { Portal.toast('Only administrators can generate completed clearance forms.', true); return; }
+  populateGenerateClassFilter();
+  updateGenerateFilterUi();
+  var modal = document.getElementById('generateClearanceModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+function closeGenerateClearanceModal() {
+  var modal = document.getElementById('generateClearanceModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+function selectedCompletedStudentsForGeneration() {
+  var type = document.getElementById('generateFilterType').value;
   var completed = students.filter(studentIsCompleted);
   if (!completed.length) { Portal.toast('No completed students found.', true); return; }
+  if (type === 'class') {
+    var className = document.getElementById('generateClassSelect').value;
+    if (!className) { Portal.toast('Select a class before generating clearance forms.', true); return null; }
+    completed = completed.filter(function(student) { return studentClassName(student) === className; });
+    if (!completed.length) { Portal.toast('No completed students found for ' + className + '.', true); return null; }
+  }
+  if (type === 'student') {
+    var ref = String(document.getElementById('generateStudentRef').value || '').trim().toLowerCase();
+    if (!ref) { Portal.toast('Enter student STD_ID / Ass Ref.ID before generating.', true); return null; }
+    completed = completed.filter(function(student) { return studentAssRef(student).toLowerCase() === ref; });
+    if (!completed.length) { Portal.toast('No completed student found for that STD_ID.', true); return null; }
+  }
+  return completed;
+}
+async function generateCompleted(selectedStudents) {
+  if (!canSetup()) { Portal.toast('Only administrators can generate completed clearance forms.', true); return; }
+  var completed = selectedStudents || selectedCompletedStudentsForGeneration();
+  if (!completed || !completed.length) return;
   var printWin = window.open('', '_blank');
   if (!printWin) { Portal.toast('Allow popups to print completed clearance forms.', true); return; }
   printWin.document.write('<!doctype html><html><head><title>Preparing Clearance Forms</title></head><body style="font-family:Arial,sans-serif;padding:24px">Preparing completed clearance forms...</body></html>');
@@ -519,6 +617,7 @@ async function generateCompleted() {
   }
   await loadData();
   if (!forms.length) { printWin.close(); Portal.toast('No completed clearance forms were found to print.', true); return; }
+  closeGenerateClearanceModal();
   printClearanceForms(forms.join('<div class="print-page-break"></div>'), 'Completed Student Clearance Forms', printWin);
   Portal.toast('Completed clearance forms ready. Choose Save as PDF in the print dialog.');
 }
@@ -555,7 +654,11 @@ function startClearance() {
   document.getElementById('closeClearanceFormBtn').addEventListener('click', closeClearanceForm);
   document.getElementById('printClearanceFormBtn').addEventListener('click', printClearanceForm);
   document.getElementById('clearanceFormModal').addEventListener('click', function(e) { if (e.target.id === 'clearanceFormModal') closeClearanceForm(); });
-  document.getElementById('generateBtn').addEventListener('click', function() { generateCompleted().catch(function(err) { console.error(err); Portal.toast('Could not generate clearance: ' + (err.message || 'Unknown error'), true); }); });
+  document.getElementById('generateBtn').addEventListener('click', openGenerateClearanceModal);
+  document.getElementById('closeGenerateClearanceBtn').addEventListener('click', closeGenerateClearanceModal);
+  document.getElementById('generateClearanceModal').addEventListener('click', function(e) { if (e.target.id === 'generateClearanceModal') closeGenerateClearanceModal(); });
+  document.getElementById('generateFilterType').addEventListener('change', updateGenerateFilterUi);
+  document.getElementById('runGenerateClearanceBtn').addEventListener('click', function() { generateCompleted().catch(function(err) { console.error(err); Portal.toast('Could not generate clearance: ' + (err.message || 'Unknown error'), true); }); });
   document.getElementById('requirementForm').addEventListener('submit', function(e) { e.preventDefault(); async function save() { await AxiomDB.saveClearanceRequirement({ id: document.getElementById('requirementId').value || null, title: document.getElementById('clearanceTitle').value.trim(), position_title: document.getElementById('positionTitle').value.trim(), staff_user_id: document.getElementById('assignedStaff').value || null, sort_order: document.getElementById('sortOrder').value, active: document.getElementById('activeReq').checked }); Portal.toast('Clearance requirement saved.'); clearForm(); await loadData(); } save().catch(function(err) { console.error(err); Portal.toast('Could not save clearance setup: ' + (err.message || 'Unknown error'), true); }); });
   loadData().catch(function(err) { console.error(err); Portal.toast('Could not load clearance system: ' + (err.message || 'Unknown error'), true); });
 }
