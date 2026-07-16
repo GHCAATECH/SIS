@@ -39,6 +39,22 @@
   }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
+<style>
+  .archive-table th,
+  .archive-table td,
+  .archive-table .name-cell {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+  }
+  .archive-table .name-cell { min-width: 230px; max-width: 280px; line-height: 1.32; }
+  .archive-table th:last-child,
+  .archive-table td:last-child {
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+</style>
 </head>
 <body class="portal-shell footer-shell">
 <div class="main">
