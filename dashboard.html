@@ -214,8 +214,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260716-clearance-completed1"></script>
-<script src="assets/shell.js?v=20260716-no-help1"></script>
+<script src="assets/supabase-client.js?v=20260716-student-status-menu1"></script>
+<script src="assets/shell.js?v=20260716-archive-clearance1"></script>
 <script>
 var dashboardUser = Portal.currentUser();
 var dashboardActive = Portal.isSchoolAdmin(dashboardUser) ? 'staffportal' : 'dashboard';
@@ -243,6 +243,12 @@ $(function () {
   }
   function isStudentUser(user) {
     return !!(user && (user.type === 'student' || user.category === 'Student' || user.role === 'Student' || user.ass_ref_id));
+  }
+  function isCompletedStudent(user) {
+    return isStudentUser(user) && (
+      String(user.status || '').trim().toLowerCase() === 'completed' ||
+      String(user.student_level || '').trim().toLowerCase() === 'completed'
+    );
   }
   function clearanceTitle(row) {
     var requirement = row && row.clearance_requirements ? row.clearance_requirements : {};
@@ -310,7 +316,7 @@ $(function () {
 
   async function loadStudentClearanceDashboard() {
     var panel = document.getElementById('clearanceDashboard');
-    if (!isStudentUser(currentUser)) {
+    if (!isStudentUser(currentUser) || !isCompletedStudent(currentUser)) {
       if (panel) panel.style.display = 'none';
       return;
     }

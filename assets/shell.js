@@ -67,6 +67,11 @@
       location.pathname.replace(/\\/g, '/').indexOf('/admin/') > -1;
   }
 
+  function isCompletedStudent(user) {
+    if (!user || norm(user.type) !== 'student') return false;
+    return norm(user.status) === 'completed' || norm(user.student_level) === 'completed';
+  }
+
   function currentUser() {
     try {
       var user = JSON.parse(localStorage.getItem('axiom_current_user') || 'null');
@@ -79,7 +84,9 @@
         user.type = 'student';
         user.category = user.category || 'Student';
         user.role = user.role || 'Student';
-        user.privileges = user.privileges || ['dashboard', 'mydocuments', 'transcript', 'clearance'];
+        user.privileges = user.privileges || ['dashboard', 'mydocuments', 'transcript'];
+        if (isCompletedStudent(user) && user.privileges.indexOf('clearance') < 0) user.privileges.push('clearance');
+        if (!isCompletedStudent(user)) user.privileges = user.privileges.filter(function(key) { return key !== 'clearance'; });
         localStorage.setItem('axiom_current_user', JSON.stringify(user));
       }
       return user;
@@ -132,14 +139,17 @@
       });
     }
     if (user && user.type === 'student') {
+      var studentItems = [
+        { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
+        { key: 'mydocuments', label: 'My Documents', icon: 'fa-file-shield' },
+        { key: 'transcript', label: 'Transcript', icon: 'fa-file-lines' }
+      ];
+      if (isCompletedStudent(user)) {
+        studentItems.push({ key: 'clearance', label: 'Clearance', icon: 'fa-clipboard-list' });
+      }
       return [{
         title: 'Student Portal',
-        items: [
-          { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
-          { key: 'mydocuments', label: 'My Documents', icon: 'fa-file-shield' },
-          { key: 'transcript', label: 'Transcript', icon: 'fa-file-lines' },
-          { key: 'clearance', label: 'Clearance', icon: 'fa-clipboard-list' }
-        ]
+        items: studentItems
       }];
     }
     if (!user) {
@@ -393,6 +403,11 @@
         }
         if (user && user.isSuperAdmin) {
           if (opts.onReady) opts.onReady();
+          return;
+        }
+        if (user && user.type === 'student' && active === 'clearance' && !isCompletedStudent(user)) {
+          Portal.toast('Clearance is only available after your account is moved to Student Archive.', true);
+          setTimeout(function () { location.href = route('dashboard.html'); }, 900);
           return;
         }
         if (user && user.type === 'student' && (active === 'dashboard' || active === 'mydocuments' || active === 'transcript' || active === 'clearance')) {

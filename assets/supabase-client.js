@@ -194,12 +194,14 @@
           full_name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase(),
           class_name: student.classes && student.classes.name ? student.classes.name : '',
           programme: student.classes && student.classes.programmes ? student.classes.programmes.name : '',
+          status: student.status || '',
+          student_level: student.student_level || '',
           school_id: student.school_id,
           school_code: student.schools && student.schools.code ? student.schools.code : activeSchoolCode(),
           school_name: student.schools && student.schools.name ? student.schools.name : '',
           category: 'Student',
           role: 'Student',
-          privileges: ['mydocuments']
+          privileges: (String(student.status || '').toLowerCase() === 'completed' || String(student.student_level || '').toLowerCase() === 'completed') ? ['dashboard', 'mydocuments', 'transcript', 'clearance'] : ['dashboard', 'mydocuments', 'transcript']
         };
       }
     }
@@ -934,7 +936,8 @@
     profile.type = 'student';
     profile.category = 'Student';
     profile.role = 'Student';
-    profile.privileges = profile.privileges || ['dashboard', 'mydocuments', 'transcript', 'clearance'];
+    var completedStudent = String(profile.status || '').toLowerCase() === 'completed' || String(profile.student_level || '').toLowerCase() === 'completed';
+    profile.privileges = completedStudent ? ['dashboard', 'mydocuments', 'transcript', 'clearance'] : ['dashboard', 'mydocuments', 'transcript'];
     return profile;
   }
 
