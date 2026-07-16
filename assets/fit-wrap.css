@@ -1,6 +1,6 @@
-/* AXIOMBYTE SMS final fit/wrap layer.
-   Loaded after page-specific styles so long text, buttons, and tables do not
-   break alignment on desktop, tablet, or phone. */
+/* AXIOMBYTE SMS final fit/alignment layer.
+   Loaded after page-specific styles so text stays on one line, while wide
+   tables and panels scroll instead of breaking layout alignment. */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -45,12 +45,12 @@
   .privilege-user,
   .profile-mode-note
 ) {
-  overflow-wrap: anywhere;
-  word-break: normal;
-}
-
-:where(.brand span, .sidebar-brand span, .topbar h1, .nav__title, .desktop-nav a, .mobile-navigation a) {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   overflow-wrap: normal;
+  word-break: normal;
 }
 
 :where(
@@ -117,10 +117,10 @@
   .clearance-table,
   .archive-table
 ) :where(th, td):not(.action-column):not(.action-cell) {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-  overflow-wrap: anywhere !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: normal !important;
 }
 
 :where(
@@ -182,8 +182,10 @@
   justify-content: center;
   text-align: center;
   line-height: 1.15 !important;
-  white-space: normal !important;
-  overflow-wrap: anywhere !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 :where(
