@@ -238,8 +238,14 @@ function isStaffPortalMode() {
   try { return sessionStorage.getItem('axiom_staff_portal_mode') === '1'; }
   catch (e) { return false; }
 }
+function isAdminPortalMode() {
+  try { return sessionStorage.getItem('axiom_admin_portal_mode') === '1'; }
+  catch (e) { return false; }
+}
 function canSetup() {
-  return currentUser && !isStaffPortalMode() && !hasStudentIdentity() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator');
+  if (!currentUser || isStaffPortalMode() || hasStudentIdentity()) return false;
+  if (currentUser.isSuperAdmin) return true;
+  return isAdminPortalMode() && (currentUser.isAdmin || currentUser.category === 'School Administrator' || currentUser.role === 'School Administrator');
 }
 function isStaffClearanceView() { return currentUser && !hasStudentIdentity() && !canSetup(); }
 function isStudentClearanceView() { return !!hasStudentIdentity(); }

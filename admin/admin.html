@@ -145,7 +145,10 @@
 <script src="../assets/supabase-client.js?v=20260714-capture-flow5"></script>
 <script src="../assets/shell.js?v=20260715-student-archive1"></script>
 <script>
-try { sessionStorage.removeItem('axiom_staff_portal_mode'); } catch (e) {}
+try {
+  sessionStorage.removeItem('axiom_staff_portal_mode');
+  sessionStorage.setItem('axiom_admin_portal_mode', '1');
+} catch (e) {}
 Portal.init({ active: 'dashboard', title: 'Administration Overview' });
 var tiles = [
   ['registeruser','Add User','Create a new portal account','fa-user-plus'],

@@ -220,8 +220,13 @@
 var dashboardUser = Portal.currentUser();
 var dashboardActive = Portal.isSchoolAdmin(dashboardUser) ? 'staffportal' : 'dashboard';
 try {
-  if (dashboardActive === 'staffportal') sessionStorage.setItem('axiom_staff_portal_mode', '1');
-  else sessionStorage.removeItem('axiom_staff_portal_mode');
+  if (dashboardActive === 'staffportal') {
+    sessionStorage.setItem('axiom_staff_portal_mode', '1');
+    sessionStorage.removeItem('axiom_admin_portal_mode');
+  } else {
+    sessionStorage.removeItem('axiom_staff_portal_mode');
+    sessionStorage.removeItem('axiom_admin_portal_mode');
+  }
 } catch (e) {}
 Portal.init({ active: dashboardActive, title: dashboardActive === 'staffportal' ? 'Staff Portal' : 'Dashboard' });
 
