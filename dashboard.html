@@ -219,6 +219,10 @@
 <script>
 var dashboardUser = Portal.currentUser();
 var dashboardActive = Portal.isSchoolAdmin(dashboardUser) ? 'staffportal' : 'dashboard';
+try {
+  if (dashboardActive === 'staffportal') sessionStorage.setItem('axiom_staff_portal_mode', '1');
+  else sessionStorage.removeItem('axiom_staff_portal_mode');
+} catch (e) {}
 Portal.init({ active: dashboardActive, title: dashboardActive === 'staffportal' ? 'Staff Portal' : 'Dashboard' });
 
 $(function () {

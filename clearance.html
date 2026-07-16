@@ -143,7 +143,7 @@
             <input class="input clearance-search" id="recordSearch" type="search" placeholder="Search by student name or STD_ID" autocomplete="off" />
             <select class="input" id="statusFilter" style="width:150px"><option value="">All Status</option><option>Pending</option><option>Cleared</option><option>Declined</option></select>
             <button class="btn btn--primary" id="viewClearanceFormBtn" type="button" style="display:none"><i class="fas fa-file-lines"></i> View Clearance Form</button>
-            <button class="btn" id="generateBtn" type="button"><i class="fas fa-wand-magic-sparkles"></i> Generate for Completed</button>
+            <button class="btn" id="generateBtn" type="button" style="display:none"><i class="fas fa-wand-magic-sparkles"></i> Generate for Completed</button>
           </div>
         </div>
         <div class="clearance-card__body">
@@ -234,8 +234,12 @@ function formatDate(value) {
 function hasStudentIdentity() {
   return currentUser && (currentUser.type === 'student' || currentUser.category === 'Student' || currentUser.role === 'Student' || currentUser.ass_ref_id);
 }
+function isStaffPortalMode() {
+  try { return sessionStorage.getItem('axiom_staff_portal_mode') === '1'; }
+  catch (e) { return false; }
+}
 function canSetup() {
-  return currentUser && !hasStudentIdentity() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator');
+  return currentUser && !isStaffPortalMode() && !hasStudentIdentity() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.category === 'School Administrator');
 }
 function isStaffClearanceView() { return currentUser && !hasStudentIdentity() && !canSetup(); }
 function isStudentClearanceView() { return !!hasStudentIdentity(); }
