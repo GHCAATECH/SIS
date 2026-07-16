@@ -215,7 +215,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/supabase-client.js?v=20260715-student-clearance-session3"></script>
-<script src="assets/shell.js?v=20260716-no-help1"></script>
+<script src="assets/shell.js?v=20260716-download-docs1"></script>
 <script>
 var dashboardUser = Portal.currentUser();
 var dashboardActive = Portal.isSchoolAdmin(dashboardUser) ? 'staffportal' : 'dashboard';
@@ -433,12 +433,12 @@ $(function () {
     return '<a class="card quick reveal" href="'+href+'"><span class="ico '+color+'"><i class="fas '+icon+'"></i></span><span><b>'+title+'</b><br><span style="font-size:12px;color:var(--text-faint)">'+subtitle+'</span></span></a>';
   }
   function renderQuickActions() {
-    if (currentUser) return;
+    if (!currentUser) return;
     var quickGrid = document.getElementById('quickActions');
     if (!quickGrid || !currentUser) return;
     if (currentUser.type === 'student') {
       quickGrid.innerHTML = [
-        quickCard('mydocuments.html', 'fa-file-shield', 'b1', 'My Documents', 'View uploaded documents'),
+        quickCard('mydocuments.html', 'fa-file-shield', 'b1', 'Download Documents', 'Select documents to print'),
         quickCard('transcript.html', 'fa-file-lines', 'b2', 'Transcript', 'View academic transcript')
       ].join('');
       return;
@@ -447,7 +447,7 @@ $(function () {
     if (currentUser.category === 'Teaching Staff') {
       cards.push(quickCard('cass.html', 'fa-clipboard-check', 'b1', 'Capture Assessment', 'Enter / modify scores'));
     }
-    cards.push(quickCard('mydocuments.html', 'fa-file-shield', 'b2', 'My Documents', 'View staff documents'));
+    cards.push(quickCard('mydocuments.html', 'fa-file-shield', 'b2', 'Download Documents', 'Select documents to print'));
     cards.push(quickCard('transcript.html', 'fa-file-lines', 'b3', 'Transcript', 'Open transcript module'));
     quickGrid.innerHTML = cards.join('');
   }

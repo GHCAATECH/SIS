@@ -25,7 +25,7 @@
         { key: 'qualitativeaccessment',  label: 'Qualitative Assessment', icon: 'fa-star-half-stroke' },
         { key: 'transcript',             label: 'Transcript',             icon: 'fa-file-lines' },
         { key: 'assessmentmonitor',      label: 'School Monitor',         icon: 'fa-chart-line' },
-        { key: 'mydocuments',            label: 'My Documents',           icon: 'fa-file-shield' }
+        { key: 'mydocuments',            label: 'Download Documents',     icon: 'fa-file-shield' }
       ]
     },
     {
@@ -136,7 +136,7 @@
         title: 'Student Portal',
         items: [
           { key: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
-          { key: 'mydocuments', label: 'My Documents', icon: 'fa-file-shield' },
+          { key: 'mydocuments', label: 'Download Documents', icon: 'fa-file-shield' },
           { key: 'transcript', label: 'Transcript', icon: 'fa-file-lines' },
           { key: 'clearance', label: 'Clearance', icon: 'fa-clipboard-list' }
         ]
@@ -253,7 +253,7 @@
   function buildTopbar(title, subtitle) {
     var user = currentUser();
     var displayName = user && user.full_name ? user.full_name : SCHOOL.user;
-    var myDocumentsLabel = user && user.type === 'student' ? 'Student Documents' : 'My Documents';
+    var myDocumentsLabel = 'Download Documents';
     var addUserLink = (!user || isSchoolAdminPortal(user)) ? '<a href="' + route('registeruser.html') + '"><i class="fas fa-user-plus" style="width:16px"></i> Add New User</a>' : '';
     return el(
       '<header class="topbar">' +
