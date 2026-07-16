@@ -2300,3 +2300,222 @@ table tbody tr:hover,
   }
 }
 
+/* Final system fit and wrapping pass.
+   Keeps text readable across desktop, tablet, and phone without allowing
+   long labels, IDs, emails, names, or buttons to push layouts sideways. */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+:where(
+  body,
+  .main,
+  .content,
+  main,
+  section,
+  article,
+  .card,
+  .panel,
+  .modal,
+  .modal__body,
+  .card__body,
+  .page-head,
+  .toolbar,
+  .form-grid,
+  .grid,
+  .mini-grid,
+  .field,
+  .table-tools,
+  .users-tools,
+  .legacy-filter
+) {
+  min-width: 0 !important;
+  max-width: 100%;
+}
+
+:where(
+  h1, h2, h3, h4, h5, h6,
+  p, label, legend, small,
+  span, strong, b, em,
+  a, li, dd, dt,
+  .card, .panel, .field,
+  .page-head, .ph-actions,
+  .modal__head, .modal__body,
+  .staff-profile-identity,
+  .clearance-form-tile,
+  .student-clearance-summary,
+  .privilege-user,
+  .profile-mode-note
+) {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+:where(.brand span, .sidebar-brand span, .topbar h1, .nav__title, .desktop-nav a, .mobile-navigation a) {
+  overflow-wrap: normal;
+}
+
+:where(
+  .table-wrap,
+  .table-scroll,
+  .student-table-wrapper,
+  .users-table-wrap,
+  .legacy-table-wrap,
+  .records-table-wrap,
+  .score-table-wrap,
+  .super-table-wrap,
+  .clearance-table-wrap,
+  .archive-table-wrap,
+  .subject-assignment-scroll
+) {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+:where(
+  table,
+  .tbl,
+  .student-table,
+  .users-table,
+  .legacy-table,
+  .records-table,
+  .score-table,
+  .super-table,
+  .clearance-table,
+  .archive-table,
+  .subject-table
+) {
+  max-width: none;
+  border-collapse: collapse;
+}
+
+:where(
+  table,
+  .tbl,
+  .student-table,
+  .users-table,
+  .legacy-table,
+  .records-table,
+  .score-table,
+  .super-table,
+  .clearance-table,
+  .archive-table
+) :where(th, td) {
+  vertical-align: middle !important;
+  line-height: 1.32 !important;
+}
+
+:where(
+  .tbl,
+  .student-table,
+  .users-table,
+  .legacy-table,
+  .records-table,
+  .score-table,
+  .super-table,
+  .clearance-table,
+  .archive-table
+) :where(th, td):not(.action-column):not(.action-cell) {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+}
+
+:where(
+  .row-actions,
+  .action-buttons,
+  .review-actions,
+  .ph-actions,
+  .btn-row,
+  .privilege-actions,
+  .edit-actions
+) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:where(.action-column, .action-cell) {
+  justify-content: center;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+:where(
+  button,
+  .btn,
+  .legacy-btn,
+  .legacy-action,
+  .footer-btn,
+  .footer-action,
+  .action-btn,
+  .cass-blue-btn,
+  .upload-btn,
+  .filter-btn,
+  .btn-refresh,
+  .btn-update,
+  .template-link,
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"]
+) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  width: auto;
+  height: auto !important;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+:where(
+  button,
+  .btn,
+  .legacy-btn,
+  .legacy-action,
+  .footer-btn,
+  .footer-action,
+  .action-btn,
+  .cass-blue-btn,
+  .upload-btn,
+  .filter-btn
+) > :where(span, strong, b) {
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.15 !important;
+}
+
+:where(input, select, textarea, .input, .select, .multi-dropdown__trigger) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:where(.photo-box img, .student-photo img, .staff-profile-photo-view img, .edit-photo-preview img, .ts-passport img, .pdf-passport img) {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+@media (max-width: 768px) {
+  :where(.page-head, .toolbar, .table-tools, .users-tools, .legacy-filter, .student-footer-actions) {
+    align-items: stretch !important;
+  }
+
+  :where(.ph-actions, .btn-row, .row-actions, .action-buttons, .review-actions) {
+    justify-content: flex-start;
+  }
+
+  :where(.content, .clearance-wrap) {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+}
+
