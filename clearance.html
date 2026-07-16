@@ -315,7 +315,14 @@ function renderRecords() {
     var req = row.clearance_requirements || {};
     var assigned = row.assigned_staff ? row.assigned_staff.full_name : 'Any matching staff';
     var reviewer = row.reviewer ? row.reviewer.full_name : (rowStatus === 'Cleared' ? (assigned !== 'Any matching staff' ? assigned : row.position_title || 'Admin update') : '');
-    var action = studentView ? '<span class="muted">View only</span>' : rowStatus === 'Pending' ? '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '">Clear</button> <button class="btn btn--danger" data-review="Declined" data-id="' + row.id + '">Decline</button>' : '<span class="muted">Reviewed</span>';
+    var action = '<span class="muted">Reviewed</span>';
+    if (studentView) {
+      action = '<span class="muted">View only</span>';
+    } else if (rowStatus === 'Pending') {
+      action = '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '">Clear</button> <button class="btn btn--danger" data-review="Declined" data-id="' + row.id + '">Decline</button>';
+    } else if (rowStatus === 'Declined') {
+      action = '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '" title="Clear after remarks are fulfilled">Clear</button>';
+    }
     return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls.name || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(rowStatus) + '">' + escapeHtml(rowStatus) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td>' + action + '</td></tr>';
   }).join('') : '<tr><td colspan="10" class="muted">No clearance records found.</td></tr>';
   if (staffView) {
