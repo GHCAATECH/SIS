@@ -86,6 +86,10 @@
   .clearance-form-table th { background:#eaf2ff; color:#0f172a; }
   .clearance-form__actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid rgba(148,163,184,.28); background:#fff; }
   .muted { color:#64748b; }
+  #viewClearanceFormBtn,
+  #generateBtn { display:none; }
+  body.staff-clearance-view #viewClearanceFormBtn,
+  body.staff-clearance-view #generateBtn { display:none !important; }
   @media (max-width: 980px) {
     .clearance-grid, .clearance-grid.staff-clearance-grid, .clearance-grid.student-clearance-grid { grid-template-columns:1fr; }
     .clearance-card__head { align-items:flex-start; flex-direction:column; }
@@ -249,6 +253,12 @@ function canSetup() {
 }
 function isStaffClearanceView() { return currentUser && !hasStudentIdentity() && !canSetup(); }
 function isStudentClearanceView() { return !!hasStudentIdentity(); }
+function setClearanceToolMode(adminToolsAllowed, studentView) {
+  var viewBtn = document.getElementById('viewClearanceFormBtn');
+  var generateBtn = document.getElementById('generateBtn');
+  if (viewBtn) viewBtn.style.display = (adminToolsAllowed || studentView) ? 'inline-flex' : 'none';
+  if (generateBtn) generateBtn.style.display = adminToolsAllowed ? 'inline-flex' : 'none';
+}
 function renderStudentClearanceSummary() {
   var box = document.getElementById('studentClearanceSummary');
   if (!isStudentClearanceView()) { box.style.display = 'none'; return; }
@@ -516,19 +526,20 @@ async function loadData() {
   var setupAllowed = canSetup();
   var staffView = isStaffClearanceView();
   var studentView = isStudentClearanceView();
+  var adminToolsAllowed = setupAllowed && !staffView && !studentView;
+  document.body.classList.toggle('staff-clearance-view', staffView);
   document.getElementById('clearanceGrid').classList.toggle('staff-clearance-grid', staffView);
   document.getElementById('clearanceGrid').classList.toggle('student-clearance-grid', studentView);
-  document.getElementById('setupCard').style.display = setupAllowed ? '' : 'none';
+  document.getElementById('setupCard').style.display = adminToolsAllowed ? '' : 'none';
   document.getElementById('clearedCard').style.display = staffView ? '' : 'none';
   document.getElementById('recordsTitle').innerHTML = staffView ? '<i class="fas fa-list-check"></i> Clearance To Review' : studentView ? '<i class="fas fa-list-check"></i> My Clearance Records' : '<i class="fas fa-list-check"></i> Clearance Records';
-  document.getElementById('generateBtn').style.display = setupAllowed ? '' : 'none';
-  document.getElementById('viewClearanceFormBtn').style.display = (setupAllowed || studentView) ? '' : 'none';
+  setClearanceToolMode(adminToolsAllowed, studentView);
   document.getElementById('statusFilter').style.display = studentView ? 'none' : '';
   document.getElementById('recordSearch').style.display = studentView ? 'none' : '';
   if (!window.AxiomDB || !AxiomDB.isConfigured()) { Portal.toast('Supabase is not configured.', true); return; }
-  staff = setupAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
-  students = setupAllowed && AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
-  requirements = setupAllowed && AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
+  staff = adminToolsAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
+  students = adminToolsAllowed && AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
+  requirements = adminToolsAllowed && AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
   records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(isStudentClearanceView() ? { studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id } : {}) || [] : [];
   renderStaffOptions(); renderRequirements(); renderStudentClearanceSummary(); renderRecords();
 }
