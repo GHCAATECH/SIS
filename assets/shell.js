@@ -259,7 +259,6 @@
       '<header class="topbar">' +
         '<button class="icon-btn hamburger" id="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>' +
         '<h1>' + title + '<small>' + (subtitle || activeSchoolLabel()) + '</small></h1>' +
-        '<button class="icon-btn" id="helpBtn" title="Quick help" style="margin-left:auto"><i class="far fa-circle-question"></i></button>' +
         '<div class="usermenu" id="usermenu">' +
           '<button class="usermenu__btn" type="button">' +
             '<span class="avatar">' + displayName.charAt(0) + '</span>' +
@@ -336,11 +335,7 @@
     if (um && um.querySelector('.usermenu__btn')) um.querySelector('.usermenu__btn').addEventListener('click', function (e) { e.stopPropagation(); um.classList.toggle('open'); });
     document.addEventListener('click', function () { if (um) um.classList.remove('open'); });
 
-    // help + logout
-    var helpBtn = document.getElementById('helpBtn');
-    if (helpBtn) helpBtn.addEventListener('click', function () {
-      Portal.toast('Use the field labels and tooltips on this page for guidance.');
-    });
+    // logout
     var logoutLink = document.getElementById('logoutLink');
     if (logoutLink) logoutLink.addEventListener('click', function (e) {
       e.preventDefault();
