@@ -84,7 +84,7 @@
   <main class="content">
     <div class="page-head">
       <span class="ph-ico"><i class="fas fa-file-shield"></i></span>
-      <div><h2>Download Documents</h2><p id="docSubtitle">Select uploaded documents to view, download, or print.</p></div>
+      <div><h2>My Documents</h2><p id="docSubtitle">View documents uploaded to your account.</p></div>
     </div>
 
     <div class="card card--pad-0">
@@ -136,7 +136,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/supabase-client.js?v=20260714-capture-flow5"></script>
-<script src="assets/shell.js?v=20260716-download-docs1"></script>
+<script src="assets/shell.js?v=20260716-no-help1"></script>
 <script>
 Portal.init({ active: 'mydocuments' });
 
@@ -146,7 +146,7 @@ if (!currentUser || !currentUser.id) {
 }
 var ownerType = currentUser.type === 'student' ? 'student' : 'staff';
 var currentDocuments = [];
-document.getElementById('docSubtitle').textContent = ownerType === 'student' ? 'Select student documents to view, download, or print.' : 'Select staff documents to view, download, or print.';
+document.getElementById('docSubtitle').textContent = ownerType === 'student' ? 'View documents uploaded to your student account.' : 'View documents uploaded to your staff account.';
 document.getElementById('docHeadTitle').textContent = ownerType === 'student' ? 'Student Documents' : 'Staff Documents';
 document.getElementById('studentTranscriptCard').style.display = 'none';
 
