@@ -3,47 +3,368 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Qualitative Assessment — AXIOMBYTE SMS</title>
+<title>Qualitative Assessment - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 <link rel="stylesheet" href="assets/app.css?v=20260717-red-card-borders1" />
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
+<style>
+  .qa-card {
+    border: 1px solid #ef4444 !important;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .qa-filter {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(160px, 240px) minmax(120px, 180px) 95px minmax(190px, 260px);
+    gap: 14px;
+    align-items: end;
+    padding: 22px 24px 18px;
+    border: 1px solid #ef4444 !important;
+    border-bottom: 0 !important;
+    background: #fff;
+  }
+  .qa-filter label {
+    display: block;
+    margin-bottom: 8px;
+    color: #000;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .qa-filter .select,
+  .qa-filter .input {
+    min-height: 38px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .qa-filter-btn {
+    min-height: 38px;
+    border: 0;
+    border-radius: 4px;
+    background: #08aeea;
+    color: #fff;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .qa-table-shell {
+    margin: 0 24px 14px;
+    border: 1px solid #ef4444 !important;
+    border-radius: 4px;
+    height: clamp(340px, calc(100dvh - 300px), 560px);
+    overflow: auto;
+    background: #fff;
+    scrollbar-gutter: stable;
+  }
+  .qa-table {
+    width: 100%;
+    min-width: 1320px;
+    border-collapse: collapse;
+    table-layout: fixed;
+    color: #000;
+    font-size: 11px;
+  }
+  .qa-table th,
+  .qa-table td {
+    border: 1px solid #ef4444 !important;
+    padding: 8px 8px;
+    text-align: center;
+    vertical-align: top;
+    background: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .qa-table th {
+    background: #f8fafc;
+    font-weight: 900;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .qa-table th:nth-child(1), .qa-table td:nth-child(1) { width: 140px; }
+  .qa-table th:nth-child(2), .qa-table td:nth-child(2) { width: 145px; }
+  .qa-table th:nth-child(3), .qa-table td:nth-child(3) { width: 150px; }
+  .qa-table th:nth-child(4), .qa-table td:nth-child(4) { width: 290px; }
+  .qa-table th:nth-child(5), .qa-table td:nth-child(5) { width: 115px; }
+  .qa-table th:nth-child(6), .qa-table td:nth-child(6) { width: 105px; }
+  .qa-table th:nth-child(7), .qa-table td:nth-child(7) { width: 120px; }
+  .qa-table th:nth-child(8), .qa-table td:nth-child(8) { width: 150px; }
+  .qa-photo {
+    position: relative;
+    width: 86px;
+    height: 100px;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #f1f8ed;
+  }
+  .qa-photo span {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #5cab4f;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 900;
+  }
+  .qa-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #fff;
+  }
+  .qa-action-btn {
+    min-height: 38px;
+    min-width: 98px;
+    border: 0;
+    border-radius: 4px;
+    background: #08aeea;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .qa-total {
+    padding: 8px 24px 22px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 900;
+    color: #000;
+    text-transform: uppercase;
+    border-left: 1px solid #ef4444 !important;
+    border-right: 1px solid #ef4444 !important;
+    border-bottom: 1px solid #ef4444 !important;
+  }
+  .qa-total span {
+    margin-left: 28px;
+    color: #0b8f22;
+  }
+  .qa-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0, 0, 0, .55);
+  }
+  .qa-modal-backdrop.active { display: flex; }
+  .qa-modal {
+    width: min(600px, 100%);
+    max-height: calc(100dvh - 28px);
+    overflow: auto;
+    border: 1px solid #ef4444 !important;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 22px 60px rgba(0,0,0,.22);
+  }
+  .qa-modal-head {
+    position: relative;
+    padding: 18px 52px 16px;
+    border-bottom: 1px solid #ef4444 !important;
+    text-align: center;
+    color: #1f78b4;
+    font-size: 24px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .qa-modal-close {
+    position: absolute;
+    right: 16px;
+    top: 14px;
+    border: 0;
+    background: transparent;
+    color: #bbb;
+    font-size: 26px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .qa-modal-body {
+    padding: 24px 20px 18px;
+  }
+  .qa-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 42px;
+  }
+  .qa-modal-section h3 {
+    margin: 0 0 8px;
+    color: #1f78b4;
+    font-size: 20px;
+    font-weight: 500;
+  }
+  .qa-modal-section ul {
+    margin: 0 0 8px 22px;
+    padding: 0;
+    color: #000;
+    line-height: 1.32;
+  }
+  .qa-modal-section li {
+    margin-bottom: 4px;
+  }
+  .qa-modal-section strong {
+    font-weight: 900;
+  }
+  .qa-assessment-label {
+    display: block;
+    margin: 18px 0 6px;
+    font-size: 14px;
+    font-weight: 900;
+    color: #000;
+  }
+  .qa-textarea {
+    width: 100%;
+    min-height: 105px;
+    resize: vertical;
+    border: 1px solid #ef4444 !important;
+    border-radius: 4px;
+    padding: 8px;
+    font: inherit;
+    font-size: 14px;
+  }
+  .qa-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 20px;
+    border-top: 1px solid #ef4444 !important;
+    background: #fff;
+  }
+  .qa-save,
+  .qa-close-btn {
+    min-width: 90px;
+    min-height: 38px;
+    border: 0;
+    border-radius: 4px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .qa-save { background: #08aeea; color: #fff; }
+  .qa-close-btn { background: #f2f2f2; color: #111; }
+  @media (max-width: 900px) {
+    .qa-filter { grid-template-columns: 1fr 1fr; padding: 18px 14px; }
+    .qa-filter-btn { width: 100%; }
+    .qa-table-shell { margin: 0 14px 14px; }
+    .qa-modal-grid { grid-template-columns: 1fr; gap: 8px; }
+  }
+  @media (max-width: 560px) {
+    .qa-filter { grid-template-columns: 1fr; }
+    .qa-modal-head { font-size: 20px; }
+  }
+</style>
 </head>
 <body class="portal-shell footer-shell">
 <div class="main">
   <main class="content">
-    <div class="page-head">
-      <span class="ph-ico"><i class="fas fa-star-half-stroke"></i></span>
-      <div><h2>Qualitative Assessment</h2><p>Record conduct, attitudes, interests and psychomotor skills.</p></div>
-      <div class="ph-actions"><button class="btn btn--success" id="saveBtn"><i class="fas fa-floppy-disk"></i> Save</button></div>
-    </div>
-
-    <div class="card" style="margin-bottom:18px">
-      <div class="card__body">
-        <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
-          <div class="field"><label>Class</label><select class="select" id="qaClass"><option>Year 2 A</option><option>Year 1 A</option><option>Year 3 A</option></select></div>
-          <div class="field"><label>Student</label>
-            <select class="select" id="qaStudent"><option>Mensah Kwabena</option><option>Owusu Abena</option><option>Asante Yaw</option><option>Boateng Akosua</option></select></div>
-          <div class="field"><label>Term</label><select class="select" id="qaTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select></div>
+    <div class="card card--pad-0 qa-card">
+      <div class="qa-filter">
+        <div class="field">
+          <label>Learning Area:</label>
+          <select class="select" id="learningAreaFilter">
+            <option value="">Select Learning Area</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Class:</label>
+          <select class="select" id="classFilter">
+            <option value="">Select Class</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Year:</label>
+          <select class="select" id="yearFilter">
+            <option>Year 1</option>
+            <option>Year 2</option>
+            <option>Year 3</option>
+          </select>
+        </div>
+        <button class="qa-filter-btn" id="filterBtn" type="button">&lt;&lt;Filter&gt;&gt;</button>
+        <div class="field">
+          <label>Ass't Ref. ID:</label>
+          <input class="input" id="refSearch" placeholder="Search with Reference ID or Name" />
         </div>
       </div>
-    </div>
 
-    <div class="grid cols-2">
-      <div class="card card--pad-0">
-        <div class="card__head"><i class="fas fa-heart"></i> Attitudes &amp; Conduct</div>
-        <div class="card__body" id="attitudes"></div>
+      <div class="qa-table-shell">
+        <table class="qa-table" id="qaTable">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>PPT_PIC</th>
+              <th>ASS_REF.ID</th>
+              <th>Candidate_Name</th>
+              <th>Nat'l_ID</th>
+              <th>Gender</th>
+              <th>DOB</th>
+              <th>Class</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <div class="card card--pad-0">
-        <div class="card__head"><i class="fas fa-lightbulb"></i> Interests &amp; Skills</div>
-        <div class="card__body" id="interests"></div>
-      </div>
-    </div>
 
-    <div class="card" style="margin-top:18px">
-      <div class="card__head"><i class="fas fa-comment-dots"></i> Class Teacher's Remark</div>
-      <div class="card__body"><textarea class="textarea" placeholder="Overall remark on the student's conduct and development…"></textarea></div>
+      <div class="qa-total">Total Number of Students: <span id="studentTotal">0</span></div>
     </div>
   </main>
+</div>
+
+<div class="qa-modal-backdrop" id="qaModal" aria-hidden="true">
+  <div class="qa-modal" role="dialog" aria-modal="true" aria-labelledby="qaModalTitle">
+    <div class="qa-modal-head" id="qaModalTitle">
+      Qualitative Assessment
+      <button class="qa-modal-close" id="modalCloseX" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="qa-modal-body">
+      <div class="qa-modal-grid">
+        <section class="qa-modal-section">
+          <h3>Behavioural and Social Skills</h3>
+          <ul>
+            <li><strong>Classroom Behaviour:</strong><br>Observations:</li>
+            <li><strong>Interaction with Peers:</strong><br>Observations:</li>
+            <li><strong>Respect for Authority:</strong><br>Observations:</li>
+          </ul>
+        </section>
+        <section class="qa-modal-section">
+          <h3>Personal Development</h3>
+          <ul>
+            <li><strong>Time Management:</strong><br>Observations:</li>
+            <li><strong>Responsibility and Accountability:</strong><br>Observations:</li>
+            <li><strong>Emotional Maturity:</strong><br>Observations:</li>
+          </ul>
+        </section>
+        <section class="qa-modal-section">
+          <h3>Skills Assessment</h3>
+          <ul>
+            <li><strong>Leadership Skills:</strong><br>Observations:</li>
+            <li><strong>Problem-Solving Skills:</strong><br>Observations:</li>
+            <li><strong>Creativity and Innovation:</strong><br>Observations:</li>
+          </ul>
+        </section>
+        <section class="qa-modal-section">
+          <h3>General Comments</h3>
+          <ul>
+            <li>Overall Strengths:</li>
+            <li>Areas for Growth:</li>
+            <li>Additional Notes:</li>
+          </ul>
+        </section>
+      </div>
+      <label class="qa-assessment-label" for="assessmentText">Your Assessment Should Reflect the Above: <span style="color:#ef4444">*</span></label>
+      <textarea class="qa-textarea" id="assessmentText" placeholder="Type Assessment Here"></textarea>
+    </div>
+    <div class="qa-modal-actions">
+      <button class="qa-save" id="saveBtn" type="button">Save</button>
+      <button class="qa-close-btn" id="modalCloseBtn" type="button">Close</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -52,39 +373,56 @@
 <script>
 Portal.init({ active: 'qualitativeaccessment' });
 
-var ratings = ['Excellent','Very Good','Good','Satisfactory','Needs Improvement'];
 var QA_KEY = 'axiom_qualitative_assessments';
-function ratingRows(items){
-  return items.map(function(it){
-    var opts = ratings.map(function(r,i){ return '<option'+(i===2?' selected':'')+'>'+r+'</option>'; }).join('');
-    return '<div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid var(--border)">'+
-      '<label style="margin:0">'+it+'</label>'+
-      '<select class="select qa-rating" data-item="'+it+'" style="max-width:190px">'+opts+'</select></div>';
-  }).join('');
-}
-document.getElementById('attitudes').innerHTML = ratingRows(['Punctuality','Attendance','Politeness','Honesty','Neatness','Relationship with peers','Respect for authority']);
-document.getElementById('interests').innerHTML = ratingRows(['Sports & games','Drama / music','Debating / public speaking','Leadership','Handwriting','Creativity','Initiative']);
+var students = [];
+var classes = [];
+var renderedStudents = [];
+var selectedStudent = null;
 
-function collectRatings() {
-  var values = {};
-  document.querySelectorAll('.qa-rating').forEach(function(select) {
-    values[select.dataset.item] = select.value;
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, function(char) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char];
   });
-  return values;
 }
 
-function qualitativePayload() {
-  var studentSelect = document.getElementById('qaStudent');
-  var remark = document.querySelector('textarea.textarea');
-  return {
-    class_name: document.getElementById('qaClass').value,
-    student_ref: studentSelect.value,
-    student_name: studentSelect.options[studentSelect.selectedIndex].textContent,
-    term: document.getElementById('qaTerm').value,
-    ratings: collectRatings(),
-    teacher_remark: remark ? remark.value.trim() : '',
-    updated_at: new Date().toISOString()
-  };
+function initials(name) {
+  return String(name || 'ST').split(/\s+/).filter(Boolean).slice(0, 2).map(function(part) {
+    return part.charAt(0).toUpperCase();
+  }).join('') || 'ST';
+}
+
+function fullName(student) {
+  return [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase();
+}
+
+function studentClassName(student) {
+  return (student.classes && student.classes.name) || student.class_name || student.className || '';
+}
+
+function studentProgrammeName(student) {
+  return (student.classes && student.classes.programmes && student.classes.programmes.name) || student.programme || student.programmeName || '';
+}
+
+function studentYear(student) {
+  var level = student.student_level || (student.classes && student.classes.year_level) || '';
+  if (/year\s*[123]/i.test(level)) return 'Year ' + String(level).match(/[123]/)[0];
+  if (student.year_admitted) {
+    var diff = new Date().getFullYear() - Number(student.year_admitted);
+    if (diff <= 0) return 'Year 1';
+    if (diff === 1) return 'Year 2';
+    if (diff === 2) return 'Year 3';
+  }
+  return '';
+}
+
+function photoUrl(student) {
+  return String(student.passport_url || student.passportUrl || student.photo_url || student.photoUrl || '').trim();
+}
+
+function safeImageUrl(value) {
+  value = String(value || '').trim();
+  if (!/^(https?:\/\/|data:image\/|blob:)/i.test(value)) return '';
+  return escapeHtml(value);
 }
 
 function saveLocalQualitative(payload) {
@@ -96,45 +434,184 @@ function saveLocalQualitative(payload) {
   localStorage.setItem(QA_KEY, JSON.stringify(list));
 }
 
-async function populateQualitativeFromSupabase() {
-  if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
+function localStudents() {
   try {
-    var classes = await AxiomDB.listClasses();
-    var students = await AxiomDB.listStudents();
-    if (classes && classes.length) {
-      document.getElementById('qaClass').innerHTML = classes.map(function(cls) {
-        return '<option value="'+cls.name+'">'+cls.name+'</option>';
-      }).join('');
-    }
-    if (students && students.length) {
-      document.getElementById('qaStudent').innerHTML = students.map(function(student) {
-        var name = [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase();
-        return '<option value="'+student.ass_ref_id+'">'+name+' - STD_ID: '+student.ass_ref_id+'</option>';
-      }).join('');
-    }
-  } catch (err) {
-    console.error(err);
-    Portal.toast('Could not load qualitative options: ' + (err.message || 'Unknown error'), true);
+    return (JSON.parse(localStorage.getItem('axiom_registered_students') || '[]') || []).map(function(row) {
+      return {
+        ass_ref_id: row.ass_ref_id || row.assRef || row.std_id || row.id,
+        first_name: row.first_name || row.firstName || row.name || '',
+        surname: row.surname || '',
+        other_names: row.other_names || row.otherNames || '',
+        ghana_card_number: row.ghana_card_number || '',
+        gender: row.gender || '',
+        date_of_birth: row.date_of_birth || row.dob || '',
+        passport_url: row.passport_url || row.photoUrl || '',
+        student_level: row.student_level || row.year || '',
+        classes: { name: row.class_name || row.className || row.class || '', programmes: { name: row.programme || row.programmeName || '' } }
+      };
+    });
+  } catch (e) {
+    return [];
   }
 }
-populateQualitativeFromSupabase();
 
-document.getElementById('saveBtn').addEventListener('click', function(){
+function populateFilters() {
+  var programmes = {};
+  classes.forEach(function(cls) {
+    var name = cls.programme || (cls.programmes && cls.programmes.name) || '';
+    if (name) programmes[name] = true;
+  });
+  students.forEach(function(student) {
+    var programme = studentProgrammeName(student);
+    if (programme) programmes[programme] = true;
+  });
+  var programmeOptions = Object.keys(programmes).sort();
+  document.getElementById('learningAreaFilter').innerHTML =
+    '<option value="">Select Learning Area</option>' +
+    programmeOptions.map(function(name) { return '<option>'+escapeHtml(name)+'</option>'; }).join('');
+  document.getElementById('classFilter').innerHTML =
+    '<option value="">Select Class</option>' +
+    classes.map(function(cls) { return '<option value="'+escapeHtml(cls.name || '')+'">'+escapeHtml(cls.name || '')+'</option>'; }).join('');
+}
+
+function applyFilters() {
+  var programme = document.getElementById('learningAreaFilter').value;
+  var className = document.getElementById('classFilter').value;
+  var year = document.getElementById('yearFilter').value;
+  var search = document.getElementById('refSearch').value.toLowerCase().trim();
+  renderedStudents = students.filter(function(student) {
+    var name = fullName(student);
+    if (programme && studentProgrammeName(student) !== programme) return false;
+    if (className && studentClassName(student) !== className) return false;
+    if (year && studentYear(student) !== year) return false;
+    if (search) {
+      var haystack = [student.ass_ref_id, name].join(' ').toLowerCase();
+      if (haystack.indexOf(search) === -1) return false;
+    }
+    return true;
+  });
+  renderRows();
+}
+
+function renderRows(message) {
+  var body = document.querySelector('#qaTable tbody');
+  document.getElementById('studentTotal').textContent = renderedStudents.length;
+  if (!renderedStudents.length) {
+    body.innerHTML = '<tr><td colspan="8" style="padding:34px;font-weight:900;color:#6b7280;text-align:center">'+escapeHtml(message || 'No students found. Select filters and click Filter.')+'</td></tr>';
+    return;
+  }
+  body.innerHTML = renderedStudents.map(function(student) {
+    var name = fullName(student);
+    var image = safeImageUrl(photoUrl(student));
+    return '<tr>' +
+      '<td><button class="qa-action-btn" type="button" data-ref="'+escapeHtml(student.ass_ref_id || '')+'">Capt. Ass&apos;t</button></td>' +
+      '<td><div class="qa-photo"><span>'+escapeHtml(initials(name))+'</span>'+(image ? '<img src="'+image+'" alt="'+escapeHtml(name)+' passport" onerror="this.remove()">' : '')+'</div></td>' +
+      '<td>'+escapeHtml(student.ass_ref_id || '')+'</td>' +
+      '<td>'+escapeHtml(name)+'</td>' +
+      '<td>'+escapeHtml(student.ghana_card_number || '')+'</td>' +
+      '<td>'+escapeHtml(String(student.gender || '').toUpperCase())+'</td>' +
+      '<td>'+escapeHtml(student.date_of_birth || '')+'</td>' +
+      '<td>'+escapeHtml(studentClassName(student))+'</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function openModal(student) {
+  selectedStudent = student;
+  document.getElementById('assessmentText').value = '';
+  document.getElementById('qaModal').classList.add('active');
+  document.getElementById('qaModal').setAttribute('aria-hidden', 'false');
+  document.getElementById('assessmentText').focus();
+}
+
+function closeModal() {
+  document.getElementById('qaModal').classList.remove('active');
+  document.getElementById('qaModal').setAttribute('aria-hidden', 'true');
+}
+
+function qualitativePayload() {
+  if (!selectedStudent) throw new Error('Select a student first.');
+  return {
+    class_name: studentClassName(selectedStudent),
+    student_ref: selectedStudent.ass_ref_id,
+    student_name: fullName(selectedStudent),
+    term: document.getElementById('yearFilter').value,
+    ratings: {},
+    teacher_remark: document.getElementById('assessmentText').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+}
+
+async function loadSetup() {
+  students = localStudents();
+  classes = [];
+  if (window.AxiomDB && AxiomDB.isConfigured()) {
+    try {
+      var dbClasses = await AxiomDB.listClasses();
+      var dbStudents = await AxiomDB.listStudents();
+      if (dbClasses && dbClasses.length) classes = dbClasses;
+      if (dbStudents && dbStudents.length) students = dbStudents;
+    } catch (err) {
+      console.error(err);
+      Portal.toast('Could not load qualitative assessment data. Showing local data.', true);
+    }
+  }
+  if (!classes.length) {
+    var classNames = {};
+    students.forEach(function(student) {
+      var name = studentClassName(student);
+      if (name) classNames[name] = { name: name, programme: studentProgrammeName(student) };
+    });
+    classes = Object.keys(classNames).map(function(name) { return classNames[name]; });
+  }
+  populateFilters();
+  renderedStudents = [];
+  renderRows('Select filters and click Filter to load students.');
+}
+
+document.getElementById('filterBtn').addEventListener('click', applyFilters);
+document.getElementById('refSearch').addEventListener('input', function() {
+  if (renderedStudents.length) applyFilters();
+});
+document.getElementById('qaTable').addEventListener('click', function(event) {
+  var button = event.target.closest('.qa-action-btn');
+  if (!button) return;
+  var ref = button.getAttribute('data-ref');
+  var student = renderedStudents.find(function(item) { return item.ass_ref_id === ref; });
+  if (student) openModal(student);
+});
+document.getElementById('modalCloseX').addEventListener('click', closeModal);
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+document.getElementById('qaModal').addEventListener('click', function(event) {
+  if (event.target.id === 'qaModal') closeModal();
+});
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') closeModal();
+});
+document.getElementById('saveBtn').addEventListener('click', function() {
   async function saveQualitative() {
     var payload = qualitativePayload();
+    if (!payload.teacher_remark) {
+      Portal.toast('Type the qualitative assessment before saving.', true);
+      return;
+    }
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.saveQualitativeAssessment) {
       await AxiomDB.saveQualitativeAssessment(payload);
     } else {
       saveLocalQualitative(payload);
     }
     Portal.toast('Qualitative assessment saved.');
+    closeModal();
   }
   saveQualitative().catch(function(err) {
     console.error(err);
-    saveLocalQualitative(qualitativePayload());
+    try { saveLocalQualitative(qualitativePayload()); } catch (e) {}
     Portal.toast('Saved locally. Run the qualitative assessment SQL to save online.', true);
+    closeModal();
   });
 });
+
+loadSetup();
 </script>
 <footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
   <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>
