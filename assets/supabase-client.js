@@ -169,6 +169,7 @@
           category: profile.category,
           position_responsibility: profile.position_responsibility,
           position: profile.position_responsibility,
+          form_master_class: profile.form_master_class || '',
           department: profile.department,
           rank: profile.rank,
           school_id: profile.school_id,
@@ -257,6 +258,7 @@
           if (authProfile) {
             authProfile.session_token = profile.session_token;
             authProfile.privileges = profile.privileges || authProfile.privileges || [];
+            authProfile.form_master_class = authProfile.form_master_class || profile.form_master_class || '';
             if (profile.school_code) setActiveSchool(profile.school_code, profile.school_id, profile.school_name);
             return authProfile;
           }
@@ -268,8 +270,24 @@
     if (profile.school_code) setActiveSchool(profile.school_code, profile.school_id, profile.school_name);
     profile.type = profile.type || 'staff';
     profile.isAdmin = profile.isAdmin || profile.category === 'School Administrator' || profile.role === 'School Administrator';
+    profile.form_master_class = profile.form_master_class || '';
     profile.privileges = profile.privileges || [];
     return profile;
+  }
+
+  async function qualitativeAssessmentSetup() {
+    var c = db();
+    if (!c) return null;
+    var token = activeStaffSessionToken();
+    if (!token) return null;
+    var result = await c.rpc('secure_qualitative_assessment_setup', {
+      p_session_token: token
+    });
+    if (result.error) {
+      if (/secure_qualitative_assessment_setup|schema cache|function/i.test(result.error.message || '')) return null;
+      throw result.error;
+    }
+    return result.data || null;
   }
 
   async function captureAssessmentSetup() {
@@ -1217,6 +1235,18 @@
   async function saveQualitativeAssessment(payload) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
+    var token = activeStaffSessionToken();
+    if (token) {
+      var sessionResult = await c.rpc('secure_save_qualitative_assessment_with_session', {
+        p_session_token: token,
+        p_payload: payload || {}
+      });
+      if (!sessionResult.error) return sessionResult.data;
+      if (/secure_save_qualitative_assessment_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw new Error('Run the form master qualitative assessment SQL in Supabase, then refresh this page.');
+      }
+      throw sessionResult.error;
+    }
     payload.school_id = school.id;
     var result = await c
       .from('qualitative_assessments')
@@ -1820,6 +1850,7 @@
     recalculateClassPositions: recalculateClassPositions,
     listResultSummaries: listResultSummaries,
     updateSchoolInfo: updateSchoolInfo,
+    qualitativeAssessmentSetup: qualitativeAssessmentSetup,
     saveQualitativeAssessment: saveQualitativeAssessment,
     listQualitativeAssessments: listQualitativeAssessments,
     uploadStudentPassport: uploadStudentPassport,

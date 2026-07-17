@@ -72,6 +72,11 @@
     return norm(user.status) === 'completed' || norm(user.student_level) === 'completed';
   }
 
+  function isFormMasterOrMistress(user) {
+    var position = norm(user && (user.position_responsibility || user.position || '')).replace(/_/g, ' ');
+    return /form\s+master|form\s+mistress/.test(position);
+  }
+
   function currentUser() {
     try {
       var user = JSON.parse(localStorage.getItem('axiom_current_user') || 'null');
@@ -164,6 +169,9 @@
     if (allowed.indexOf('dashboard') < 0) allowed.push('dashboard');
     if (user.category === 'Teaching Staff' && allowed.indexOf('cass') < 0) allowed.push('cass');
     if (user.category === 'Teaching Staff' && allowed.indexOf('schemeofwork') < 0) allowed.push('schemeofwork');
+    if (user.category === 'Teaching Staff' && isFormMasterOrMistress(user) && allowed.indexOf('qualitativeaccessment') < 0) {
+      allowed.push('qualitativeaccessment');
+    }
     if (user.category !== 'Teaching Staff') {
       allowed = allowed.filter(function (key) { return key !== 'cass' && key !== 'schemeofwork'; });
     }
@@ -433,6 +441,10 @@
           return;
         }
         if (user && user.category === 'Teaching Staff' && active === 'schemeofwork') {
+          if (opts.onReady) opts.onReady();
+          return;
+        }
+        if (user && user.category === 'Teaching Staff' && active === 'qualitativeaccessment' && isFormMasterOrMistress(user)) {
           if (opts.onReady) opts.onReady();
           return;
         }

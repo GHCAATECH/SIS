@@ -366,8 +366,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-staff-assessment-records1"></script>
-<script src="assets/shell.js?v=20260716-archive-clearance1"></script>
+<script src="assets/supabase-client.js?v=20260717-form-master-qa1"></script>
+<script src="assets/shell.js?v=20260717-form-master-qa1"></script>
 <script>
 Portal.init({ active: 'qualitativeaccessment' });
 
@@ -431,6 +431,49 @@ function capturedByName() {
   ).toUpperCase();
 }
 
+function currentPortalUser() {
+  return (window.Portal && Portal.currentUser) ? Portal.currentUser() : null;
+}
+
+function isSchoolAdminUser() {
+  var user = currentPortalUser();
+  var category = String(user && user.category || '').toLowerCase();
+  var role = String(user && user.role || '').toLowerCase();
+  return !!(user && (user.isAdmin || category === 'school administrator' || role === 'school administrator'));
+}
+
+function isFormMasterUser() {
+  var user = currentPortalUser();
+  var category = String(user && user.category || '').toLowerCase();
+  var position = String(user && (user.position_responsibility || user.position || '') || '').toLowerCase().replace(/_/g, ' ');
+  return category === 'teaching staff' && /form\s+master|form\s+mistress/.test(position);
+}
+
+function formMasterScopeClass() {
+  var user = currentPortalUser();
+  if (!user || isSchoolAdminUser() || !isFormMasterUser()) return '';
+  return String(user.form_master_class || '').trim();
+}
+
+function sameClassName(a, b) {
+  return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+}
+
+function applyFormMasterScope() {
+  var scopeClass = formMasterScopeClass();
+  if (!scopeClass) return '';
+  students = students.filter(function(student) {
+    return sameClassName(studentClassName(student), scopeClass);
+  });
+  classes = classes.filter(function(cls) {
+    return sameClassName(cls.name, scopeClass);
+  });
+  if (!classes.length) {
+    classes = [{ name: scopeClass, programme: students.length ? studentProgrammeName(students[0]) : '' }];
+  }
+  return scopeClass;
+}
+
 function saveLocalQualitative(payload) {
   var list = [];
   try { list = JSON.parse(localStorage.getItem(QA_KEY) || '[]'); } catch (e) {}
@@ -475,9 +518,17 @@ function populateFilters() {
   document.getElementById('learningAreaFilter').innerHTML =
     '<option value="">Select Learning Area</option>' +
     programmeOptions.map(function(name) { return '<option>'+escapeHtml(name)+'</option>'; }).join('');
-  document.getElementById('classFilter').innerHTML =
+  var classFilter = document.getElementById('classFilter');
+  classFilter.innerHTML =
     '<option value="">Select Class</option>' +
     classes.map(function(cls) { return '<option value="'+escapeHtml(cls.name || '')+'">'+escapeHtml(cls.name || '')+'</option>'; }).join('');
+  var scopeClass = formMasterScopeClass();
+  if (scopeClass) {
+    classFilter.value = scopeClass;
+    classFilter.disabled = true;
+  } else {
+    classFilter.disabled = false;
+  }
 }
 
 function applyFilters() {
@@ -485,8 +536,16 @@ function applyFilters() {
   var className = document.getElementById('classFilter').value;
   var year = document.getElementById('yearFilter').value;
   var search = document.getElementById('refSearch').value.toLowerCase().trim();
+  var scopeClass = formMasterScopeClass();
+  if (isFormMasterUser() && !scopeClass) {
+    renderedStudents = [];
+    renderRows('No class has been assigned to you as Form Master/Form Mistress.');
+    return;
+  }
+  if (scopeClass) className = scopeClass;
   renderedStudents = students.filter(function(student) {
     var name = fullName(student);
+    if (scopeClass && !sameClassName(studentClassName(student), scopeClass)) return false;
     if (programme && studentProgrammeName(student) !== programme) return false;
     if (className && studentClassName(student) !== className) return false;
     if (year && studentYear(student) !== year) return false;
@@ -543,6 +602,7 @@ function qualitativePayload() {
     term: document.getElementById('yearFilter').value,
     ratings: {},
     teacher_remark: document.getElementById('assessmentText').value.trim(),
+    captured_by: capturedByName(),
     updated_at: new Date().toISOString()
   };
 }
@@ -552,10 +612,16 @@ async function loadSetup() {
   classes = [];
   if (window.AxiomDB && AxiomDB.isConfigured()) {
     try {
-      var dbClasses = await AxiomDB.listClasses();
-      var dbStudents = await AxiomDB.listStudents();
-      if (dbClasses && dbClasses.length) classes = dbClasses;
-      if (dbStudents && dbStudents.length) students = dbStudents;
+      var scopedSetup = AxiomDB.qualitativeAssessmentSetup ? await AxiomDB.qualitativeAssessmentSetup() : null;
+      if (scopedSetup && (scopedSetup.classes || scopedSetup.students)) {
+        if (scopedSetup.classes && scopedSetup.classes.length) classes = scopedSetup.classes;
+        if (scopedSetup.students && scopedSetup.students.length) students = scopedSetup.students;
+      } else {
+        var dbClasses = await AxiomDB.listClasses();
+        var dbStudents = await AxiomDB.listStudents();
+        if (dbClasses && dbClasses.length) classes = dbClasses;
+        if (dbStudents && dbStudents.length) students = dbStudents;
+      }
     } catch (err) {
       console.error(err);
       Portal.toast('Could not load qualitative assessment data. Showing local data.', true);
@@ -569,9 +635,14 @@ async function loadSetup() {
     });
     classes = Object.keys(classNames).map(function(name) { return classNames[name]; });
   }
+  var scopeClass = applyFormMasterScope();
   populateFilters();
   renderedStudents = [];
-  renderRows('Select filters and click Filter to load students.');
+  if (isFormMasterUser() && !scopeClass) {
+    renderRows('No class has been assigned to you as Form Master/Form Mistress.');
+  } else {
+    renderRows('Select filters and click Filter to load students.');
+  }
 }
 
 document.getElementById('filterBtn').addEventListener('click', applyFilters);
