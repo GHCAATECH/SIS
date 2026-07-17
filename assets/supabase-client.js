@@ -1105,17 +1105,16 @@
     var c = db();
     if (!c) return null;
     var token = activeStaffSessionToken();
-    var session = null;
-    try { session = await authSession(); } catch (e) { session = null; }
-    if (!session && token) {
+    if (token) {
       var sessionResult = await c.rpc('secure_save_assessment_scores_with_session', {
         p_session_token: token,
         p_payload: payload || {}
       });
       if (!sessionResult.error) return sessionResult.data;
-      if (!/secure_save_assessment_scores_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
-        throw sessionResult.error;
+      if (/secure_save_assessment_scores_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw new Error('Run the staff capture assessment SQL in Supabase, then refresh this page.');
       }
+      throw sessionResult.error;
     }
     var school = await currentSchool();
     if (!c || !school) return null;
@@ -1126,9 +1125,23 @@
   }
 
   async function listAssessmentRecords(filters) {
-    var c = db(), school = await currentSchool();
-    if (!c || !school) return null;
+    var c = db();
+    if (!c) return null;
     filters = filters || {};
+    var token = activeStaffSessionToken();
+    if (token) {
+      var sessionResult = await c.rpc('secure_list_assessment_records_with_session', {
+        p_session_token: token,
+        p_filters: filters || {}
+      });
+      if (!sessionResult.error) return sessionResult.data || [];
+      if (/secure_list_assessment_records_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw new Error('Run the staff assessment records SQL in Supabase, then refresh this page.');
+      }
+      throw sessionResult.error;
+    }
+    var school = await currentSchool();
+    if (!school) return null;
     var result = await c
       .from('assessment_scores')
       .select('score, grade, remark, updated_at, students(ass_ref_id, first_name, surname, other_names, ghana_card_number, gender, disability_status, date_of_birth, status, passport_url, student_level, year_admitted, classes(year_level)), assessments(class_id, academic_year, year_level, semester, status, submitted_at, overall_score, inserted_by, subjects(name, code), classes(name, programme_id, programmes(name)), assessment_modes(name, display_order))')
