@@ -2519,3 +2519,61 @@ table tbody tr:hover,
   }
 }
 
+/* System-wide red card borders */
+:where(
+  .card,
+  .panel,
+  .modal,
+  .legacy-panel,
+  .records-card,
+  .manage-card,
+  .profile-card,
+  .users-card,
+  .score-panel,
+  .clearance-card,
+  .archive-card,
+  .student-clearance-summary,
+  .clearance-form-tile,
+  .staff-profile-card,
+  .quick,
+  .tile,
+  .stat,
+  .mini,
+  .profile-tile,
+  .profile-mini
+) {
+  border: 1px solid #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+:where(
+  .card__head,
+  .modal__head,
+  .panel__head,
+  .legacy-filter,
+  .table-tools,
+  .users-tools,
+  .student-footer-actions,
+  .records-filter,
+  .records-search,
+  .records-footer
+) {
+  border-color: #ef4444 !important;
+}
+
+:where(
+  .table-wrap,
+  .student-table-wrapper,
+  .users-table-wrap,
+  .legacy-table-wrap,
+  .records-table-shell,
+  .records-table-wrap,
+  .score-table-wrap,
+  .super-table-wrap,
+  .clearance-table-wrap,
+  .archive-table-wrap,
+  .subject-assignment-scroll
+) {
+  border: 1px solid #ef4444 !important;
+}
+
