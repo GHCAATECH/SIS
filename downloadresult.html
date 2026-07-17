@@ -17,6 +17,7 @@
     font-weight: 800;
     text-transform: uppercase;
   }
+  .records-title { display:none; }
   .records-filter {
     display: grid;
     grid-template-columns: repeat(4, minmax(170px, 1fr));
@@ -174,10 +175,7 @@
 <div class="main">
   <main class="content">
     <div class="card card--pad-0 records-card">
-      <div class="records-title">Student Records</div>
-
       <div class="records-filter">
-        <input class="input" id="academicYearFilter" pattern="\d{4}/\d{4}" placeholder="Academic Year (2025/2026)">
         <select class="select" id="yearFilter">
           <option selected>Year 1</option>
           <option>Year 2</option>
@@ -200,7 +198,6 @@
         </select>
         <select class="select" id="subjectFilter"><option value="">All Subjects</option></select>
         <button class="btn" type="button" id="submitFilter">Submit</button>
-        <button class="btn btn--primary" type="button" id="recalculatePositionsBtn"><i class="fas fa-ranking-star"></i> Recalculate Class Positions</button>
       </div>
 
       <div class="records-search">
@@ -312,14 +309,6 @@ function padScore(score) {
 function dateOnly(value) {
   return value ? String(value).slice(0, 10) : '';
 }
-
-function currentAcademicYear() {
-  var today = new Date();
-  var year = today.getFullYear();
-  return today.getMonth() >= 8 ? year + '/' + (year + 1) : (year - 1) + '/' + year;
-}
-
-document.getElementById('academicYearFilter').value = currentAcademicYear();
 
 function normalizeYearLevel(value) {
   var match = String(value || '').match(/(?:year\s*)?([123])/i);
@@ -537,7 +526,6 @@ function applyFilters() {
     showRecordsFilterPending();
     return;
   }
-  var academicYear = document.getElementById('academicYearFilter').value.trim();
   var year = document.getElementById('yearFilter').value;
   var semester = document.getElementById('semesterFilter').value;
   var mode = document.getElementById('modeFilter').value;
@@ -546,7 +534,6 @@ function applyFilters() {
   var classId = document.getElementById('classFilter').value;
   var search = document.getElementById('searchBox').value.toLowerCase().trim();
   renderedRecords = records.filter(function(row) {
-    if (academicYear && row.academicYear && row.academicYear !== academicYear) return false;
     if (year && row.currentYearLevel !== year) return false;
     if (semester && row.semester !== semester) return false;
     if (!modeMatches(row, mode)) return false;
@@ -675,39 +662,11 @@ document.getElementById('submitFilter').addEventListener('click', function() {
     button.disabled = false;
   });
 });
-document.getElementById('recalculatePositionsBtn').addEventListener('click', function() {
-  var button = this;
-  var payload = {
-    academicYear: document.getElementById('academicYearFilter').value.trim(),
-    term: document.getElementById('semesterFilter').value,
-    programmeId: document.getElementById('programmeFilter').value,
-    classId: document.getElementById('classFilter').value
-  };
-  if (!/^\d{4}\/\d{4}$/.test(payload.academicYear) || !payload.term || !payload.programmeId || !payload.classId) {
-    Portal.toast('Select academic year, term, programme, and class first.', true);
-    return;
-  }
-  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.recalculateClassPositions) {
-    Portal.toast('Run the class position SQL migration and connect Supabase first.', true);
-    return;
-  }
-  button.disabled = true;
-  button.classList.add('loading');
-  AxiomDB.recalculateClassPositions(payload).then(function(results) {
-    Portal.toast('Class positions recalculated for '+results.length+' student(s).');
-  }).catch(function(err) {
-    console.error(err);
-    Portal.toast('Could not recalculate positions: '+(err.message || 'Unknown error'), true);
-  }).finally(function() {
-    button.disabled = false;
-    button.classList.remove('loading');
-  });
-});
 document.getElementById('searchBox').addEventListener('input', function() {
   showRecordsFilterPending('Search is pending. Click Submit to load assessment records.');
 });
 document.getElementById('downloadBtn').addEventListener('click', downloadRecords);
-['academicYearFilter','yearFilter','semesterFilter','modeFilter','subjectFilter','classFilter'].forEach(function(id) {
+['yearFilter','semesterFilter','modeFilter','subjectFilter','classFilter'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', function() { showRecordsFilterPending(); });
 });
 
