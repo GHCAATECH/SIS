@@ -10,11 +10,11 @@
   .ts-head { display:flex; align-items:center; gap:16px; border-bottom:2px solid var(--brand); padding-bottom:16px; margin-bottom:18px; }
   .ts-head .crest { width:74px; height:74px; border-radius:50%; background:var(--surface-2); border:1px solid var(--border); display:grid; place-items:center; color:var(--text-faint); flex:none; }
   .ts-head h3 { font-size:18px; } .ts-head p { margin:2px 0 0; color:var(--text-soft); font-size:13px; }
-  .ts-passport, .pdf-passport { display:grid; place-items:center; overflow:hidden; background:#f8fafc; border:1px solid #94a3b8; color:#64748b; font-weight:700; }
+  .ts-passport, .pdf-passport { display:grid; place-items:center; overflow:hidden; background:#f1f8ed; border:1px solid #94a3b8; color:#fff; font-weight:800; }
   .ts-passport { width:76px; height:90px; margin-left:auto; border-radius:4px; flex:none; }
   .pdf-passport { width:82px; height:98px; justify-self:end; align-self:start; }
-  .ts-passport img, .pdf-passport img { grid-area:1 / 1; position:relative; z-index:2; width:100%; height:100%; object-fit:cover; background:#fff; }
-  .ts-passport span, .pdf-passport span { grid-area:1 / 1; position:relative; z-index:1; }
+  .ts-passport img, .pdf-passport img { grid-area:1 / 1; position:relative; z-index:2; width:100%; height:100%; object-fit:contain; background:#fff; }
+  .ts-passport span, .pdf-passport span { grid-area:1 / 1; position:relative; z-index:1; width:54px; height:54px; border-radius:50%; display:grid; place-items:center; background:#5cab4f; }
   .ts-meta { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
   .ts-meta .k { font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); }
   .ts-meta .v { font-weight:600; }
@@ -215,7 +215,7 @@
             <p>0021101 · AXIOMBYTE SMS — AXIOMBYTE SMS</p>
             <p style="font-weight:600;color:var(--brand);margin-top:4px">ACADEMIC TRANSCRIPT</p>
           </div>
-          <div class="ts-passport" id="tsPassport"><span>PHOTO</span></div>
+          <div class="ts-passport" id="tsPassport"><span>ST</span></div>
         </div>
 
         <div class="ts-meta">
@@ -280,7 +280,7 @@ function safeAttribute(value) {
 function profileInitials(profile) {
   return String(profile.full_name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function(part) {
     return part.charAt(0).toUpperCase();
-  }).join('') || 'PHOTO';
+  }).join('') || 'ST';
 }
 
 function passportHtml(profile) {

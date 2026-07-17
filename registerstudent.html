@@ -156,6 +156,17 @@
     object-position: center;
     background: #fff;
   }
+  .passport-preview span {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #5cab4f;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 800;
+  }
   .photo-file { width: 168px; max-width: 100%; margin-top: 0; font-size: 10px; }
   .photo-column.stage-hidden { display: none; }
   .legacy-form.no-photo { grid-template-columns: 1fr; }
@@ -384,7 +395,7 @@
           </div>
 
           <div class="photo-column">
-            <div class="passport-preview" id="photoBox"><i class="fas fa-image"></i></div>
+            <div class="passport-preview" id="photoBox"><span>ST</span></div>
             <input class="photo-file" type="file" accept="image/*" id="photo" />
           </div>
 
@@ -839,11 +850,37 @@ document.getElementById('studentClass').addEventListener('change', function() { 
 document.getElementById('residentialStatus').addEventListener('change', updateHouseOptions);
 document.getElementById('yearAdmitted').addEventListener('change', updateStudentLevel);
 
+var photoPreviewHasImage = false;
+
+function studentInitialsFromForm() {
+  return [document.getElementById('firstName').value, document.getElementById('surname').value]
+    .join(' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(function(part) { return part.charAt(0).toUpperCase(); })
+    .join('') || 'ST';
+}
+
+function updatePhotoFallback() {
+  if (photoPreviewHasImage) return;
+  document.getElementById('photoBox').innerHTML = '<span>'+studentInitialsFromForm()+'</span>';
+}
+
+['surname', 'firstName', 'otherNames'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', updatePhotoFallback);
+});
+
 document.getElementById('photo').addEventListener('change', function(e) {
   var file = e.target.files[0];
-  if (!file) return;
+  if (!file) {
+    photoPreviewHasImage = false;
+    updatePhotoFallback();
+    return;
+  }
+  photoPreviewHasImage = true;
   var url = URL.createObjectURL(file);
-  document.getElementById('photoBox').innerHTML = '<img src="'+url+'" alt="Student passport photo">';
+  document.getElementById('photoBox').innerHTML = '<img src="'+url+'" alt="Student passport photo" onerror="photoPreviewHasImage=false;updatePhotoFallback();">';
 });
 
 function openBulkUploadModal() {
@@ -908,7 +945,8 @@ document.getElementById('regForm').addEventListener('reset', function() {
   window.setTimeout(function() {
     populateProgrammeSelect(document.getElementById('studentProgramme'));
     populateClassSelect('', document.getElementById('studentClass'));
-    document.getElementById('photoBox').innerHTML = '<i class="fas fa-image"></i>';
+    photoPreviewHasImage = false;
+    updatePhotoFallback();
     renderSubjects();
     updateHouseOptions();
     updateStudentLevel();
