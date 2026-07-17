@@ -943,6 +943,7 @@ var editSections = [
     ['employment_status', 'Employment Status', 'select', false, ['', 'Permanent', 'Contract', 'National Service', 'Temporary']],
     ['trained_status', 'Trained Status (Teaching staff)', 'select', false, ['', 'Professional', 'Non-Professional']],
     ['position_responsibility', 'Position / Responsibility', 'multiselect'],
+    ['form_master_class', 'Form Master/Form Mistress Class', 'class-select'],
     ['department', 'Department (Teaching staff)', 'department-select'],
     ['house_assigned', 'House Assigned']
   ]],
@@ -997,6 +998,7 @@ function userRecord(user) {
     employment_status: row.employment_status || '',
     trained_status: row.trained_status || '',
     position_responsibility: row.position_responsibility || '',
+    form_master_class: row.form_master_class || '',
     department: row.department || '',
     house_assigned: row.house_assigned || '',
     professional_qualification: row.professional_qualification || '',
@@ -1044,6 +1046,9 @@ function editInput(field, record) {
       return '<option value="'+String(option).replace(/"/g, '&quot;')+'"'+(String(option) === String(value) ? ' selected' : '')+'>'+option+'</option>';
     }).join('');
     return '<div class="field"><label>'+label+'</label><select class="select edit-field" id="edit_'+name+'" data-name="'+name+'">'+departmentHtml+'</select></div>';
+  }
+  if (type === 'class-select') {
+    return '<div class="field" id="edit_'+name+'_field"><label>'+label+'</label><select class="select edit-field" id="edit_'+name+'" data-name="'+name+'"><option value="">Select class...</option></select></div>';
   }
   return '<div class="field"><label>'+label+(field[3] ? ' <span class="req">*</span>' : '')+'</label><input class="input edit-field" id="edit_'+name+'" data-name="'+name+'" type="'+type+'" value="'+String(value).replace(/"/g, '&quot;')+'"'+required+'></div>';
 }
@@ -1104,6 +1109,7 @@ function updateEditPositionDropdownLabel() {
   document.getElementById('edit_position_responsibility_trigger').textContent = !selected.length
     ? 'Select positions...'
     : (selected.length <= 2 ? selected.join(', ') : selected.length+' positions selected');
+  syncEditFormMasterClassField();
 }
 
 function bindEditPositionDropdown() {
@@ -1122,6 +1128,38 @@ function bindEditPositionDropdown() {
     if (option) option.selected = e.target.checked;
     updateEditPositionDropdownLabel();
   });
+}
+
+function selectedEditPositions() {
+  var select = document.getElementById('edit_position_responsibility');
+  return select ? Array.from(select.selectedOptions).map(function(option) { return option.value; }) : [];
+}
+
+function isFormMasterPositionSelected() {
+  return selectedEditPositions().some(function(position) {
+    return /form\s+master|form\s+mistress/i.test(position || '');
+  });
+}
+
+function populateEditFormMasterClassOptions(preferredClass) {
+  var select = document.getElementById('edit_form_master_class');
+  if (!select) return;
+  var current = preferredClass === undefined ? select.value : preferredClass;
+  var options = assignmentClasses.map(function(cls) { return cls.name || cls.className || cls.id || ''; }).filter(Boolean);
+  if (current && options.indexOf(current) === -1) options.unshift(current);
+  select.innerHTML = '<option value="">Select class...</option>' + options.map(function(name) {
+    return '<option value="'+String(name).replace(/"/g, '&quot;')+'"'+(String(name) === String(current) ? ' selected' : '')+'>'+name+'</option>';
+  }).join('');
+}
+
+function syncEditFormMasterClassField() {
+  var field = document.getElementById('edit_form_master_class_field');
+  var select = document.getElementById('edit_form_master_class');
+  if (!field || !select) return;
+  var shouldShow = isFormMasterPositionSelected();
+  field.style.display = shouldShow ? '' : 'none';
+  select.required = shouldShow;
+  if (!shouldShow) select.value = '';
 }
 
 function syncEditHouseField() {
@@ -1150,8 +1188,9 @@ function staffProfilePhotoMarkup(record) {
   '</div>';
 }
 
-function openEditUserModal(user) {
+async function openEditUserModal(user) {
   activeEditUser = user;
+  await loadAssignmentClasses();
   var record = userRecord(user);
   document.getElementById('editUserForm').innerHTML =
   staffProfilePhotoMarkup(record) +
@@ -1182,6 +1221,8 @@ function openEditUserModal(user) {
   syncEditRoleOptions();
   syncEditRankOptions(record.rank);
   syncEditPositionOptions(record.position_responsibility);
+  populateEditFormMasterClassOptions(record.form_master_class);
+  syncEditFormMasterClassField();
   document.getElementById('edit_role').value = record.role || document.getElementById('edit_role').value;
   syncEditHouseField();
   setProfileReadOnly(true);
@@ -1214,6 +1255,7 @@ function setProfileReadOnly(isReadOnly) {
   if (!isReadOnly) {
     syncEditRoleOptions();
     syncEditHouseField();
+    syncEditFormMasterClassField();
   }
 }
 
@@ -1233,6 +1275,7 @@ function editPayload() {
   payload.trained_status = payload.category === 'Teaching Staff' ? payload.trained_status : '';
   payload.department = payload.category === 'Teaching Staff' ? payload.department : '';
   payload.house_assigned = payload.role === 'House Staff' ? payload.house_assigned : '';
+  payload.form_master_class = /form\s+master|form\s+mistress/i.test(payload.position_responsibility || '') ? payload.form_master_class : '';
   ['date_of_birth', 'first_appointment_date', 'date_posted_to_station', 'date_placed_on_rank'].forEach(function(key) {
     if (!payload[key]) payload[key] = null;
   });
@@ -1715,7 +1758,10 @@ document.getElementById('usersTable').addEventListener('click', function(e) {
   var user = displayedUsers[Number(b.dataset.i)];
   var name = user ? user[0] : b.closest('tr').children[2].textContent.trim();
   if (b.dataset.act === 'ViewProfile' && user) {
-    openEditUserModal(user);
+    openEditUserModal(user).catch(function(err) {
+      console.error(err);
+      Portal.toast('Could not open staff profile: ' + (err.message || 'Unknown error'), true);
+    });
     return;
   }
   if (b.dataset.act === 'AssignPrivilege' && user) {
