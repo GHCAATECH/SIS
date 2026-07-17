@@ -1260,13 +1260,13 @@
   }
 
   async function listQualitativeAssessments(studentRefs) {
-    var c = db(), school = await currentSchool();
-    if (!c || !school) return null;
+    var c = db();
+    if (!c) return null;
     var studentToken = activeStudentSessionToken();
     var staffToken = activeStaffSessionToken();
     if (studentToken || staffToken) {
       var sessionResult = await c.rpc('secure_list_qualitative_assessments', {
-        p_school_id: school.id,
+        p_school_id: null,
         p_student_refs: studentRefs || [],
         p_student_session_token: studentToken || null,
         p_staff_session_token: staffToken || null
@@ -1277,6 +1277,8 @@
       }
       throw sessionResult.error;
     }
+    var school = await currentSchool();
+    if (!school) return null;
     var query = c
       .from('qualitative_assessments')
       .select('*')

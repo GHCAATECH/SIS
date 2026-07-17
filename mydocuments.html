@@ -76,13 +76,20 @@
           <div class="card stat"><div class="num" id="trSubjects">-</div><div class="cap">Subjects</div></div>
         </div>
         <div class="empty" id="transcriptEmpty" style="display:none"><i class="fas fa-clipboard-list"></i>No transcript records found yet.</div>
+        <div class="card" style="margin-top:14px;border-color:var(--danger)">
+          <div class="card__head"><i class="fas fa-star-half-stroke"></i> Qualitative Assessment</div>
+          <div class="card__body">
+            <p id="trQualitativeRemark" style="margin:0;line-height:1.45;font-weight:700;color:#0f172a">No qualitative assessment available.</p>
+            <p id="trQualitativeBy" style="margin:10px 0 0;color:#64748b;font-weight:800">Qualitative Assessment by: ________________</p>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-staff-assessment-records1"></script>
+<script src="assets/supabase-client.js?v=20260717-transcript-qualitative2"></script>
 <script src="assets/shell.js?v=20260716-archive-clearance1"></script>
 <script>
 Portal.init({ active: 'mydocuments' });
@@ -167,6 +174,34 @@ function renderTranscript(profile, rows) {
   document.getElementById('trSubjects').textContent = rows.length;
 }
 
+function latestQualitativeForRef(rows, ref) {
+  var matches = (rows || []).filter(function(row) {
+    return String(row.student_ref || '').toUpperCase() === String(ref || '').toUpperCase();
+  });
+  matches.sort(function(a, b) {
+    return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+  });
+  return matches[0] || null;
+}
+
+async function loadStudentQualitative(ref) {
+  if (!ref || !window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listQualitativeAssessments) return null;
+  try {
+    var rows = await AxiomDB.listQualitativeAssessments([ref]);
+    return latestQualitativeForRef(rows, ref);
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load qualitative assessment: ' + (err.message || 'Unknown error'), true);
+    return null;
+  }
+}
+
+function renderQualitative(row) {
+  row = row || {};
+  document.getElementById('trQualitativeRemark').textContent = row.teacher_remark || 'No qualitative assessment available.';
+  document.getElementById('trQualitativeBy').textContent = 'Qualitative Assessment by: ' + (row.captured_by_name || row.updated_by || row.teacher_name || row.captured_by || '________________');
+}
+
 function loadLocalTranscript() {
   var records = [];
   try { records = JSON.parse(localStorage.getItem('axiom_assessment_records') || '[]'); } catch (e) {}
@@ -218,6 +253,7 @@ async function loadStudentTranscript() {
       programme: student.classes && student.classes.programmes ? student.classes.programmes.name : '-',
       class_name: student.classes && student.classes.name ? student.classes.name : '-'
     }, rows);
+    renderQualitative(await loadStudentQualitative(student.ass_ref_id));
   } catch (err) {
     console.error(err);
     Portal.toast('Could not load transcript: ' + (err.message || 'Unknown error'), true);
@@ -227,6 +263,7 @@ async function loadStudentTranscript() {
 
 renderDocuments([]);
 loadMyDocuments();
+loadStudentTranscript();
 </script>
 <footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
   <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>
