@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 <link rel="stylesheet" href="assets/app.css?v=20260716-fit-wrap1" />
 <style>
-  .records-card { border-radius: 4px; overflow: hidden; }
+  .records-card { border: 1px solid #ef4444 !important; border-radius: 4px; overflow: hidden; }
   .records-title {
     padding: 7px 14px;
     border-bottom: 1px solid rgba(128,128,128,.3);
@@ -25,10 +25,14 @@
     align-items: center;
     padding: 22px 18px 10px;
     background: #fff;
+    border: 1px solid #ef4444 !important;
+    border-bottom: 0 !important;
   }
   .records-search {
     padding: 8px 18px 14px;
     background: #fff;
+    border-left: 1px solid #ef4444 !important;
+    border-right: 1px solid #ef4444 !important;
   }
   .records-search .input { width: 220px; min-height: 38px; border-radius: 4px; }
   .records-filter .select,
@@ -45,7 +49,7 @@
   }
   .records-table-shell {
     margin: 0 18px 16px;
-    border: 1px solid rgba(128,128,128,.3);
+    border: 1px solid #ef4444 !important;
     border-radius: 4px;
     height: clamp(320px, calc(100vh - 312px), 560px);
     overflow: hidden auto;
@@ -61,7 +65,7 @@
   }
   .records-table th,
   .records-table td {
-    border: 1px solid rgba(128,128,128,.3);
+    border: 1px solid #ef4444 !important;
     padding: 7px 5px;
     text-align: center;
     vertical-align: top;
@@ -118,6 +122,9 @@
     align-items: center;
     padding: 0 18px 20px;
     background: #fff;
+    border-left: 1px solid #ef4444 !important;
+    border-right: 1px solid #ef4444 !important;
+    border-bottom: 1px solid #ef4444 !important;
   }
   .student-total {
     grid-column: 1;
