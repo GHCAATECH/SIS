@@ -64,7 +64,11 @@ begin
       select qa.*
       from public.qualitative_assessments qa
       where qa.school_id = v_student.school_id
-        and upper(qa.student_ref) = upper(v_student.ass_ref_id)
+        and (
+          upper(qa.student_ref) = upper(v_student.ass_ref_id)
+          or upper(qa.student_ref) = upper(v_student.id::text)
+          or upper(qa.student_name) = upper(trim(coalesce(v_student.first_name, '') || ' ' || coalesce(v_student.surname, '') || ' ' || coalesce(v_student.other_names, '')))
+        )
       order by qa.updated_at desc;
     return;
   end if;
@@ -98,6 +102,8 @@ begin
           and (
             coalesce(array_length(v_refs, 1), 0) = 0
             or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_ref) = upper(ref.value))
+            or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_name) = upper(ref.value))
+            or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_name || '|' || coalesce(qa.class_name, '')) = upper(ref.value))
           )
         order by qa.updated_at desc;
       return;
@@ -118,6 +124,8 @@ begin
           and (
             coalesce(array_length(v_refs, 1), 0) = 0
             or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_ref) = upper(ref.value))
+            or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_name) = upper(ref.value))
+            or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_name || '|' || coalesce(qa.class_name, '')) = upper(ref.value))
           )
         order by qa.updated_at desc;
       return;
@@ -141,6 +149,8 @@ begin
       and (
         coalesce(array_length(v_refs, 1), 0) = 0
         or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_ref) = upper(ref.value))
+        or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_name) = upper(ref.value))
+        or exists (select 1 from unnest(v_refs) ref(value) where upper(qa.student_name || '|' || coalesce(qa.class_name, '')) = upper(ref.value))
       )
     order by qa.updated_at desc;
 end;

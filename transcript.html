@@ -580,6 +580,19 @@ function studentRef(student) {
   return student.ass_ref_id || student.assRef || student.ref || '';
 }
 
+function qualitativeLookupKeys(student) {
+  return [
+    studentRef(student),
+    student.id,
+    student.std_id,
+    student.student_id,
+    studentFullName(student),
+    studentClassName(student) ? studentFullName(student) + '|' + studentClassName(student) : ''
+  ].filter(Boolean).map(function(value) {
+    return String(value).trim().toUpperCase();
+  });
+}
+
 function getStudentLevel(admissionYear, currentYear) {
   var difference = currentYear - Number(admissionYear);
   if (difference === 0) return 'Year 1';
@@ -779,9 +792,22 @@ async function loadQualitativeRows(refs) {
   return localQualitativeRows(refs);
 }
 
-function latestQualitativeForRef(rows, ref) {
+function latestQualitativeForRef(rows, ref, student) {
+  var wanted = {};
+  [ref].concat(student ? qualitativeLookupKeys(student) : []).filter(Boolean).forEach(function(value) {
+    wanted[String(value || '').trim().toUpperCase()] = true;
+  });
   var matches = (rows || []).filter(function(row) {
-    return String(row.student_ref || '').toUpperCase() === String(ref || '').toUpperCase();
+    var rowKeys = [
+      row.student_ref,
+      row.student_id,
+      row.ass_ref_id,
+      row.student_name,
+      row.class_name && row.student_name ? row.student_name + '|' + row.class_name : ''
+    ].filter(Boolean).map(function(value) {
+      return String(value).trim().toUpperCase();
+    });
+    return rowKeys.some(function(key) { return wanted[key]; });
   });
   matches.sort(function(a, b) {
     return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
@@ -956,12 +982,17 @@ async function downloadTranscriptSet() {
   }
 
   var cards = [];
-  var refs = students.map(studentRef).filter(Boolean);
+  var refs = [];
+  students.forEach(function(student) {
+    qualitativeLookupKeys(student).forEach(function(key) {
+      if (refs.indexOf(key) === -1) refs.push(key);
+    });
+  });
   var qualitativeRows = await loadQualitativeRows(refs);
   for (var i = 0; i < students.length; i++) {
     var rows = await getStudentTranscriptRows(students[i]);
     var positionSummaries = await getStudentPositionSummaries(students[i]);
-    cards.push(transcriptCardHtml(profileFromStudent(students[i]), rows, latestQualitativeForRef(qualitativeRows, studentRef(students[i])), positionSummaries));
+    cards.push(transcriptCardHtml(profileFromStudent(students[i]), rows, latestQualitativeForRef(qualitativeRows, studentRef(students[i]), students[i]), positionSummaries));
   }
   document.getElementById('batchTranscriptArea').innerHTML = cards.join('');
   document.body.classList.add('printing-transcripts');
@@ -1005,8 +1036,8 @@ async function loadStudentTranscript() {
       year_admitted: student.year_admitted || '-',
       passport_url: student.passport_url || student.photoUrl || student.profile_photo || currentUser.passport_url || ''
     };
-    var qualitativeRows = await loadQualitativeRows([student.ass_ref_id]);
-    renderOfficialStudentTranscript(profile, rows, latestQualitativeForRef(qualitativeRows, student.ass_ref_id), data.summaries || []);
+    var qualitativeRows = await loadQualitativeRows(qualitativeLookupKeys(student));
+    renderOfficialStudentTranscript(profile, rows, latestQualitativeForRef(qualitativeRows, student.ass_ref_id, student), data.summaries || []);
   } catch (err) {
     console.error(err);
     Portal.toast('Could not load transcript: ' + (err.message || 'Unknown error'), true);
