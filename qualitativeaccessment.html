@@ -366,7 +366,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-form-master-qa1"></script>
+<script src="assets/supabase-client.js?v=20260717-form-master-qa2"></script>
 <script src="assets/shell.js?v=20260717-form-master-qa1"></script>
 <script>
 Portal.init({ active: 'qualitativeaccessment' });
@@ -685,6 +685,10 @@ document.getElementById('saveBtn').addEventListener('click', function() {
       Portal.toast('Type the qualitative assessment before saving.', true);
       return;
     }
+    var user = currentPortalUser();
+    if (isFormMasterUser() && !isSchoolAdminUser() && !(user && user.session_token)) {
+      throw new Error('Staff session token is missing. Logout and login again after running the qualitative assessment SQL.');
+    }
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.saveQualitativeAssessment) {
       await AxiomDB.saveQualitativeAssessment(payload);
     } else {
@@ -696,7 +700,7 @@ document.getElementById('saveBtn').addEventListener('click', function() {
   saveQualitative().catch(function(err) {
     console.error(err);
     try { saveLocalQualitative(qualitativePayload()); } catch (e) {}
-    Portal.toast('Saved locally. Run the qualitative assessment SQL to save online.', true);
+    Portal.toast('Saved locally only: ' + ((err && err.message) || 'Could not save online.'), true);
     closeModal();
   });
 });
