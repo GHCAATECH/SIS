@@ -18,7 +18,7 @@
   .manage-title a { text-transform: none; font-size: 14px; font-weight: 700; color: #2196f3; }
   .legacy-filter {
     display: grid;
-    grid-template-columns: minmax(145px, 180px) minmax(130px, 165px) minmax(96px, 120px) auto minmax(230px, 1fr);
+    grid-template-columns: minmax(145px, 180px) minmax(130px, 165px) minmax(96px, 120px) auto minmax(170px, 220px);
     gap: 8px; align-items: end; padding: 14px 14px 12px;
     border-bottom: 1px solid var(--border); background: var(--surface);
   }
@@ -29,6 +29,7 @@
   .legacy-filter .select, .legacy-filter .input, .table-tools .select, .table-tools .input {
     border-radius: 4px; min-height: 34px; background: #fff; font-size: 13px;
   }
+  #assIdSearch { max-width: 220px; }
   .filter-btn {
     min-height: 34px; border-radius: 4px; padding: 0 14px; font-size: 12px;
     background: #08aeea; border-color: #08aeea; color: #fff;
@@ -415,6 +416,7 @@
     .table-tools { align-items: stretch; flex-direction: column; }
     .search-control { justify-content: space-between; }
     .search-control .input { width: 100%; }
+    #assIdSearch { max-width: 100%; }
     .manage-card { overflow: visible; }
     .legacy-table-wrap {
       max-height: 58dvh;
