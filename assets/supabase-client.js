@@ -1281,7 +1281,9 @@
     if (!c) return null;
     var studentToken = activeStudentSessionToken();
     var staffToken = activeStaffSessionToken();
-    if (studentToken || staffToken) {
+    var storedUser = currentStoredUser();
+    var staffUser = storedUser && storedUser.type !== 'student' && storedUser.category && storedUser.category !== 'Student';
+    if (studentToken || staffToken || staffUser) {
       var sessionResult = await c.rpc('secure_list_qualitative_assessments', {
         p_school_id: null,
         p_student_refs: studentRefs || [],

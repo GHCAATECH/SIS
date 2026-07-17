@@ -367,7 +367,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-form-master-qa3"></script>
+<script src="assets/supabase-client.js?v=20260717-qualitative-captured-by1"></script>
 <script src="assets/shell.js?v=20260717-form-master-qa1"></script>
 <script>
 Portal.init({ active: 'qualitativeaccessment' });
@@ -377,6 +377,7 @@ var students = [];
 var classes = [];
 var renderedStudents = [];
 var selectedStudent = null;
+var qualitativeRecordsByKey = {};
 
 function escapeHtml(value) {
   return String(value || '').replace(/[&<>"']/g, function(char) {
@@ -460,6 +461,24 @@ function sameClassName(a, b) {
   return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
 }
 
+function qualitativeKey(studentRef, term) {
+  return [String(studentRef || '').trim().toUpperCase(), String(term || '').trim().toUpperCase()].join('|');
+}
+
+function currentQualitativeTerm() {
+  return document.getElementById('yearFilter').value || 'Year 1';
+}
+
+function rememberQualitativeRecord(record) {
+  if (!record || !record.student_ref) return;
+  qualitativeRecordsByKey[qualitativeKey(record.student_ref, record.term || currentQualitativeTerm())] = record;
+}
+
+function capturedByForStudent(student) {
+  var record = qualitativeRecordsByKey[qualitativeKey(student.ass_ref_id, currentQualitativeTerm())];
+  return record && (record.captured_by_name || record.captured_by || record.captured_by_staff_name || record.updated_by) ? String(record.captured_by_name || record.captured_by || record.captured_by_staff_name || record.updated_by).toUpperCase() : '';
+}
+
 function applyFormMasterScope() {
   var scopeClass = formMasterScopeClass();
   if (!scopeClass) return '';
@@ -482,6 +501,29 @@ function saveLocalQualitative(payload) {
   list = list.filter(function(item) { return item.key !== key; });
   list.push(Object.assign({ key: key }, payload));
   localStorage.setItem(QA_KEY, JSON.stringify(list));
+  rememberQualitativeRecord(payload);
+}
+
+async function loadCapturedByForRenderedStudents() {
+  qualitativeRecordsByKey = {};
+  var refs = renderedStudents.map(function(student) { return student.ass_ref_id; }).filter(Boolean);
+  if (!refs.length) return;
+
+  try {
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listQualitativeAssessments) {
+      var rows = await AxiomDB.listQualitativeAssessments(refs);
+      (rows || []).forEach(rememberQualitativeRecord);
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load captured-by data. Showing local data.', true);
+  }
+
+  try {
+    var localRows = JSON.parse(localStorage.getItem(QA_KEY) || '[]') || [];
+    localRows.forEach(rememberQualitativeRecord);
+  } catch (e) {}
 }
 
 function localStudents() {
@@ -532,7 +574,7 @@ function populateFilters() {
   }
 }
 
-function applyFilters() {
+async function applyFilters() {
   var programme = document.getElementById('learningAreaFilter').value;
   var className = document.getElementById('classFilter').value;
   var year = document.getElementById('yearFilter').value;
@@ -556,6 +598,7 @@ function applyFilters() {
     }
     return true;
   });
+  await loadCapturedByForRenderedStudents();
   renderRows();
 }
 
@@ -576,7 +619,7 @@ function renderRows(message) {
       '<td>'+escapeHtml(name)+'</td>' +
       '<td>'+escapeHtml(String(student.gender || '').toUpperCase())+'</td>' +
       '<td>'+escapeHtml(studentClassName(student))+'</td>' +
-      '<td>'+escapeHtml(capturedByName())+'</td>' +
+      '<td>'+escapeHtml(capturedByForStudent(student) || 'NOT CAPTURED')+'</td>' +
     '</tr>';
   }).join('');
 }
@@ -660,9 +703,19 @@ async function loadSetup() {
   }
 }
 
-document.getElementById('filterBtn').addEventListener('click', applyFilters);
+document.getElementById('filterBtn').addEventListener('click', function() {
+  applyFilters().catch(function(err) {
+    console.error(err);
+    Portal.toast((err && err.message) || 'Could not filter qualitative assessment data.', true);
+  });
+});
 document.getElementById('refSearch').addEventListener('input', function() {
-  if (renderedStudents.length) applyFilters();
+  if (renderedStudents.length) {
+    applyFilters().catch(function(err) {
+      console.error(err);
+      Portal.toast((err && err.message) || 'Could not filter qualitative assessment data.', true);
+    });
+  }
 });
 document.getElementById('qaTable').addEventListener('click', function(event) {
   var button = event.target.closest('.qa-action-btn');
@@ -691,11 +744,13 @@ document.getElementById('saveBtn').addEventListener('click', function() {
       throw new Error('Staff session token is missing. Logout and login again after running the qualitative assessment SQL.');
     }
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.saveQualitativeAssessment) {
-      await AxiomDB.saveQualitativeAssessment(payload);
+      var saved = await AxiomDB.saveQualitativeAssessment(payload);
+      rememberQualitativeRecord(saved || payload);
     } else {
       saveLocalQualitative(payload);
     }
     Portal.toast('Qualitative assessment saved.');
+    renderRows();
     closeModal();
   }
   saveQualitative().catch(function(err) {
