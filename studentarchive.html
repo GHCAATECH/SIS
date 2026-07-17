@@ -31,6 +31,8 @@
   .archive-profile-tile { border:1px solid rgba(148,163,184,.35); border-radius:10px; padding:10px 12px; background:#fff; min-width:0; }
   .archive-profile-tile span { display:block; color:#64748b; font-size:11px; font-weight:900; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .archive-profile-tile b { display:block; margin-top:5px; color:#0f172a; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .archive-profile-tile.subjects { grid-column:1 / -1; }
+  .archive-profile-tile.subjects b { white-space:normal; line-height:1.45; }
   .archive-profile-actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid rgba(148,163,184,.28); }
   .archive-doc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
   .archive-doc-toolbar label { display:inline-flex; align-items:center; gap:7px; font-weight:900; white-space:nowrap; }
@@ -42,6 +44,21 @@
   .archive-doc-table td:nth-child(2),
   .archive-doc-table td:nth-child(3) { max-width:260px; overflow:hidden; text-overflow:ellipsis; }
   .archive-doc-check { width:16px; height:16px; accent-color:var(--brand); }
+  .archive-card,
+  .archive-toolbar,
+  .archive-table-wrap,
+  .archive-table th,
+  .archive-table td,
+  .archive-summary,
+  .archive-modal__card,
+  .archive-modal__head,
+  .archive-profile-tile,
+  .archive-profile-actions,
+  .archive-doc-table-wrap,
+  .archive-doc-table th,
+  .archive-doc-table td {
+    border-color:#ef4444 !important;
+  }
   @media (max-width: 900px) {
     .archive-shell { padding: 12px; }
     .archive-toolbar { grid-template-columns:1fr; }
@@ -102,7 +119,7 @@
 <body class="portal-shell footer-shell">
 <div class="main">
   <main class="content archive-shell">
-    <div class="page-head">
+    <div class="page-head" style="display:none" aria-hidden="true">
       <span class="ph-ico"><i class="fas fa-box-archive"></i></span>
       <div><h2>Student Archive</h2><p>View students who completed school after progressing from Year 3.</p></div>
     </div>
@@ -196,6 +213,7 @@ Portal.init({ active: 'studentarchive', title: 'Student Archive', onReady: start
 var ARCHIVE_KEY = 'axiom_student_archive';
 var archiveRows = [];
 var archiveDocumentRows = [];
+var archiveClassRows = [];
 
 function escapeHtml(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
@@ -252,7 +270,8 @@ function dbArchiveRow(row) {
     disabilityStatus: row.disability_status || '',
     guardianName: row.guardian_name || '',
     relationship: row.relationship || '',
-    residentialAddress: row.residential_address || ''
+    residentialAddress: row.residential_address || '',
+    subjects: row.subjects || []
   };
 }
 
@@ -331,12 +350,32 @@ function findArchiveRow(assRef) {
 }
 
 function profileTile(label, value) {
-  return '<div class="archive-profile-tile"><span>' + escapeHtml(label) + '</span><b title="' + escapeHtml(value || '-') + '">' + escapeHtml(value || '-') + '</b></div>';
+  var cls = String(label || '').toLowerCase().indexOf('subjects') > -1 ? ' archive-profile-tile subjects' : 'archive-profile-tile';
+  return '<div class="' + cls + '"><span>' + escapeHtml(label) + '</span><b title="' + escapeHtml(value || '-') + '">' + escapeHtml(value || '-') + '</b></div>';
+}
+
+function subjectsForArchiveRow(row) {
+  if (row && Array.isArray(row.subjects) && row.subjects.length) {
+    return row.subjects.map(function(subject) {
+      return typeof subject === 'string' ? subject : (subject.name || subject.subject_name || '');
+    }).filter(Boolean);
+  }
+  var className = String(row && row.className || '').trim().toLowerCase();
+  if (!className) return [];
+  var classRow = archiveClassRows.find(function(cls) {
+    return String(cls.name || '').trim().toLowerCase() === className;
+  });
+  if (!classRow) return [];
+  var subjectList = classRow.subjects || classRow.subjectLinks || [];
+  return subjectList.map(function(subject) {
+    return typeof subject === 'string' ? subject : [subject.name, subject.code ? '(' + subject.code + ')' : ''].filter(Boolean).join(' ');
+  }).filter(Boolean);
 }
 
 function openArchiveView(assRef) {
   var row = findArchiveRow(assRef);
   if (!row) { Portal.toast('Archived student record was not found.', true); return; }
+  var subjects = subjectsForArchiveRow(row);
   var fields = [
     ['STD_ID', row.assRef],
     ['Student Name', row.name],
@@ -354,7 +393,8 @@ function openArchiveView(assRef) {
     ['Year Completed', row.completionYear],
     ['Completed On', row.completedOn ? String(row.completedOn).slice(0, 10) : ''],
     ['Status', row.status || 'Completed'],
-    ['Residential Address', row.residentialAddress]
+    ['Residential Address', row.residentialAddress],
+    ['Subjects Offered', subjects.length ? subjects.join(', ') : 'No subjects found']
   ];
   document.getElementById('archiveViewTitle').textContent = row.name || 'Archived Student Information';
   document.getElementById('archiveViewBody').innerHTML = '<div class="archive-profile-grid">' + fields.map(function(field) {
@@ -550,6 +590,9 @@ async function loadArchive() {
   var dbRows = [];
   if (window.AxiomDB && AxiomDB.isConfigured()) {
     try {
+      if (AxiomDB.listClasses) {
+        archiveClassRows = await AxiomDB.listClasses() || [];
+      }
       var students = await AxiomDB.listStudents();
       dbRows = (students || []).filter(function(row) {
         return String(row.status || '').toLowerCase() === 'completed' || String(row.student_level || '').toLowerCase() === 'completed';
