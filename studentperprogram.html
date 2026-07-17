@@ -479,6 +479,26 @@
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
 <style>
+  body.portal-shell .content {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: calc(100dvh - 150px) !important;
+    padding-bottom: 12px !important;
+  }
+  .manage-card {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: calc(100dvh - 180px) !important;
+  }
+  .student-table-wrapper {
+    flex: 1 1 auto !important;
+    max-height: none !important;
+    min-height: 420px !important;
+  }
+  .student-footer-actions {
+    flex: none !important;
+  }
   #filterBtn.btn.filter-btn {
     width: 58px !important;
     min-width: 58px !important;
