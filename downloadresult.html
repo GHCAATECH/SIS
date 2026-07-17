@@ -20,7 +20,7 @@
   .records-title { display:none; }
   .records-filter {
     display: grid;
-    grid-template-columns: repeat(4, minmax(170px, 1fr));
+    grid-template-columns: repeat(5, minmax(150px, 1fr)) 110px;
     gap: 14px;
     align-items: center;
     padding: 22px 18px 10px;
@@ -72,25 +72,20 @@
     font-weight: 800;
     text-transform: uppercase;
   }
-  .records-table th:nth-child(1), .records-table td:nth-child(1) { width: 6%; }
-  .records-table th:nth-child(2), .records-table td:nth-child(2) { width: 8%; }
-  .records-table th:nth-child(3), .records-table td:nth-child(3) { width: 15%; }
-  .records-table th:nth-child(4), .records-table td:nth-child(4) { width: 6%; }
-  .records-table th:nth-child(5), .records-table td:nth-child(5) { width: 5%; }
-  .records-table th:nth-child(6), .records-table td:nth-child(6) { width: 7%; }
+  .records-table th:nth-child(1), .records-table td:nth-child(1) { width: 8%; }
+  .records-table th:nth-child(2), .records-table td:nth-child(2) { width: 14%; }
+  .records-table th:nth-child(3), .records-table td:nth-child(3) { width: 19%; }
+  .records-table th:nth-child(4), .records-table td:nth-child(4) { width: 8%; }
+  .records-table th:nth-child(5), .records-table td:nth-child(5) { width: 10%; }
+  .records-table th:nth-child(6), .records-table td:nth-child(6) { width: 10%; }
   .records-table th:nth-child(7), .records-table td:nth-child(7) { width: 8%; }
-  .records-table th:nth-child(8), .records-table td:nth-child(8) { width: 7%; }
-  .records-table th:nth-child(9), .records-table td:nth-child(9) { width: 5%; }
-  .records-table th:nth-child(10), .records-table td:nth-child(10) { width: 6%; }
-  .records-table th:nth-child(11), .records-table td:nth-child(11) { width: 6%; }
-  .records-table th:nth-child(12), .records-table td:nth-child(12) { width: 5%; }
-  .records-table th:nth-child(13), .records-table td:nth-child(13) { width: 9%; }
-  .records-table th:nth-child(14), .records-table td:nth-child(14) { width: 9%; }
+  .records-table th:nth-child(8), .records-table td:nth-child(8) { width: 11%; }
+  .records-table th:nth-child(9), .records-table td:nth-child(9) { width: 12%; }
   .records-table td.name { font-weight: 800; }
   .record-photo {
     position: relative;
     width: 58px;
-    height: 58px;
+    height: 68px;
     margin: 0 auto;
     display: grid;
     place-items: center;
@@ -113,7 +108,7 @@
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     background: #fff;
   }
   .records-footer {
@@ -186,7 +181,6 @@
           <option>2nd Sem</option>
           <option value="">All Semesters</option>
         </select>
-        <select class="select" id="programmeFilter"><option value="">Select Programme</option></select>
         <select class="select" id="classFilter"><option value="">Select Class</option></select>
         <select class="select" id="modeFilter">
           <option>1. Individual Class Assessments (e.g., Classwork, Quizzes, Homework)</option>
@@ -196,7 +190,7 @@
           <option>5. Supervised individual Termly</option>
           <option value="">All Modes</option>
         </select>
-        <select class="select" id="subjectFilter"><option value="">All Subjects</option></select>
+        <select class="select" id="subjectFilter"><option value="">Select Subject</option></select>
         <button class="btn" type="button" id="submitFilter">Submit</button>
       </div>
 
@@ -208,17 +202,12 @@
         <table class="records-table" id="recordsTable">
           <thead>
             <tr>
-              <th>Profile Photo</th>
-              <th>STD_ID</th>
-              <th>Candidate Name</th>
-              <th>National ID</th>
+              <th>PPT_PIC</th>
+              <th>ASS_REF.ID</th>
+              <th>CANDIDATE_NAME</th>
               <th>Gender</th>
-              <th>Disability</th>
-              <th>Can Read Braille</th>
-              <th>Date of Birth</th>
-              <th>Status</th>
-              <th>Current Year</th>
-              <th>Subject Code</th>
+              <th>DISSABILITY</th>
+              <th>Overall Score</th>
               <th>Score</th>
               <th>Captured By</th>
               <th>Captured On</th>
@@ -308,6 +297,19 @@ function padScore(score) {
 
 function dateOnly(value) {
   return value ? String(value).slice(0, 10) : '';
+}
+
+function dateTime(value) {
+  if (!value) return '';
+  var date = new Date(value);
+  if (isNaN(date.getTime())) return String(value);
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function normalizeYearLevel(value) {
@@ -400,6 +402,7 @@ function localRecords() {
         status: student.status || '',
         subjectCode: score.subjectCode || '',
         subjectName: record.subjectName || score.subject || '',
+        overallScore: record.overallScore || record.overall_score || '',
         score: score.score,
         capturedBy: record.captured_by || 'Admin',
         capturedOn: record.saved_at || '',
@@ -434,8 +437,9 @@ function mapDbRecord(row) {
     status: student.status || '',
     subjectCode: subject.code || '',
     subjectName: subject.name || '',
+    overallScore: assessment.overall_score || '',
     score: row.score,
-    capturedBy: 'Staff',
+    capturedBy: assessment.inserted_by || row.captured_by || row.capturedBy || 'Staff',
     capturedOn: assessment.submitted_at || row.updated_at || '',
     academicYear: assessment.academic_year || '',
     yearLevel: assessment.year_level || '',
@@ -450,30 +454,13 @@ function mapDbRecord(row) {
   };
 }
 
-function populatePositionScopeFilters() {
-  var programmeSelect = document.getElementById('programmeFilter');
+function populateClassFilter() {
   var classSelect = document.getElementById('classFilter');
-  var currentProgramme = programmeSelect.value;
-  var programmes = {};
-  availableClasses.forEach(function(cls) {
-    if (cls.programme_id && cls.programme) programmes[cls.programme_id] = cls.programme;
-  });
-  programmeSelect.innerHTML = '<option value="">Select Programme</option>' + Object.keys(programmes).map(function(id) {
-    return '<option value="'+id+'">'+programmes[id]+'</option>';
+  var currentClass = classSelect.value;
+  classSelect.innerHTML = '<option value="">Select Class</option>' + availableClasses.map(function(cls) {
+    return '<option value="'+cls.id+'">'+cls.name+'</option>';
   }).join('');
-  if (programmes[currentProgramme]) programmeSelect.value = currentProgramme;
-
-  function refreshClasses() {
-    var programmeId = programmeSelect.value;
-    var currentClass = classSelect.value;
-    var classes = availableClasses.filter(function(cls) { return !programmeId || cls.programme_id === programmeId; });
-    classSelect.innerHTML = '<option value="">Select Class</option>' + classes.map(function(cls) {
-      return '<option value="'+cls.id+'">'+cls.name+'</option>';
-    }).join('');
-    if (classes.some(function(cls) { return cls.id === currentClass; })) classSelect.value = currentClass;
-  }
-  programmeSelect.onchange = function() { refreshClasses(); showRecordsFilterPending(); };
-  refreshClasses();
+  if (availableClasses.some(function(cls) { return cls.id === currentClass; })) classSelect.value = currentClass;
 }
 
 function normalizeSubject(subject) {
@@ -515,7 +502,7 @@ function populateSubjects() {
   var select = document.getElementById('subjectFilter');
   var current = select.value;
   var subjects = mergeSubjects();
-  select.innerHTML = '<option value="">All Subjects</option>' + subjects.map(function(subject) {
+  select.innerHTML = '<option value="">Select Subject</option>' + subjects.map(function(subject) {
     return '<option value="'+subject.name+'">'+subject.name+'</option>';
   }).join('');
   select.value = subjects.some(function(subject) { return subject.name === current; }) ? current : '';
@@ -530,7 +517,6 @@ function applyFilters() {
   var semester = document.getElementById('semesterFilter').value;
   var mode = document.getElementById('modeFilter').value;
   var subject = document.getElementById('subjectFilter').value;
-  var programmeId = document.getElementById('programmeFilter').value;
   var classId = document.getElementById('classFilter').value;
   var search = document.getElementById('searchBox').value.toLowerCase().trim();
   renderedRecords = records.filter(function(row) {
@@ -538,7 +524,6 @@ function applyFilters() {
     if (semester && row.semester !== semester) return false;
     if (!modeMatches(row, mode)) return false;
     if (subject && row.subjectName !== subject) return false;
-    if (programmeId && row.programmeId !== programmeId) return false;
     if (classId && row.classId !== classId) return false;
     if (search && JSON.stringify(row).toLowerCase().indexOf(search) === -1) return false;
     return true;
@@ -566,7 +551,7 @@ function renderRows(message) {
   var body = document.querySelector('#recordsTable tbody');
   document.getElementById('recordCount').textContent = renderedRecords.length;
   if (!renderedRecords.length) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="14">'+(message || 'No current assessment records found.')+'</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="9">'+(message || 'No current assessment records found.')+'</td></tr>';
     return;
   }
   body.innerHTML = renderedRecords.map(function(row) {
@@ -575,17 +560,12 @@ function renderRows(message) {
       '<td><div class="record-photo"><span>'+initials(row.photoName)+'</span>'+(photoUrl ? '<img src="'+photoUrl+'" alt="'+initials(row.photoName)+'" onerror="this.remove()">' : '')+'</div></td>' +
       '<td>'+row.assRef+'</td>' +
       '<td class="name">'+row.candidateName+'</td>' +
-      '<td>'+row.nationalId+'</td>' +
       '<td>'+String(row.gender || '').toUpperCase()+'</td>' +
       '<td>'+(row.disability || 'NORMAL')+'</td>' +
-      '<td>'+row.canReadBraille+'</td>' +
-      '<td>'+dateOnly(row.dob)+'</td>' +
-      '<td>'+row.status+'</td>' +
-      '<td>'+row.currentYearLevel+'</td>' +
-      '<td>'+(row.subjectCode || row.subjectName)+'</td>' +
+      '<td>'+padScore(row.overallScore)+'</td>' +
       '<td>'+padScore(row.score)+'</td>' +
       '<td>'+row.capturedBy+'</td>' +
-      '<td>'+dateOnly(row.capturedOn)+'</td>' +
+      '<td>'+dateTime(row.capturedOn)+'</td>' +
     '</tr>';
   }).join('');
 }
@@ -595,9 +575,9 @@ function downloadRecords() {
     Portal.toast('Excel exporter could not load. Check the internet connection and reload.', true);
     return;
   }
-  var headers = ['Profile Photo','STD_ID','Candidate Name','National ID','Gender','Disability','Can Read Braille','Date of Birth','Status','Current Year','Subject Code','Score','Captured By','Captured On'];
+  var headers = ['PPT_PIC','ASS_REF.ID','CANDIDATE_NAME','GENDER','DISSABILITY','Overall Score','Score','Captured By','Captured On'];
   var rows = renderedRecords.map(function(row) {
-    return [row.photoUrl || '', row.assRef, row.candidateName, row.nationalId, row.gender, row.disability, row.canReadBraille, dateOnly(row.dob), row.status, row.currentYearLevel, row.subjectCode || row.subjectName, padScore(row.score), row.capturedBy, dateOnly(row.capturedOn)];
+    return [row.photoUrl || '', row.assRef, row.candidateName, row.gender, row.disability, padScore(row.overallScore), padScore(row.score), row.capturedBy, dateTime(row.capturedOn)];
   });
   var worksheet = XLSX.utils.aoa_to_sheet([headers].concat(rows));
   worksheet['!cols'] = headers.map(function(header, index) {
@@ -628,7 +608,7 @@ async function loadRecordSetup() {
       Portal.toast('Could not load assessment filter setup.', true);
     }
   }
-  populatePositionScopeFilters();
+  populateClassFilter();
   populateSubjects();
   showRecordsFilterPending('Select filters and click Submit to load assessment records.');
 }
