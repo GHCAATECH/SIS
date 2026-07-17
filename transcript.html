@@ -259,7 +259,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-staff-assessment-records1"></script>
+<script src="assets/supabase-client.js?v=20260717-transcript-qualitative1"></script>
 <script src="assets/shell.js?v=20260716-archive-clearance1"></script>
 <script>
 Portal.init({ active: 'transcript' });
@@ -644,7 +644,7 @@ function transcriptCardHtml(profile, records, qualitative, positionSummaries) {
   var calc = transcriptRowsHtml(records, positionSummaries || []);
   qualitative = qualitative || {};
   var remark = qualitative.teacher_remark || 'No qualitative assessment available.';
-  var teacher = qualitative.updated_by || qualitative.teacher_name || qualitative.captured_by || '';
+  var teacher = qualitative.captured_by_name || qualitative.updated_by || qualitative.teacher_name || qualitative.captured_by || '';
   var academicYear = academicYearLabel(profile);
   return '<section class="print-transcript">'+
     '<div class="transcript-page">'+

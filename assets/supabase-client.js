@@ -1262,6 +1262,21 @@
   async function listQualitativeAssessments(studentRefs) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
+    var studentToken = activeStudentSessionToken();
+    var staffToken = activeStaffSessionToken();
+    if (studentToken || staffToken) {
+      var sessionResult = await c.rpc('secure_list_qualitative_assessments', {
+        p_school_id: school.id,
+        p_student_refs: studentRefs || [],
+        p_student_session_token: studentToken || null,
+        p_staff_session_token: staffToken || null
+      });
+      if (!sessionResult.error) return sessionResult.data || [];
+      if (/secure_list_qualitative_assessments|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw new Error('Run the transcript qualitative assessment SQL in Supabase, then refresh this page.');
+      }
+      throw sessionResult.error;
+    }
     var query = c
       .from('qualitative_assessments')
       .select('*')
