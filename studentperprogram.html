@@ -521,7 +521,12 @@
   .student-table th:nth-child(1),
   .student-table td:nth-child(1) { width: 96px !important; }
   .student-table th:nth-child(2),
-  .student-table td:nth-child(2) { width: 155px !important; }
+  .student-table td:nth-child(2) {
+    width: 230px !important;
+    min-width: 230px !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
   .student-table th:nth-child(3),
   .student-table td:nth-child(3) { width: 245px !important; }
   .student-table th:nth-child(4),
