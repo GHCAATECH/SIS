@@ -343,3 +343,185 @@ html body .qa-assessment-label,
 html body .transcript-record-table * {
   color: #002B4C !important;
 }
+
+/* Landing page palette */
+html body.landing-page {
+  --primary: #002B4C;
+  --primary-dark: #001D33;
+  --secondary: #002B4C;
+  --secondary-dark: #001D33;
+  --heading: #002B4C;
+  --text: #002B4C;
+  --border: #002B4C;
+  --surface: #C0EBFF;
+  --background: #C0EBFF;
+  background: #C0EBFF !important;
+  color: #002B4C !important;
+}
+
+html body.landing-page main,
+html body.landing-page .hero-section {
+  background: #C0EBFF !important;
+  color: #002B4C !important;
+}
+
+html body.landing-page .main-header,
+html body.landing-page .dashboard-window,
+html body.landing-page .dashboard-topbar,
+html body.landing-page .dashboard-content,
+html body.landing-page .dashboard-main,
+html body.landing-page .statistic-card,
+html body.landing-page .analytics-card,
+html body.landing-page .activity-card,
+html body.landing-page .floating-card,
+html body.landing-page .hero-module-strip,
+html body.landing-page .hero-badge,
+html body.landing-page .mobile-login,
+html body.landing-page .mobile-close-button {
+  background: rgba(255, 255, 255, .42) !important;
+  border-color: #002B4C !important;
+  color: #002B4C !important;
+}
+
+html body.landing-page .mobile-sidebar {
+  background: #F59E71 !important;
+  border-color: #002B4C !important;
+  color: #002B4C !important;
+}
+
+html body.landing-page .mobile-overlay {
+  background: rgba(0, 43, 76, .42) !important;
+}
+
+html body.landing-page .brand-icon,
+html body.landing-page .mini-logo,
+html body.landing-page .footer-brand .mark,
+html body.landing-page .mobile-menu-button,
+html body.landing-page .play-button,
+html body.landing-page .trust-icon,
+html body.landing-page .floating-card > span,
+html body.landing-page .stat-icon,
+html body.landing-page .dashboard-sidebar,
+html body.landing-page .badge-dot,
+html body.landing-page .activity-dot {
+  background: #002B4C !important;
+  border-color: #002B4C !important;
+  color: #C0EBFF !important;
+}
+
+html body.landing-page .brand-icon svg,
+html body.landing-page .mini-logo svg,
+html body.landing-page .footer-brand .mark i,
+html body.landing-page .play-button svg,
+html body.landing-page .trust-icon svg,
+html body.landing-page .floating-card svg,
+html body.landing-page .stat-icon svg {
+  fill: #C0EBFF !important;
+  stroke: #C0EBFF !important;
+  color: #C0EBFF !important;
+}
+
+html body.landing-page .mobile-menu-button::before,
+html body.landing-page .mobile-menu-button::after,
+html body.landing-page .mobile-menu-button span,
+html body.landing-page .sidebar-line,
+html body.landing-page .sidebar-line.active {
+  background: #C0EBFF !important;
+  border-color: #C0EBFF !important;
+}
+
+html body.landing-page .nav-signup,
+html body.landing-page .primary-hero-button,
+html body.landing-page .secondary-hero-button,
+html body.landing-page .mobile-signup {
+  background: #002B4C !important;
+  border: 1px solid #002B4C !important;
+  color: #C0EBFF !important;
+}
+
+html body.landing-page .nav-signup *,
+html body.landing-page .primary-hero-button *,
+html body.landing-page .secondary-hero-button *,
+html body.landing-page .mobile-signup * {
+  color: #C0EBFF !important;
+  stroke: #C0EBFF !important;
+}
+
+html body.landing-page .hero-content h1,
+html body.landing-page .hero-content h1 span,
+html body.landing-page .hero-description,
+html body.landing-page .brand-text strong,
+html body.landing-page .brand-text small,
+html body.landing-page .mobile-brand strong,
+html body.landing-page .mobile-brand small,
+html body.landing-page .desktop-menu a,
+html body.landing-page .login-link,
+html body.landing-page .mobile-navigation a,
+html body.landing-page .quick-access-label,
+html body.landing-page .quick-access a,
+html body.landing-page .trust-item,
+html body.landing-page .dashboard-title strong,
+html body.landing-page .dashboard-title small,
+html body.landing-page .statistic-card small,
+html body.landing-page .statistic-card strong,
+html body.landing-page .statistic-card em,
+html body.landing-page .card-heading strong,
+html body.landing-page .card-heading small,
+html body.landing-page .card-heading > span,
+html body.landing-page .activity-item strong,
+html body.landing-page .activity-item small,
+html body.landing-page .floating-card strong,
+html body.landing-page .floating-card small,
+html body.landing-page .hero-module-strip > span,
+html body.landing-page .module-list span {
+  color: #002B4C !important;
+}
+
+html body.landing-page .hero-content h1 span {
+  background: none !important;
+  -webkit-text-fill-color: #002B4C !important;
+}
+
+html body.landing-page .shape-one,
+html body.landing-page .shape-two,
+html body.landing-page .dashboard-window,
+html body.landing-page .dashboard-topbar,
+html body.landing-page .statistic-card,
+html body.landing-page .analytics-card,
+html body.landing-page .activity-card,
+html body.landing-page .floating-card,
+html body.landing-page .hero-module-strip,
+html body.landing-page .hero-trust,
+html body.landing-page .quick-access a + a,
+html body.landing-page .mobile-sidebar-header,
+html body.landing-page .mobile-access-buttons,
+html body.landing-page .chart-area,
+html body.landing-page .activity-item {
+  border-color: #002B4C !important;
+}
+
+html body.landing-page .chart-area {
+  background-image: linear-gradient(rgba(0, 43, 76, .22) 1px, transparent 1px) !important;
+}
+
+html body.landing-page .chart-area span {
+  background: #002B4C !important;
+}
+
+html body.landing-page .landing-footer {
+  background: #C0EBFF !important;
+  border-top: 1px solid #002B4C !important;
+  color: #002B4C !important;
+}
+
+html body.landing-page .footer-brand,
+html body.landing-page .footer-grid p,
+html body.landing-page .footer-col h3,
+html body.landing-page .footer-col a,
+html body.landing-page .footer-bottom {
+  color: #002B4C !important;
+}
+
+html body.landing-page .footer-bottom {
+  border-top-color: #002B4C !important;
+}
