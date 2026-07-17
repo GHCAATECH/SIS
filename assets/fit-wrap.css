@@ -229,3 +229,176 @@
     padding-right: 10px !important;
   }
 }
+
+/* Final requested color enforcement */
+:root {
+  --brand: #002B4C;
+  --brand-dark: #001D33;
+  --brand-soft: rgba(0, 43, 76, .12);
+  --accent: #002B4C;
+  --bg: #C0EBFF;
+  --surface: #C0EBFF;
+  --surface-2: rgba(255, 255, 255, .45);
+  --border: #002B4C;
+  --text: #002B4C;
+  --text-soft: #002B4C;
+  --text-faint: rgba(0, 43, 76, .72);
+}
+
+html,
+body,
+.main,
+.content,
+main,
+section,
+.page-shell,
+.docs-layout,
+.login-shell {
+  background: #C0EBFF !important;
+  color: #002B4C !important;
+}
+
+:where(body, body *) {
+  color: #002B4C;
+}
+
+:where(.sidebar, .mobile-sidebar, .sidebar#sidebar) {
+  background: #F59E71 !important;
+  border-color: #002B4C !important;
+}
+
+:where(.sidebar *, .mobile-sidebar *, .nav__title, .nav__items a, .nav__items a i, .sidebar__brand, .sidebar__brand small) {
+  color: #002B4C !important;
+}
+
+:where(.nav__items a:hover, .nav__items a.active, .nav__title:hover) {
+  background: rgba(192, 235, 255, .65) !important;
+  color: #002B4C !important;
+}
+
+:where(
+  button,
+  .btn,
+  .legacy-btn,
+  .legacy-action,
+  .footer-btn,
+  .footer-action,
+  .action-btn,
+  .qa-action-btn,
+  .qa-save,
+  .cass-blue-btn,
+  .upload-btn,
+  .filter-btn,
+  .btn-refresh,
+  .btn-update,
+  .template-link,
+  .signup-btn,
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  a.btn
+):not(.sidebar-close):not(.mobile-close-button):not(.modal__close) {
+  background: #002B4C !important;
+  border-color: #002B4C !important;
+  color: #C0EBFF !important;
+}
+
+:where(
+  button,
+  .btn,
+  .legacy-btn,
+  .legacy-action,
+  .footer-btn,
+  .footer-action,
+  .action-btn,
+  .qa-action-btn,
+  .qa-save,
+  .cass-blue-btn,
+  .upload-btn,
+  .filter-btn,
+  .btn-refresh,
+  .btn-update,
+  .template-link,
+  .signup-btn,
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  a.btn
+) :where(i, span, strong, b) {
+  color: #C0EBFF !important;
+}
+
+:where(
+  .card,
+  .panel,
+  .modal,
+  .modal__box,
+  .legacy-panel,
+  .records-card,
+  .manage-card,
+  .profile-card,
+  .users-card,
+  .score-panel,
+  .clearance-card,
+  .archive-card,
+  .student-clearance-summary,
+  .clearance-form-tile,
+  .staff-profile-card,
+  .quick,
+  .tile,
+  .stat,
+  .mini,
+  .profile-tile,
+  .profile-mini,
+  .topbar,
+  .site-header,
+  .usermenu__btn,
+  .usermenu__list,
+  .input,
+  .select,
+  .textarea,
+  input,
+  select,
+  textarea,
+  .search,
+  .dropzone,
+  .photo-box,
+  .table-wrap,
+  .student-table-wrapper,
+  .users-table-wrap,
+  .legacy-table-wrap,
+  .records-table-shell,
+  .records-table-wrap,
+  .score-table-wrap,
+  .super-table-wrap,
+  .clearance-table-wrap,
+  .archive-table-wrap,
+  table,
+  .tbl,
+  th,
+  td
+) {
+  border-color: #002B4C !important;
+}
+
+:where(.card, .panel, .modal, .legacy-panel, .topbar, .site-header, .usermenu__list, input, select, textarea, .input, .select, .textarea, .search) {
+  background-color: rgba(255, 255, 255, .42) !important;
+}
+
+:where(table, .tbl, .student-table, .users-table, .legacy-table, .records-table, .score-table, .super-table, .clearance-table, .archive-table) {
+  background: rgba(255, 255, 255, .38) !important;
+}
+
+:where(table, .tbl, .student-table, .users-table, .legacy-table, .records-table, .score-table, .super-table, .clearance-table, .archive-table) :where(th, td) {
+  border-color: #002B4C !important;
+  color: #002B4C !important;
+}
+
+:where(table, .tbl, .student-table, .users-table, .legacy-table, .records-table, .score-table, .super-table, .clearance-table, .archive-table) thead :where(th, td),
+.card__head,
+.modal__head,
+.panel__head {
+  background: rgba(245, 158, 113, .55) !important;
+  color: #002B4C !important;
+  border-color: #002B4C !important;
+}

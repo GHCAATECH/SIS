@@ -1,0 +1,345 @@
+/* AXIOMBYTE SMS requested global theme.
+   Loaded last so page-level styles still inherit one consistent palette. */
+:root {
+  --brand: #002B4C;
+  --brand-dark: #001D33;
+  --brand-soft: rgba(0, 43, 76, .12);
+  --accent: #002B4C;
+  --green: #002B4C;
+  --green-soft: rgba(0, 43, 76, .12);
+  --bg: #C0EBFF;
+  --surface: #C0EBFF;
+  --surface-2: rgba(255, 255, 255, .45);
+  --border: #002B4C;
+  --text: #002B4C;
+  --text-soft: #002B4C;
+  --text-faint: rgba(0, 43, 76, .72);
+}
+
+html,
+body,
+body.portal-shell,
+body.footer-shell,
+body.login-page,
+body.public-page,
+main,
+section,
+html body .main,
+html body .content,
+html body .page-shell,
+html body .docs-layout,
+html body .login-shell,
+html body .download-panel,
+html body .download-space {
+  background: #C0EBFF !important;
+  color: #002B4C !important;
+}
+
+html body,
+html body * {
+  color: #002B4C;
+}
+
+html body .sidebar,
+html body .mobile-sidebar,
+html body .sidebar#sidebar,
+html body .admin-sidebar,
+html body .side-nav {
+  background: #F59E71 !important;
+  border-color: #002B4C !important;
+  color: #002B4C !important;
+}
+
+html body .sidebar *,
+html body .mobile-sidebar *,
+html body .admin-sidebar *,
+html body .side-nav *,
+html body .nav__title,
+html body .nav__items a,
+html body .nav__items a i,
+html body .sidebar__brand,
+html body .sidebar__brand small,
+html body .sidebar-brand span:last-child,
+html body .mobile-navigation a,
+html body .sidebar-nav a {
+  color: #002B4C !important;
+}
+
+html body .nav__items a:hover,
+html body .nav__items a.active,
+html body .nav__title:hover,
+html body .mobile-navigation a:hover,
+html body .sidebar-nav a:hover {
+  background: rgba(192, 235, 255, .65) !important;
+  color: #002B4C !important;
+}
+
+html body .sidebar__brand .logo,
+html body .site-header .brand .mark,
+html body .sidebar-brand .mark,
+html body .mobile-brand .mark,
+html body .avatar,
+html body .ph-ico,
+html body .page-head .ph-ico {
+  background: #002B4C !important;
+  color: #C0EBFF !important;
+}
+
+html body button,
+html body .btn,
+html body .btn.btn-primary,
+html body .btn.btn-success,
+html body .btn.btn-danger,
+html body .btn.btn-warning,
+html body .btn-mini,
+html body .btn-mini.is-active,
+html body .legacy-btn,
+html body .legacy-action,
+html body .footer-btn,
+html body .footer-action,
+html body .action-btn,
+html body .action-btn.view-btn,
+html body .action-btn.edit-btn,
+html body .action-btn.print-btn,
+html body .action-btn.delete-btn,
+html body .qa-action-btn,
+html body .qa-save,
+html body .cass-blue-btn,
+html body .upload-btn,
+html body .filter-btn,
+html body .btn-refresh,
+html body .btn-update,
+html body .template-link,
+html body .signup-btn,
+html body input[type="submit"],
+html body input[type="button"],
+html body input[type="reset"],
+html body a.btn {
+  background: #002B4C !important;
+  border-color: #002B4C !important;
+  color: #C0EBFF !important;
+}
+
+html body button:not(.sidebar-close):not(.mobile-close-button):not(.modal__close) *,
+html body .btn *,
+html body .btn-mini *,
+html body .legacy-btn *,
+html body .legacy-action *,
+html body .footer-btn *,
+html body .footer-action *,
+html body .action-btn *,
+html body .qa-action-btn *,
+html body .qa-save *,
+html body .cass-blue-btn *,
+html body .upload-btn *,
+html body .filter-btn *,
+html body .btn-refresh *,
+html body .btn-update *,
+html body .template-link *,
+html body .signup-btn * {
+  color: #C0EBFF !important;
+}
+
+html body .sidebar-close,
+html body .mobile-close-button,
+html body .modal__close {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #002B4C !important;
+}
+
+html body .card,
+html body .panel,
+html body .modal,
+html body .modal__box,
+html body .legacy-panel,
+html body .records-card,
+html body .manage-card,
+html body .profile-card,
+html body .users-card,
+html body .score-panel,
+html body .clearance-card,
+html body .archive-card,
+html body .student-clearance-summary,
+html body .clearance-form-tile,
+html body .staff-profile-card,
+html body .quick,
+html body .tile,
+html body .stat,
+html body .mini,
+html body .profile-tile,
+html body .profile-mini,
+html body .topbar,
+html body .site-header,
+html body .usermenu__btn,
+html body .usermenu__list,
+html body .input,
+html body .select,
+html body .textarea,
+html body input,
+html body select,
+html body textarea,
+html body .search,
+html body .dropzone,
+html body .photo-box,
+html body .table-wrap,
+html body .student-table-wrapper,
+html body .users-table-wrap,
+html body .legacy-table-wrap,
+html body .records-table-shell,
+html body .records-table-wrap,
+html body .score-table-wrap,
+html body .super-table-wrap,
+html body .clearance-table-wrap,
+html body .archive-table-wrap,
+html body table,
+html body .tbl,
+html body th,
+html body td {
+  border-color: #002B4C !important;
+}
+
+html body .card,
+html body .panel,
+html body .modal,
+html body .legacy-panel,
+html body .topbar,
+html body .site-header,
+html body .usermenu__list,
+html body input,
+html body select,
+html body textarea,
+html body .input,
+html body .select,
+html body .textarea,
+html body .search {
+  background-color: rgba(255, 255, 255, .42) !important;
+}
+
+html body table,
+html body .tbl,
+html body .student-table,
+html body .users-table,
+html body .legacy-table,
+html body .records-table,
+html body .score-table,
+html body .super-table,
+html body .clearance-table,
+html body .archive-table {
+  background: rgba(255, 255, 255, .38) !important;
+  color: #002B4C !important;
+}
+
+html body table th,
+html body table td,
+html body .tbl th,
+html body .tbl td,
+html body .student-table th,
+html body .student-table td,
+html body .users-table th,
+html body .users-table td,
+html body .legacy-table th,
+html body .legacy-table td,
+html body .records-table th,
+html body .records-table td,
+html body .score-table th,
+html body .score-table td,
+html body .super-table th,
+html body .super-table td,
+html body .clearance-table th,
+html body .clearance-table td,
+html body .archive-table th,
+html body .archive-table td {
+  border-color: #002B4C !important;
+  color: #002B4C !important;
+}
+
+html body table thead th,
+html body table thead td,
+html body .tbl thead th,
+html body .tbl thead td,
+html body .student-table thead th,
+html body .student-table thead td,
+html body .users-table thead th,
+html body .users-table thead td,
+html body .legacy-table thead th,
+html body .legacy-table thead td,
+html body .records-table thead th,
+html body .records-table thead td,
+html body .score-table thead th,
+html body .score-table thead td,
+html body .super-table thead th,
+html body .super-table thead td,
+html body .clearance-table thead th,
+html body .clearance-table thead td,
+html body .archive-table thead th,
+html body .archive-table thead td,
+html body .card__head,
+html body .modal__head,
+html body .panel__head {
+  background: rgba(245, 158, 113, .55) !important;
+  color: #002B4C !important;
+  border-color: #002B4C !important;
+}
+
+html body .qa-card,
+html body .qa-filter,
+html body .qa-table-shell,
+html body .qa-table th,
+html body .qa-table td,
+html body .qa-total,
+html body .qa-modal,
+html body .qa-modal-head,
+html body .qa-textarea,
+html body .qa-modal-actions,
+html body .records-filter,
+html body .records-table-shell,
+html body .records-table-wrap,
+html body .records-toolbar,
+html body .records-total,
+html body .transcript-record-table,
+html body .transcript-record-table th,
+html body .transcript-record-table td,
+html body .transcript-record-table .course-title,
+html body .transcript-record-table thead th.semester-gap,
+html body .clearance-form-tile,
+html body .clearance-form-table th,
+html body .clearance-form-table td {
+  border-color: #002B4C !important;
+}
+
+html body .qa-table th,
+html body .records-table th,
+html body .transcript-record-table th,
+html body .transcript-record-table .course-title,
+html body .clearance-form-table th {
+  background: rgba(245, 158, 113, .55) !important;
+  color: #002B4C !important;
+}
+
+html body .qa-card,
+html body .qa-filter,
+html body .qa-table-shell,
+html body .qa-table td,
+html body .qa-modal,
+html body .qa-modal-actions,
+html body .records-filter,
+html body .records-table-shell,
+html body .records-table-wrap,
+html body .transcript-record-table td,
+html body .transcript-record-table thead th.semester-gap {
+  background: rgba(255, 255, 255, .42) !important;
+  color: #002B4C !important;
+}
+
+html body .staff-section .card__head i,
+html body .qa-filter label,
+html body .qa-total,
+html body .qa-total span,
+html body .qa-modal-head,
+html body .qa-modal-section h3,
+html body .qa-modal-section ul,
+html body .qa-assessment-label,
+html body .transcript-record-table * {
+  color: #002B4C !important;
+}
