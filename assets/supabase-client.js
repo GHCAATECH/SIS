@@ -55,6 +55,14 @@
     }
   }
 
+  function currentStoredUser() {
+    try {
+      return JSON.parse(w.localStorage.getItem('axiom_current_user') || 'null');
+    } catch (e) {
+      return null;
+    }
+  }
+
   async function authSession() {
     var c = db();
     if (!c) return null;
@@ -279,9 +287,11 @@
     var c = db();
     if (!c) return null;
     var token = activeStaffSessionToken();
-    if (!token) throw new Error('Staff session expired. Please logout and login again.');
+    var user = currentStoredUser();
+    var staffUser = user && user.type !== 'student' && user.category && user.category !== 'Student';
+    if (!token && !staffUser) throw new Error('Staff session expired. Please logout and login again.');
     var result = await c.rpc('secure_qualitative_assessment_setup', {
-      p_session_token: token
+      p_session_token: token || null
     });
     if (result.error) {
       if (/secure_qualitative_assessment_setup|schema cache|function/i.test(result.error.message || '')) {
@@ -1235,13 +1245,15 @@
   }
 
   async function saveQualitativeAssessment(payload) {
-    var c = db(), school = await currentSchool();
-    if (!c || !school) return null;
+    var c = db();
+    if (!c) return null;
     payload = Object.assign({}, payload || {});
     var token = activeStaffSessionToken();
-    if (token) {
+    var user = currentStoredUser();
+    var staffUser = user && user.type !== 'student' && user.category && user.category !== 'Student';
+    if (token || staffUser) {
       var sessionResult = await c.rpc('secure_save_qualitative_assessment_with_session', {
-        p_session_token: token,
+        p_session_token: token || null,
         p_payload: payload || {}
       });
       if (!sessionResult.error) return sessionResult.data;
@@ -1250,6 +1262,8 @@
       }
       throw sessionResult.error;
     }
+    var school = await currentSchool();
+    if (!school) return null;
     payload.captured_by_name = payload.captured_by_name || payload.captured_by || '';
     delete payload.captured_by;
     payload.school_id = school.id;

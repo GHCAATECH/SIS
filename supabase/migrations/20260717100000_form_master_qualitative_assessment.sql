@@ -1,5 +1,5 @@
 -- Assign qualitative assessment capture to Form Master/Form Mistress by class.
--- Run after 20260717090000_staff_form_master_class.sql.
+-- This version supports either a staff_login_sessions token or a Supabase Auth staff login.
 
 create extension if not exists pgcrypto with schema extensions;
 
@@ -69,16 +69,6 @@ begin
     return null;
   end if;
 
-  if coalesce(school_record.subscription_status, 'Active') = 'Suspended' then
-    return null;
-  end if;
-
-  if coalesce(school_record.subscription_status, 'Active') = 'Trial'
-     and school_record.trial_expires_at is not null
-     and school_record.trial_expires_at < now() then
-    return null;
-  end if;
-
   select coalesce(jsonb_agg(page_key order by page_key), '[]'::jsonb)
     into privilege_keys
   from public.user_privileges
@@ -120,6 +110,48 @@ begin
 end;
 $$;
 
+create or replace function public.qualitative_staff_from_session_or_auth(p_session_token text default null)
+returns public.staff_users
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  staff_record public.staff_users;
+begin
+  if p_session_token is not null then
+    select staff.*
+      into staff_record
+    from public.staff_login_sessions login
+    join public.staff_users staff on staff.id = login.staff_user_id
+    where login.session_token = p_session_token
+      and login.expires_at > now()
+      and staff.status = 'Active'
+    limit 1;
+
+    if staff_record.id is not null then
+      update public.staff_login_sessions
+      set last_seen_at = now()
+      where session_token = p_session_token;
+      return staff_record;
+    end if;
+  end if;
+
+  select *
+    into staff_record
+  from public.staff_users
+  where auth_user_id = auth.uid()
+    and status = 'Active'
+  limit 1;
+
+  if staff_record.id is null then
+    raise exception 'Staff session expired. Please logout and login again.';
+  end if;
+
+  return staff_record;
+end;
+$$;
+
 create or replace function public.secure_qualitative_assessment_setup(p_session_token text)
 returns jsonb
 language plpgsql
@@ -133,23 +165,7 @@ declare
   is_form_master boolean;
   assigned_class text;
 begin
-  select staff.*
-    into staff_record
-  from public.staff_login_sessions login
-  join public.staff_users staff on staff.id = login.staff_user_id
-  where login.session_token = p_session_token
-    and login.expires_at > now()
-    and staff.status = 'Active'
-  limit 1;
-
-  if staff_record.id is null then
-    raise exception 'Staff login session expired. Please logout and login again.';
-  end if;
-
-  update public.staff_login_sessions
-  set last_seen_at = now()
-  where session_token = p_session_token;
-
+  staff_record := public.qualitative_staff_from_session_or_auth(p_session_token);
   role_text := lower(replace(coalesce(staff_record.position_responsibility, ''), '_', ' '));
   is_admin := staff_record.category = 'School Administrator';
   is_form_master := role_text ~ 'form[[:space:]]+master|form[[:space:]]+mistress';
@@ -230,19 +246,7 @@ declare
   v_student public.students;
   saved public.qualitative_assessments;
 begin
-  select staff.*
-    into staff_record
-  from public.staff_login_sessions login
-  join public.staff_users staff on staff.id = login.staff_user_id
-  where login.session_token = p_session_token
-    and login.expires_at > now()
-    and staff.status = 'Active'
-  limit 1;
-
-  if staff_record.id is null then
-    raise exception 'Staff login session expired. Please logout and login again.';
-  end if;
-
+  staff_record := public.qualitative_staff_from_session_or_auth(p_session_token);
   role_text := lower(replace(coalesce(staff_record.position_responsibility, ''), '_', ' '));
   is_admin := staff_record.category = 'School Administrator';
   is_form_master := role_text ~ 'form[[:space:]]+master|form[[:space:]]+mistress';
@@ -269,7 +273,7 @@ begin
   from public.students student
   join public.classes cls on cls.id = student.class_id
   where student.school_id = staff_record.school_id
-    and student.ass_ref_id = v_student_ref
+    and upper(student.ass_ref_id) = upper(v_student_ref)
     and lower(cls.name) = lower(v_class_name)
     and coalesce(student.status, 'Active') not in ('Deleted', 'Transferred', 'Dropped')
   limit 1;
@@ -309,5 +313,6 @@ end;
 $$;
 
 grant execute on function public.resolve_staff_password_login(text, text) to anon, authenticated, service_role;
+grant execute on function public.qualitative_staff_from_session_or_auth(text) to anon, authenticated, service_role;
 grant execute on function public.secure_qualitative_assessment_setup(text) to anon, authenticated, service_role;
 grant execute on function public.secure_save_qualitative_assessment_with_session(text, jsonb) to anon, authenticated, service_role;
