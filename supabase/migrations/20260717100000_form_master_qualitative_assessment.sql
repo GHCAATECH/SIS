@@ -290,7 +290,7 @@ begin
     coalesce(p_payload->'ratings', '{}'::jsonb),
     nullif(p_payload->>'teacher_remark', ''),
     staff_record.id,
-    coalesce(nullif(p_payload->>'captured_by', ''), staff_record.full_name, staff_record.staff_id),
+    coalesce(nullif(p_payload->>'captured_by_name', ''), nullif(p_payload->>'captured_by', ''), staff_record.full_name, staff_record.staff_id),
     now()
   )
   on conflict (school_id, student_ref, term)

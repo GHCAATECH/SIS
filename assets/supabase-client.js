@@ -1237,6 +1237,7 @@
   async function saveQualitativeAssessment(payload) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
+    payload = Object.assign({}, payload || {});
     var token = activeStaffSessionToken();
     if (token) {
       var sessionResult = await c.rpc('secure_save_qualitative_assessment_with_session', {
@@ -1249,6 +1250,8 @@
       }
       throw sessionResult.error;
     }
+    payload.captured_by_name = payload.captured_by_name || payload.captured_by || '';
+    delete payload.captured_by;
     payload.school_id = school.id;
     var result = await c
       .from('qualitative_assessments')

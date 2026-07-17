@@ -366,7 +366,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-form-master-qa2"></script>
+<script src="assets/supabase-client.js?v=20260717-form-master-qa3"></script>
 <script src="assets/shell.js?v=20260717-form-master-qa1"></script>
 <script>
 Portal.init({ active: 'qualitativeaccessment' });
@@ -602,7 +602,7 @@ function qualitativePayload() {
     term: document.getElementById('yearFilter').value,
     ratings: {},
     teacher_remark: document.getElementById('assessmentText').value.trim(),
-    captured_by: capturedByName(),
+    captured_by_name: capturedByName(),
     updated_at: new Date().toISOString()
   };
 }
