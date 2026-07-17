@@ -611,9 +611,14 @@ async function loadSetup() {
   students = localStudents();
   classes = [];
   if (window.AxiomDB && AxiomDB.isConfigured()) {
+    var staffScoped = isFormMasterUser() && !isSchoolAdminUser();
     try {
-      var scopedSetup = AxiomDB.qualitativeAssessmentSetup ? await AxiomDB.qualitativeAssessmentSetup() : null;
-      if (scopedSetup && (scopedSetup.classes || scopedSetup.students)) {
+      if (staffScoped) {
+        if (!AxiomDB.qualitativeAssessmentSetup) {
+          throw new Error('Run the form master qualitative assessment SQL in Supabase, then logout and login again.');
+        }
+        var scopedSetup = await AxiomDB.qualitativeAssessmentSetup();
+        if (scopedSetup && scopedSetup.message) Portal.toast(scopedSetup.message, true);
         if (scopedSetup.classes && scopedSetup.classes.length) classes = scopedSetup.classes;
         if (scopedSetup.students && scopedSetup.students.length) students = scopedSetup.students;
       } else {
@@ -624,7 +629,16 @@ async function loadSetup() {
       }
     } catch (err) {
       console.error(err);
-      Portal.toast('Could not load qualitative assessment data. Showing local data.', true);
+      var message = err && err.message ? err.message : 'Could not load qualitative assessment data.';
+      Portal.toast(message, true);
+      if (staffScoped) {
+        students = [];
+        classes = [];
+        populateFilters();
+        renderedStudents = [];
+        renderRows(message);
+        return;
+      }
     }
   }
   if (!classes.length) {

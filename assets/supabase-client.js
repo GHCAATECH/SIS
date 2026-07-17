@@ -279,12 +279,14 @@
     var c = db();
     if (!c) return null;
     var token = activeStaffSessionToken();
-    if (!token) return null;
+    if (!token) throw new Error('Staff session expired. Please logout and login again.');
     var result = await c.rpc('secure_qualitative_assessment_setup', {
       p_session_token: token
     });
     if (result.error) {
-      if (/secure_qualitative_assessment_setup|schema cache|function/i.test(result.error.message || '')) return null;
+      if (/secure_qualitative_assessment_setup|schema cache|function/i.test(result.error.message || '')) {
+        throw new Error('Run the form master qualitative assessment SQL in Supabase, then logout and login again.');
+      }
       throw result.error;
     }
     return result.data || null;
