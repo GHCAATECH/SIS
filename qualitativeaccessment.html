@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260716-fit-nowrap1" />
 <style>
   .qa-card {
-    border: 1px solid #ef4444 !important;
+    border: 1px solid #16a34a !important;
     border-radius: 4px;
     overflow: hidden;
     background: #fff;
@@ -20,7 +20,7 @@
     gap: 14px;
     align-items: end;
     padding: 22px 24px 18px;
-    border: 1px solid #ef4444 !important;
+    border: 1px solid #16a34a !important;
     border-bottom: 0 !important;
     background: #fff;
   }
@@ -49,7 +49,7 @@
   }
   .qa-table-shell {
     margin: 0 24px 14px;
-    border: 1px solid #ef4444 !important;
+    border: 1px solid #16a34a !important;
     border-radius: 4px;
     height: clamp(340px, calc(100dvh - 300px), 560px);
     overflow: auto;
@@ -58,7 +58,7 @@
   }
   .qa-table {
     width: 100%;
-    min-width: 1320px;
+    min-width: 1180px;
     border-collapse: collapse;
     table-layout: fixed;
     color: #000;
@@ -66,7 +66,7 @@
   }
   .qa-table th,
   .qa-table td {
-    border: 1px solid #ef4444 !important;
+    border: 1px solid #16a34a !important;
     padding: 8px 8px;
     text-align: center;
     vertical-align: top;
@@ -87,10 +87,9 @@
   .qa-table th:nth-child(2), .qa-table td:nth-child(2) { width: 145px; }
   .qa-table th:nth-child(3), .qa-table td:nth-child(3) { width: 150px; }
   .qa-table th:nth-child(4), .qa-table td:nth-child(4) { width: 290px; }
-  .qa-table th:nth-child(5), .qa-table td:nth-child(5) { width: 115px; }
-  .qa-table th:nth-child(6), .qa-table td:nth-child(6) { width: 105px; }
-  .qa-table th:nth-child(7), .qa-table td:nth-child(7) { width: 120px; }
-  .qa-table th:nth-child(8), .qa-table td:nth-child(8) { width: 150px; }
+  .qa-table th:nth-child(5), .qa-table td:nth-child(5) { width: 105px; }
+  .qa-table th:nth-child(6), .qa-table td:nth-child(6) { width: 150px; }
+  .qa-table th:nth-child(7), .qa-table td:nth-child(7) { width: 180px; }
   .qa-photo {
     position: relative;
     width: 86px;
@@ -138,9 +137,9 @@
     font-weight: 900;
     color: #000;
     text-transform: uppercase;
-    border-left: 1px solid #ef4444 !important;
-    border-right: 1px solid #ef4444 !important;
-    border-bottom: 1px solid #ef4444 !important;
+    border-left: 1px solid #16a34a !important;
+    border-right: 1px solid #16a34a !important;
+    border-bottom: 1px solid #16a34a !important;
   }
   .qa-total span {
     margin-left: 28px;
@@ -161,7 +160,7 @@
     width: min(600px, 100%);
     max-height: calc(100dvh - 28px);
     overflow: auto;
-    border: 1px solid #ef4444 !important;
+    border: 1px solid #16a34a !important;
     border-radius: 4px;
     background: #fff;
     box-shadow: 0 22px 60px rgba(0,0,0,.22);
@@ -169,7 +168,7 @@
   .qa-modal-head {
     position: relative;
     padding: 18px 52px 16px;
-    border-bottom: 1px solid #ef4444 !important;
+    border-bottom: 1px solid #16a34a !important;
     text-align: center;
     color: #1f78b4;
     font-size: 24px;
@@ -224,7 +223,7 @@
     width: 100%;
     min-height: 105px;
     resize: vertical;
-    border: 1px solid #ef4444 !important;
+    border: 1px solid #16a34a !important;
     border-radius: 4px;
     padding: 8px;
     font: inherit;
@@ -235,7 +234,7 @@
     justify-content: flex-end;
     gap: 10px;
     padding: 18px 20px;
-    border-top: 1px solid #ef4444 !important;
+    border-top: 1px solid #16a34a !important;
     background: #fff;
   }
   .qa-save,
@@ -301,10 +300,9 @@
               <th>PPT_PIC</th>
               <th>ASS_REF.ID</th>
               <th>Candidate_Name</th>
-              <th>Nat'l_ID</th>
               <th>Gender</th>
-              <th>DOB</th>
               <th>Class</th>
+              <th>Captured By</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -357,7 +355,7 @@
           </ul>
         </section>
       </div>
-      <label class="qa-assessment-label" for="assessmentText">Your Assessment Should Reflect the Above: <span style="color:#ef4444">*</span></label>
+      <label class="qa-assessment-label" for="assessmentText">Your Assessment Should Reflect the Above: <span style="color:#16a34a">*</span></label>
       <textarea class="qa-textarea" id="assessmentText" placeholder="Type Assessment Here"></textarea>
     </div>
     <div class="qa-modal-actions">
@@ -423,6 +421,14 @@ function safeImageUrl(value) {
   value = String(value || '').trim();
   if (!/^(https?:\/\/|data:image\/|blob:)/i.test(value)) return '';
   return escapeHtml(value);
+}
+
+function capturedByName() {
+  var user = (window.Portal && Portal.currentUser) ? Portal.currentUser() : null;
+  return String(
+    (user && (user.full_name || user.staff_name || user.name || user.staff_id || user.email)) ||
+    'Staff'
+  ).toUpperCase();
 }
 
 function saveLocalQualitative(payload) {
@@ -497,7 +503,7 @@ function renderRows(message) {
   var body = document.querySelector('#qaTable tbody');
   document.getElementById('studentTotal').textContent = renderedStudents.length;
   if (!renderedStudents.length) {
-    body.innerHTML = '<tr><td colspan="8" style="padding:34px;font-weight:900;color:#6b7280;text-align:center">'+escapeHtml(message || 'No students found. Select filters and click Filter.')+'</td></tr>';
+    body.innerHTML = '<tr><td colspan="7" style="padding:34px;font-weight:900;color:#6b7280;text-align:center">'+escapeHtml(message || 'No students found. Select filters and click Filter.')+'</td></tr>';
     return;
   }
   body.innerHTML = renderedStudents.map(function(student) {
@@ -508,10 +514,9 @@ function renderRows(message) {
       '<td><div class="qa-photo"><span>'+escapeHtml(initials(name))+'</span>'+(image ? '<img src="'+image+'" alt="'+escapeHtml(name)+' passport" onerror="this.remove()">' : '')+'</div></td>' +
       '<td>'+escapeHtml(student.ass_ref_id || '')+'</td>' +
       '<td>'+escapeHtml(name)+'</td>' +
-      '<td>'+escapeHtml(student.ghana_card_number || '')+'</td>' +
       '<td>'+escapeHtml(String(student.gender || '').toUpperCase())+'</td>' +
-      '<td>'+escapeHtml(student.date_of_birth || '')+'</td>' +
       '<td>'+escapeHtml(studentClassName(student))+'</td>' +
+      '<td>'+escapeHtml(capturedByName())+'</td>' +
     '</tr>';
   }).join('');
 }
