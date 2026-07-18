@@ -1080,7 +1080,14 @@ function downloadTranscriptHtmlFile(filename, html) {
     '.print-transcript:last-child{page-break-after:auto;break-after:auto}' +
     '.transcript-page{display:block!important;min-height:265mm;padding:14mm 16mm;background:#fff;color:#111;box-sizing:border-box;page-break-after:always;break-after:page}' +
     '.transcript-page:last-child{page-break-after:auto;break-after:auto}' +
-    'table{border-collapse:collapse}.pdf-table{width:100%}.transcript-record-table{width:100%;table-layout:fixed}' +
+    'table{border-collapse:collapse!important}.pdf-table{width:100%;border-collapse:collapse!important}' +
+    '.pdf-table th,.pdf-table td{border:1px solid #94a3b8!important;padding:4px 6px!important}' +
+    '.transcript-record-table{width:100%;table-layout:fixed;border-collapse:collapse!important;border:1px solid #94a3b8!important}' +
+    '.transcript-record-table th,.transcript-record-table td{border:1px solid #94a3b8!important}' +
+    '.transcript-record-table .academic-record-title{border:0!important}' +
+    '.transcript-record-table .semester-gap{border:0!important;background:#fff!important}' +
+    '.transcript-record-table thead tr:nth-child(2) th:not(.semester-gap){border-color:#0b5f59!important}' +
+    '.transcript-record-table thead tr:nth-child(3) th{border-color:#94a3b8!important}' +
     '@media print{body{background:#fff}.transcript-export-document{padding:0}.print-transcript{margin:0;border:0;width:auto}.transcript-page{min-height:277mm;padding:12mm 16mm}}';
   var documentHtml = '<!doctype html><html><head><meta charset="utf-8"><title>'+safeAttribute(filename)+'</title>' +
     '<style>'+inlineStyles+'\n'+exportCss+'</style>' +
