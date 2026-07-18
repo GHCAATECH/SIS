@@ -20,7 +20,7 @@
   .mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .wide { grid-column:1 / -1; }
   .clearance-table-wrap { overflow:auto; border:1px solid rgba(148,163,184,.35); border-radius:10px; max-height:520px; }
-  .clearance-table { width:100%; border-collapse:collapse; min-width:1280px; table-layout:auto; }
+  .clearance-table { width:100%; border-collapse:collapse; min-width:1380px; table-layout:auto; }
   .clearance-table th, .clearance-table td {
     padding:8px 10px;
     border-bottom:1px solid rgba(148,163,184,.3);
@@ -32,16 +32,51 @@
     text-overflow:ellipsis;
   }
   .clearance-table th { background:#f8fafc; color:#0f172a; position:sticky; top:0; z-index:1; }
-  .clearance-table th:nth-child(7),
-  .clearance-table td:nth-child(7) { width:96px; min-width:96px; text-align:center; }
-  .clearance-table th:nth-child(10),
-  .clearance-table td:nth-child(10) { width:170px; min-width:170px; text-align:center; overflow:visible; }
-  .clearance-table td:nth-child(10) { white-space:nowrap !important; }
-  .clearance-table td:nth-child(10) .btn {
+  .record-clearance-table th:nth-child(1),
+  .record-clearance-table td:nth-child(1) { width:74px; min-width:74px; text-align:center; }
+  .record-clearance-table th:nth-child(8),
+  .record-clearance-table td:nth-child(8) { width:96px; min-width:96px; text-align:center; }
+  .record-clearance-table th:nth-child(11),
+  .record-clearance-table td:nth-child(11) { width:170px; min-width:170px; text-align:center; overflow:visible; }
+  .record-clearance-table td:nth-child(11) { white-space:nowrap !important; }
+  .record-clearance-table td:nth-child(11) .btn {
     min-width:72px !important;
     min-height:32px !important;
     padding:6px 10px !important;
     white-space:nowrap !important;
+  }
+  .clearance-photo {
+    width:48px;
+    height:54px;
+    margin:0 auto;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    border:1px solid rgba(148,163,184,.45);
+    border-radius:8px;
+    background:#f1f8ed;
+  }
+  .clearance-photo img {
+    grid-area:1 / 1;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    background:#fff;
+    position:relative;
+    z-index:2;
+  }
+  .clearance-photo-initials {
+    grid-area:1 / 1;
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    border-radius:50%;
+    background:#5cab4f;
+    color:#fff;
+    font-weight:900;
+    font-size:13px;
+    line-height:1;
   }
   .status-pill {
     display:inline-flex !important;
@@ -185,7 +220,7 @@
             </div>
             <button class="btn" id="clearAdminFilters" type="button"><i class="fas fa-filter-circle-xmark"></i> Clear</button>
           </div>
-          <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Remarks</th><th>Cleared By</th><th>Action</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+          <div class="clearance-table-wrap"><table class="clearance-table record-clearance-table"><thead><tr><th>PPT PIC</th><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Remarks</th><th>Cleared By</th><th>Action</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
         </div>
       </div>
 
@@ -194,7 +229,7 @@
           <h2><i class="fas fa-circle-check"></i> Cleared Students</h2>
         </div>
         <div class="clearance-card__body">
-          <div class="clearance-table-wrap"><table class="clearance-table"><thead><tr><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Remarks</th><th>Cleared By</th><th>Action</th></tr></thead><tbody id="clearedBody"></tbody></table></div>
+          <div class="clearance-table-wrap"><table class="clearance-table record-clearance-table"><thead><tr><th>PPT PIC</th><th>STD_ID</th><th>Student Name</th><th>Class</th><th>Clearance</th><th>Position</th><th>Assigned Staff</th><th>Status</th><th>Remarks</th><th>Cleared By</th><th>Action</th></tr></thead><tbody id="clearedBody"></tbody></table></div>
         </div>
       </div>
     </section>
@@ -253,7 +288,7 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-qualitative-captured-by1"></script>
+<script src="assets/supabase-client.js?v=20260718-clearance-photo1"></script>
 <script src="assets/shell.js?v=20260716-archive-clearance1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -265,7 +300,31 @@ var students = [];
 var activeFormRecords = null;
 var defaultPositions = ['Administrator','Headmaster','Assistant Headmaster (Administration)','Assistant Headmaster (Academics)','Head of Department (HOD)','Form Master/Form Mistress','House Staff','Senior Housemaster','Senior Housemistress','Bursar','Accountant','Librarian','Storekeeper','School Nurse','Laboratory Technician','ICT Coordinator','Examinations Officer','Secretary','Other'];
 function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]; }); }
-function studentName(student) { return [student && student.first_name, student && student.surname, student && student.other_names].filter(Boolean).join(' ').toUpperCase(); }
+function studentName(student) {
+  if (!student) return '';
+  return String(student.full_name || student.student_name || [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ')).toUpperCase();
+}
+function safeImageUrl(value) {
+  value = String(value || '').trim();
+  if (!/^(https?:\/\/|data:image\/|blob:)/i.test(value)) return '';
+  return escapeHtml(value);
+}
+function studentInitials(student) {
+  var name = studentName(student);
+  var parts = name.split(/\s+/).filter(Boolean);
+  return (parts[0] ? parts[0][0] : 'S') + (parts[1] ? parts[1][0] : (parts[0] && parts[0][1] ? parts[0][1] : 'T'));
+}
+function studentPassportUrl(student) {
+  return String(student && (student.passport_url || student.passportUrl || student.photo_url || student.photoUrl || student.profile_photo || student.photo) || '').trim();
+}
+function clearancePhotoCell(row) {
+  var student = rowStudent(row);
+  var url = safeImageUrl(studentPassportUrl(student) || studentPassportUrl(row));
+  return '<div class="clearance-photo">' +
+    '<span class="clearance-photo-initials">' + escapeHtml(studentInitials(student)) + '</span>' +
+    (url ? '<img src="' + url + '" alt="' + escapeHtml(studentName(student) || 'Student') + '" onerror="this.style.display=\'none\'">' : '') +
+  '</div>';
+}
 function normalizeStatus(status) {
   var text = String(status || 'Pending').trim().toLowerCase();
   if (text === 'cleared') return 'Cleared';
@@ -285,7 +344,7 @@ function clearanceNames(status) {
 }
 function recordStudentAssRef(row) {
   var student = row && row.students ? row.students : {};
-  return String(student.ass_ref_id || student.std_id || '').trim();
+  return String(student.ass_ref_id || student.std_id || (row && (row.ass_ref_id || row.std_id || row.student_ref || row.student_id_number)) || '').trim();
 }
 function studentAssRef(student) {
   return String(student && (student.ass_ref_id || student.std_id) || '').trim();
@@ -294,6 +353,22 @@ function archiveStudentForRow(row) {
   var assRef = recordStudentAssRef(row).toLowerCase();
   if (!assRef) return null;
   return students.find(function(student) { return studentAssRef(student).toLowerCase() === assRef; }) || null;
+}
+function rowStudent(row) {
+  var archived = archiveStudentForRow(row);
+  if (archived) return archived;
+  if (row && row.students) return row.students;
+  return {
+    ass_ref_id: row && (row.ass_ref_id || row.std_id || row.student_ref || row.student_id_number) || '',
+    std_id: row && (row.std_id || row.ass_ref_id || row.student_ref || row.student_id_number) || '',
+    student_name: row && (row.student_name || row.candidate_name || row.full_name) || '',
+    first_name: row && row.first_name || '',
+    surname: row && row.surname || '',
+    other_names: row && row.other_names || '',
+    passport_url: row && (row.passport_url || row.photo_url || row.photo) || '',
+    classes: row && row.classes || null,
+    class_name: row && row.class_name || ''
+  };
 }
 function studentIsCompleted(student) {
   return String(student && student.status || '').trim().toLowerCase() === 'completed' ||
@@ -493,7 +568,7 @@ function renderRecords() {
   }
   document.getElementById('recordsBody').innerHTML = rows.length ? rows.map(function(row) {
     var rowStatus = normalizeStatus(row.status);
-    var student = row.students || {};
+    var student = rowStudent(row);
     var cls = rowClassName(row);
     var req = row.clearance_requirements || {};
     var assigned = row.assigned_staff ? row.assigned_staff.full_name : 'Any matching staff';
@@ -506,18 +581,18 @@ function renderRecords() {
     } else if (rowStatus === 'Declined') {
       action = '<button class="btn btn--success" data-review="Cleared" data-id="' + row.id + '" title="Clear after remarks are fulfilled">Clear</button>';
     }
-    return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(rowStatus) + '">' + escapeHtml(rowStatus) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td>' + action + '</td></tr>';
-  }).join('') : '<tr><td colspan="10" class="muted">No clearance records found.</td></tr>';
+    return '<tr><td>' + clearancePhotoCell(row) + '</td><td>' + escapeHtml(student.ass_ref_id || student.std_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(rowStatus) + '">' + escapeHtml(rowStatus) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td>' + action + '</td></tr>';
+  }).join('') : '<tr><td colspan="11" class="muted">No clearance records found.</td></tr>';
   if (staffView) {
     document.getElementById('clearedBody').innerHTML = clearedRows.length ? clearedRows.map(function(row) {
       var rowStatus = normalizeStatus(row.status);
-      var student = row.students || {};
+      var student = rowStudent(row);
       var cls = rowClassName(row);
       var req = row.clearance_requirements || {};
       var assigned = row.assigned_staff ? row.assigned_staff.full_name : 'Any matching staff';
       var reviewer = row.reviewer ? row.reviewer.full_name : (rowStatus === 'Cleared' ? (assigned !== 'Any matching staff' ? assigned : row.position_title || 'Admin update') : '');
-      return '<tr><td>' + escapeHtml(student.ass_ref_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(rowStatus) + '">' + escapeHtml(rowStatus) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td><span class="muted">Reviewed</span></td></tr>';
-    }).join('') : '<tr><td colspan="10" class="muted">No cleared students found.</td></tr>';
+      return '<tr><td>' + clearancePhotoCell(row) + '</td><td>' + escapeHtml(student.ass_ref_id || student.std_id || '') + '</td><td>' + escapeHtml(studentName(student)) + '</td><td>' + escapeHtml(cls || '') + '</td><td>' + escapeHtml(req.title || '') + '</td><td>' + escapeHtml(row.position_title || '') + '</td><td>' + escapeHtml(assigned) + '</td><td><span class="status-pill ' + statusClass(rowStatus) + '">' + escapeHtml(rowStatus) + '</span></td><td>' + escapeHtml(row.reason || '') + '</td><td>' + escapeHtml(reviewer) + '</td><td><span class="muted">Reviewed</span></td></tr>';
+    }).join('') : '<tr><td colspan="11" class="muted">No cleared students found.</td></tr>';
   }
   document.querySelectorAll('[data-review]').forEach(function(button) { button.addEventListener('click', function() { reviewRecord(button.dataset.id, button.dataset.review); }); });
 }

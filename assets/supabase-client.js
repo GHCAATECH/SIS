@@ -1740,7 +1740,7 @@
     }
     var query = c
       .from('student_clearances')
-      .select('*, students(id, ass_ref_id, first_name, surname, other_names, status, student_level, classes(name, programmes(name))), clearance_requirements(title, is_required), assigned_staff:staff_users!student_clearances_assigned_staff_user_id_fkey(id, full_name, staff_id), reviewer:staff_users!student_clearances_reviewed_by_fkey(id, full_name, staff_id)')
+      .select('*, students(id, ass_ref_id, first_name, surname, other_names, status, student_level, passport_url, classes(name, programmes(name))), clearance_requirements(title, is_required), assigned_staff:staff_users!student_clearances_assigned_staff_user_id_fkey(id, full_name, staff_id), reviewer:staff_users!student_clearances_reviewed_by_fkey(id, full_name, staff_id)')
       .eq('school_id', school.id)
       .order('created_at', { ascending: false });
     if (resolvedStudentId) query = query.eq('student_id', resolvedStudentId);
