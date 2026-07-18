@@ -97,12 +97,63 @@ as $function$
         )
       )
   ),
+  assignment_with_students as (
+    select stat.*
+    from assignment_stats stat
+    where stat.total_assigned > 0
+  ),
+  unassigned_with_students as (
+    select
+      class_row.id as class_id,
+      class_row.name as class_name,
+      subject.id as subject_id,
+      subject.name as subject_name,
+      subject.code as subject_code,
+      student_count.total_assigned
+    from school_context context
+    join public.classes class_row on class_row.school_id = context.school_id
+    join public.class_subjects class_subject on class_subject.class_id = class_row.id
+    join public.subjects subject on subject.id = class_subject.subject_id
+    cross join lateral (
+      select count(*)::integer as total_assigned
+      from public.students student
+      where student.school_id = context.school_id
+        and student.class_id = class_row.id
+        and coalesce(lower(student.status), 'active') not in ('deleted', 'transferred', 'dropped', 'completed')
+        and (
+          nullif(p_year_level, '') is null
+          or lower(coalesce(nullif(student.student_level, ''), nullif(class_row.year_level, ''), '')) = lower(p_year_level)
+        )
+    ) student_count
+    where student_count.total_assigned > 0
+      and (
+        nullif(p_year_level, '') is null
+        or lower(coalesce(class_row.year_level, '')) = lower(p_year_level)
+        or exists (
+          select 1
+          from public.students assigned_student
+          where assigned_student.school_id = context.school_id
+            and assigned_student.class_id = class_row.id
+            and lower(coalesce(assigned_student.student_level, '')) = lower(p_year_level)
+            and coalesce(lower(assigned_student.status), 'active') not in ('deleted', 'transferred', 'dropped', 'completed')
+        )
+      )
+      and not exists (
+        select 1
+        from public.staff_subject_classes staff_assignment
+        join public.staff_users assigned_staff on assigned_staff.id = staff_assignment.staff_user_id
+        where staff_assignment.school_id = context.school_id
+          and staff_assignment.class_id = class_row.id
+          and staff_assignment.subject_id = subject.id
+          and coalesce(assigned_staff.status, 'Active') = 'Active'
+      )
+  ),
   capture_summary as (
     select
       coalesce(sum(stat.total_assigned), 0)::integer as expected_total,
       coalesce(sum(stat.captured), 0)::integer as captured_total,
       count(distinct stat.staff_user_id)::integer as teacher_total
-    from assignment_stats stat
+    from assignment_with_students stat
   ),
   score_summary as (
     select coalesce(round(avg(
@@ -158,7 +209,24 @@ as $function$
           'captured', stat.captured,
           'not_captured', greatest(stat.total_assigned - stat.captured, 0)
         ) order by stat.teacher_name, stat.class_name, stat.subject_name)
-        from assignment_stats stat
+        from assignment_with_students stat
+      ), '[]'::jsonb),
+      'unassigned_assignments', coalesce((
+        select jsonb_agg(jsonb_build_object(
+          'staff_user_id', null,
+          'teacher_name', 'UNASSIGNED',
+          'phone_number', '',
+          'email', '',
+          'class_id', unassigned.class_id,
+          'class_name', unassigned.class_name,
+          'subject_id', unassigned.subject_id,
+          'subject_name', unassigned.subject_name,
+          'subject_code', unassigned.subject_code,
+          'total_assigned', unassigned.total_assigned,
+          'captured', 0,
+          'not_captured', unassigned.total_assigned
+        ) order by unassigned.class_name, unassigned.subject_name)
+        from unassigned_with_students unassigned
       ), '[]'::jsonb)
     ) as payload
     from school_context context

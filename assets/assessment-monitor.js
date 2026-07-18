@@ -7,6 +7,7 @@
   var activeTeacherRows = [];
   var activeTeacherTotal = 0;
   var lastMonitorPayload = null;
+  var teacherListMode = 'assigned';
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -93,7 +94,8 @@
       captured: captured,
       notCaptured: Math.max(expected - captured, 0),
       teacherTotal: Number(payload.teacher_total || 0),
-      teachers: Array.isArray(payload.teachers) ? payload.teachers : []
+      teachers: Array.isArray(payload.teachers) ? payload.teachers : [],
+      unassignedAssignments: Array.isArray(payload.unassigned_assignments) ? payload.unassigned_assignments : []
     };
   }
 
@@ -112,14 +114,13 @@
       activeRows = [payloadToRow(lastMonitorPayload, filters)];
       renderMonitorRows(activeRows);
       if (options.openTeacherList) {
-        var teacherRows = activeRows[0].teachers || [];
-        if (options.onlyNotCaptured) {
-          teacherRows = teacherRows.filter(function (row) { return Number(row.not_captured || 0) > 0; });
-        }
+        var teacherRows = options.onlyUnassigned ?
+          (activeRows[0].unassignedAssignments || []) :
+          (activeRows[0].teachers || []);
         openTeacherModal(Object.assign({}, activeRows[0], {
           teachers: teacherRows,
           teacherTotal: countUniqueTeachers(teacherRows)
-        }), options.keepSearch);
+        }), options.keepSearch, options.onlyUnassigned ? 'unassigned' : 'assigned');
       }
       if (!options.silent) Portal.toast('School assessment monitor loaded.');
       return activeRows[0];
@@ -140,7 +141,7 @@
   function countUniqueTeachers(rows) {
     var ids = {};
     (rows || []).forEach(function (row) {
-      ids[row.staff_user_id || row.teacher_name] = true;
+      if (row.staff_user_id) ids[row.staff_user_id] = true;
     });
     return Object.keys(ids).length;
   }
@@ -150,11 +151,12 @@
   }
 
   function showUnassigned() {
-    return loadMonitor(selectedFilters(false), { openTeacherList: true, onlyNotCaptured: true });
+    return loadMonitor(selectedFilters(false), { openTeacherList: true, onlyUnassigned: true });
   }
 
-  function openTeacherModal(row, keepSearch) {
+  function openTeacherModal(row, keepSearch, listMode) {
     var teachers = row && Array.isArray(row.teachers) ? row.teachers : [];
+    teacherListMode = listMode || 'assigned';
     activeTeacherRows = teachers.slice();
     activeTeacherTotal = countUniqueTeachers(teachers);
     document.getElementById('teacherMode').value = document.getElementById('monitorMode').value;
@@ -182,7 +184,11 @@
     document.getElementById('teacherTotal').textContent = query ? countUniqueTeachers(filtered) : activeTeacherTotal;
 
     if (!visible.length) {
-      body.innerHTML = '<tr><td class="monitor-empty" colspan="9">No teacher assignment records found for the selected assessment mode and semester.</td></tr>';
+      body.innerHTML = '<tr><td class="monitor-empty" colspan="9">' +
+        (teacherListMode === 'unassigned' ?
+          'No class/subject with students is currently unassigned.' :
+          'No assigned staff records with students were found for the selected assessment mode and semester.') +
+        '</td></tr>';
       return;
     }
 
@@ -208,7 +214,12 @@
   async function refreshTeacherFilters() {
     document.getElementById('monitorMode').value = document.getElementById('teacherMode').value;
     document.getElementById('monitorSemester').value = document.getElementById('teacherSemester').value;
-    await loadMonitor(selectedFilters(true), { openTeacherList: true, keepSearch: true, silent: true });
+    await loadMonitor(selectedFilters(true), {
+      openTeacherList: true,
+      onlyUnassigned: teacherListMode === 'unassigned',
+      keepSearch: true,
+      silent: true
+    });
   }
 
   function downloadWorkbook(fileName, headers, rows) {

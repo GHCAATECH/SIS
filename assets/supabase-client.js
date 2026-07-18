@@ -1224,11 +1224,13 @@
           academicYear: filters.academicYear || '',
           yearLevel: filters.yearLevel || '',
           semester: filters.semester || ''
-        })
+        }),
+        listClasses()
       ]);
       var students = fallbackResults[0] || [];
       var staffRows = fallbackResults[1] || [];
       var records = fallbackResults[2] || [];
+      var classRows = fallbackResults[3] || [];
       var assignmentLists = await Promise.all(staffRows.map(function(staff) {
         return listStaffSubjectClasses(staff.id).catch(function() { return []; });
       }));
@@ -1244,6 +1246,7 @@
 
       var teacherRows = [];
       staffRows.forEach(function(staff, staffIndex) {
+        if (String(staff.status || 'Active').toLowerCase() !== 'active') return;
         (assignmentLists[staffIndex] || []).forEach(function(assignment) {
           var classStudents = activeStudents.filter(function(student) {
             var classInfo = student.classes || {};
@@ -1281,13 +1284,39 @@
         });
       });
       teacherRows = teacherRows.filter(function(row) {
-        if (!filters.yearLevel) return true;
-        var matchingClassStudent = activeStudents.some(function(student) {
+        return Number(row.total_assigned || 0) > 0;
+      });
+      var assignedKeys = {};
+      teacherRows.forEach(function(row) {
+        assignedKeys[String(row.class_id) + '|' + String(row.subject_id)] = true;
+      });
+      var unassignedRows = [];
+      classRows.forEach(function(classRow) {
+        var classStudents = activeStudents.filter(function(student) {
           var classInfo = student.classes || {};
-          return (String(student.class_id || classInfo.id || '') === String(row.class_id || '') || classInfo.name === row.class_name) &&
-            String(student.student_level || classInfo.year_level || '').toLowerCase() === String(filters.yearLevel).toLowerCase();
+          var sameClass = String(student.class_id || classInfo.id || '') === String(classRow.id || '') || classInfo.name === classRow.name;
+          var yearLevel = student.student_level || classInfo.year_level || classRow.year_level || '';
+          return sameClass && (!filters.yearLevel || String(yearLevel).toLowerCase() === String(filters.yearLevel).toLowerCase());
         });
-        return matchingClassStudent || row.total_assigned > 0;
+        if (!classStudents.length) return;
+        (classRow.subjectLinks || []).forEach(function(subject) {
+          var key = String(classRow.id) + '|' + String(subject.id);
+          if (assignedKeys[key]) return;
+          unassignedRows.push({
+            staff_user_id: null,
+            teacher_name: 'UNASSIGNED',
+            phone_number: '',
+            email: '',
+            class_id: classRow.id,
+            class_name: classRow.name || '',
+            subject_id: subject.id,
+            subject_name: subject.name || '',
+            subject_code: subject.code || '',
+            total_assigned: classStudents.length,
+            captured: 0,
+            not_captured: classStudents.length
+          });
+        });
       });
       var expectedTotal = teacherRows.reduce(function(total, row) { return total + Number(row.total_assigned || 0); }, 0);
       var capturedTotal = teacherRows.reduce(function(total, row) { return total + Number(row.captured || 0); }, 0);
@@ -1307,7 +1336,8 @@
         percentage_completed: expectedTotal ? Number(((capturedTotal / expectedTotal) * 100).toFixed(2)) : 0,
         mean_mark: normalizedScores.length ? Number((normalizedScores.reduce(function(a, b) { return a + b; }, 0) / normalizedScores.length).toFixed(2)) : 0,
         teacher_total: Object.keys(teacherIds).length,
-        teachers: teacherRows
+        teachers: teacherRows,
+        unassigned_assignments: unassignedRows
       };
     } catch (fallbackError) {
       throw new Error('Run the school assessment monitor SQL in Supabase, then refresh this page. ' + (fallbackError.message || ''));
