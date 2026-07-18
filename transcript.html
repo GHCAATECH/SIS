@@ -33,12 +33,45 @@
   .download-space::before { top:5px; border-bottom:10px solid #8b8b8b; }
   .download-space::after { bottom:5px; border-top:10px solid #8b8b8b; }
   .download-placeholder { display:grid; min-height:330px; place-items:center; color:var(--text-soft); font-weight:800; text-align:center; }
-  .transcript-filter-table { width:100%; min-width:900px; border-collapse:collapse; }
+  .transcript-filter-table { width:100%; min-width:980px; border-collapse:collapse; }
   .transcript-filter-table th,
   .transcript-filter-table td { padding:10px 12px; border:1px solid var(--border); text-align:left; white-space:nowrap; vertical-align:middle; }
   .transcript-filter-table th { position:sticky; top:0; z-index:2; background:rgba(245, 158, 113, .55); font-weight:900; text-transform:uppercase; }
   .transcript-filter-table .empty-row td { padding:42px 12px; text-align:center; color:var(--text-soft); font-weight:900; }
   .transcript-filter-count { padding:12px 14px; border-bottom:1px solid var(--border); font-weight:900; color:var(--brand); background:rgba(255,255,255,.5); }
+  .transcript-filter-photo {
+    width:48px;
+    height:54px;
+    margin:0 auto;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    border:1px solid rgba(148,163,184,.45);
+    border-radius:8px;
+    background:#f1f8ed;
+  }
+  .transcript-filter-photo img {
+    grid-area:1 / 1;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    background:#fff;
+    position:relative;
+    z-index:2;
+  }
+  .transcript-filter-photo span {
+    grid-area:1 / 1;
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    border-radius:50%;
+    background:#5cab4f;
+    color:#fff;
+    font-weight:900;
+    font-size:13px;
+    line-height:1;
+  }
   .student-report-mode #downloadTranscriptModule { display:none; }
   .admin-download-mode #studentTranscriptReport { display:none; }
   .admin-download-mode .page-head { display:none; }
@@ -302,6 +335,10 @@ function passportHtml(profile) {
   var fallback = '<span>'+profileInitials(profile)+'</span>';
   if (!profile.passport_url) return fallback;
   return '<img src="'+safeAttribute(profile.passport_url)+'" alt="Student passport photo" onerror="this.remove()">'+fallback;
+}
+
+function transcriptFilterPassportHtml(student) {
+  return '<div class="transcript-filter-photo">' + passportHtml(profileFromStudent(student)) + '</div>';
 }
 
 var GRADE_SCALE = [
@@ -930,7 +967,7 @@ function profileFromStudent(student) {
     gender: student.gender || '-',
     date_of_birth: student.date_of_birth,
     year_admitted: student.year_admitted || '-',
-    passport_url: student.passport_url || student.photoUrl || student.profile_photo || ''
+    passport_url: student.passport_url || student.passportUrl || student.photo_url || student.photoUrl || student.profile_photo || student.photo || ''
   };
 }
 
@@ -983,10 +1020,11 @@ function renderTranscriptFilterResults(students, message) {
   }
   area.innerHTML = '<div class="transcript-filter-count">Students Found: '+filteredTranscriptStudents.length+'</div>' +
     '<table class="transcript-filter-table">' +
-      '<thead><tr><th>STD_ID</th><th>Student Name</th><th>Programme</th><th>Class</th><th>Year</th></tr></thead>' +
+      '<thead><tr><th>PPT PIC</th><th>STD_ID</th><th>Student Name</th><th>Programme</th><th>Class</th><th>Year</th></tr></thead>' +
       '<tbody>' +
         filteredTranscriptStudents.map(function(student) {
           return '<tr>' +
+            '<td>'+transcriptFilterPassportHtml(student)+'</td>' +
             '<td>'+safeAttribute(studentRef(student))+'</td>' +
             '<td>'+safeAttribute(studentFullName(student))+'</td>' +
             '<td>'+safeAttribute(studentProgrammeName(student) || '-')+'</td>' +
