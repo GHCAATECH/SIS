@@ -85,6 +85,23 @@
     color:#111;
     overflow:visible !important;
   }
+  .transcript-pdf-export-host {
+    display:block !important;
+    position:absolute;
+    left:0;
+    top:0;
+    z-index:2147483647;
+    width:210mm;
+    max-width:210mm;
+    min-height:297mm;
+    overflow:visible !important;
+    background:#fff;
+    color:#111;
+    visibility:visible !important;
+    opacity:1 !important;
+    transform:none !important;
+    pointer-events:none;
+  }
   .printing-transcripts #downloadTranscriptModule, .printing-transcripts .page-head { display:none; }
   .printing-transcripts #batchTranscriptArea { display:block; }
   .print-transcript { page-break-after:always; padding:22px; background:#fff; border:1px solid rgba(128,128,128,.3); margin-bottom:18px; }
@@ -1088,22 +1105,19 @@ function downloadTranscriptHtmlFile(filename, html) {
   setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
 }
 
-function prepareTranscriptExportArea(area, html) {
-  area.innerHTML = html;
-  area.classList.add('transcript-exporting');
-  area.style.display = 'block';
-  area.style.width = '210mm';
-  area.style.maxWidth = '210mm';
-  area.style.minHeight = '297mm';
-  area.style.height = 'auto';
-  area.style.overflow = 'visible';
-  area.style.background = '#fff';
-  area.style.color = '#111';
+function createTranscriptExportHost(html) {
+  var oldHost = document.getElementById('transcriptPdfExportHost');
+  if (oldHost) oldHost.remove();
+  var host = document.createElement('div');
+  host.id = 'transcriptPdfExportHost';
+  host.className = 'transcript-pdf-export-host';
+  host.innerHTML = html;
+  document.body.appendChild(host);
+  return host;
 }
 
-function resetTranscriptExportArea(area) {
-  area.classList.remove('transcript-exporting');
-  area.removeAttribute('style');
+function removeTranscriptExportHost(host) {
+  if (host && host.parentNode) host.parentNode.removeChild(host);
 }
 
 function waitForTranscriptLayout(area) {
@@ -1124,11 +1138,14 @@ async function saveTranscriptFile(students) {
   }
   var cards = await buildTranscriptCards(students);
   var html = cards.join('');
-  var area = document.getElementById('batchTranscriptArea');
-  prepareTranscriptExportArea(area, html);
-  document.body.classList.add('printing-transcripts');
-  await waitForTranscriptLayout(area);
-  await waitForTranscriptImages();
+  if (!html.trim()) {
+    Portal.toast('No transcript content was created for the selected filter.', true);
+    return;
+  }
+  var exportHost = createTranscriptExportHost(html);
+  await waitForTranscriptLayout(exportHost);
+  await waitForTranscriptImages('#transcriptPdfExportHost');
+  await new Promise(function(resolve) { setTimeout(resolve, 250); });
 
   var firstRef = students.length === 1 ? studentRef(students[0]) : '';
   var className = document.getElementById('downloadClass').value || (students[0] && studentClassName(students[0])) || 'class';
@@ -1137,20 +1154,29 @@ async function saveTranscriptFile(students) {
 
   try {
     if (window.html2pdf) {
-      var areaBox = area.getBoundingClientRect();
+      var areaBox = exportHost.getBoundingClientRect();
       if (!areaBox.width || !areaBox.height) {
         throw new Error('Transcript export area was empty.');
       }
+      var canvasOptions = {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: Math.ceil(exportHost.scrollWidth || areaBox.width),
+        windowHeight: Math.ceil(exportHost.scrollHeight || areaBox.height)
+      };
       await window.html2pdf()
         .set({
           filename: filename,
           margin: 0,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
+          html2canvas: canvasOptions,
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
         })
-        .from(area)
+        .from(exportHost)
         .save();
     } else {
       downloadTranscriptHtmlFile(filename, html);
@@ -1161,8 +1187,7 @@ async function saveTranscriptFile(students) {
     downloadTranscriptHtmlFile(filename, html);
     Portal.toast('Could not build PDF, so an HTML transcript file was downloaded.', true);
   } finally {
-    document.body.classList.remove('printing-transcripts');
-    resetTranscriptExportArea(area);
+    removeTranscriptExportHost(exportHost);
   }
 }
 
