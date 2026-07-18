@@ -48,6 +48,10 @@ as $function$
         where student.school_id = context.school_id
           and student.class_id = assignment.class_id
           and coalesce(lower(student.status), 'active') not in ('deleted', 'transferred', 'dropped', 'completed')
+          and (
+            nullif(p_year_level, '') is null
+            or lower(coalesce(nullif(student.student_level, ''), nullif(class_row.year_level, ''), '')) = lower(p_year_level)
+          )
       ) as total_assigned,
       (
         select count(distinct score.student_id)::integer
@@ -72,7 +76,26 @@ as $function$
     join public.classes class_row on class_row.id = assignment.class_id
     join public.subjects subject on subject.id = assignment.subject_id
     where coalesce(staff.status, 'Active') = 'Active'
-      and (nullif(p_year_level, '') is null or lower(class_row.year_level) = lower(p_year_level))
+      and (
+        nullif(p_year_level, '') is null
+        or lower(coalesce(class_row.year_level, '')) = lower(p_year_level)
+        or exists (
+          select 1
+          from public.students assigned_student
+          where assigned_student.school_id = context.school_id
+            and assigned_student.class_id = assignment.class_id
+            and lower(coalesce(assigned_student.student_level, '')) = lower(p_year_level)
+            and coalesce(lower(assigned_student.status), 'active') not in ('deleted', 'transferred', 'dropped', 'completed')
+        )
+        or exists (
+          select 1
+          from public.assessments assigned_assessment
+          where assigned_assessment.school_id = context.school_id
+            and assigned_assessment.class_id = assignment.class_id
+            and lower(coalesce(assigned_assessment.year_level, '')) = lower(p_year_level)
+            and (nullif(p_academic_year, '') is null or assigned_assessment.academic_year = p_academic_year)
+        )
+      )
   ),
   capture_summary as (
     select

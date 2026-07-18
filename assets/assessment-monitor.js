@@ -156,7 +156,7 @@
   function openTeacherModal(row, keepSearch) {
     var teachers = row && Array.isArray(row.teachers) ? row.teachers : [];
     activeTeacherRows = teachers.slice();
-    activeTeacherTotal = Number(row && row.teacherTotal) || countUniqueTeachers(teachers);
+    activeTeacherTotal = countUniqueTeachers(teachers);
     document.getElementById('teacherMode').value = document.getElementById('monitorMode').value;
     document.getElementById('teacherSemester').value = document.getElementById('monitorSemester').value;
     if (!keepSearch) document.getElementById('teacherSearch').value = '';
