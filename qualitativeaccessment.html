@@ -655,9 +655,9 @@ async function loadSetup() {
   students = localStudents();
   classes = [];
   if (window.AxiomDB && AxiomDB.isConfigured()) {
-    var staffScoped = isFormMasterUser() && !isSchoolAdminUser();
+    var secureQualitativeUser = isSchoolAdminUser() || isFormMasterUser();
     try {
-      if (staffScoped) {
+      if (secureQualitativeUser) {
         if (!AxiomDB.qualitativeAssessmentSetup) {
           throw new Error('Run the form master qualitative assessment SQL in Supabase, then logout and login again.');
         }
@@ -675,7 +675,7 @@ async function loadSetup() {
       console.error(err);
       var message = err && err.message ? err.message : 'Could not load qualitative assessment data.';
       Portal.toast(message, true);
-      if (staffScoped) {
+      if (secureQualitativeUser) {
         students = [];
         classes = [];
         populateFilters();
