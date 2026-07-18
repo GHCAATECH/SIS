@@ -89,13 +89,13 @@
       yearLevel: filters.yearLevel,
       mode: filters.modeName,
       semester: filters.semester,
-      registered: Number(payload.total_students || 0),
+      registered: Number(payload.selected_year_students || 0),
       expected: expected,
       captured: captured,
       notCaptured: Math.max(expected - captured, 0),
       teacherTotal: Number(payload.teacher_total || 0),
       teachers: Array.isArray(payload.teachers) ? payload.teachers : [],
-      unassignedAssignments: Array.isArray(payload.unassigned_assignments) ? payload.unassigned_assignments : []
+      unassignedStudents: Array.isArray(payload.unassigned_students) ? payload.unassigned_students : []
     };
   }
 
@@ -115,11 +115,11 @@
       renderMonitorRows(activeRows);
       if (options.openTeacherList) {
         var teacherRows = options.onlyUnassigned ?
-          (activeRows[0].unassignedAssignments || []) :
+          (activeRows[0].unassignedStudents || []) :
           (activeRows[0].teachers || []);
         openTeacherModal(Object.assign({}, activeRows[0], {
           teachers: teacherRows,
-          teacherTotal: countUniqueTeachers(teacherRows)
+          teacherTotal: options.onlyUnassigned ? countUniqueStudents(teacherRows) : countUniqueTeachers(teacherRows)
         }), options.keepSearch, options.onlyUnassigned ? 'unassigned' : 'assigned');
       }
       if (!options.silent) Portal.toast('School assessment monitor loaded.');
@@ -146,6 +146,14 @@
     return Object.keys(ids).length;
   }
 
+  function countUniqueStudents(rows) {
+    var ids = {};
+    (rows || []).forEach(function (row) {
+      if (row.student_id || row.ass_ref_id) ids[row.student_id || row.ass_ref_id] = true;
+    });
+    return Object.keys(ids).length;
+  }
+
   function runFilter() {
     return loadMonitor(selectedFilters(false));
   }
@@ -158,7 +166,8 @@
     var teachers = row && Array.isArray(row.teachers) ? row.teachers : [];
     teacherListMode = listMode || 'assigned';
     activeTeacherRows = teachers.slice();
-    activeTeacherTotal = countUniqueTeachers(teachers);
+    activeTeacherTotal = teacherListMode === 'unassigned' ? countUniqueStudents(teachers) : countUniqueTeachers(teachers);
+    document.getElementById('teacherTotalLabel').textContent = teacherListMode === 'unassigned' ? 'UNASSIGNED STUDENTS' : 'TOTAL STAFF';
     document.getElementById('teacherMode').value = document.getElementById('monitorMode').value;
     document.getElementById('teacherSemester').value = document.getElementById('monitorSemester').value;
     if (!keepSearch) document.getElementById('teacherSearch').value = '';
@@ -167,6 +176,12 @@
   }
 
   function teacherSearchText(row) {
+    if (teacherListMode === 'unassigned') {
+      return [
+        row.ass_ref_id, row.student_name, row.gender, row.year_level,
+        row.class_name, row.subject_name, row.subject_code, row.status
+      ].join(' ').toLowerCase();
+    }
     return [
       row.teacher_name, row.phone_number, row.email, row.class_name, row.subject_name,
       row.total_assigned, row.captured, row.not_captured
@@ -181,14 +196,42 @@
       return !query || teacherSearchText(row).indexOf(query) > -1;
     });
     var visible = filtered.slice(0, limit);
-    document.getElementById('teacherTotal').textContent = query ? countUniqueTeachers(filtered) : activeTeacherTotal;
+    document.getElementById('teacherReportTable').classList.toggle('is-unassigned', teacherListMode === 'unassigned');
+    document.getElementById('teacherTotal').textContent = query ?
+      (teacherListMode === 'unassigned' ? countUniqueStudents(filtered) : countUniqueTeachers(filtered)) :
+      activeTeacherTotal;
+
+    if (teacherListMode === 'unassigned') {
+      document.getElementById('teacherTableHead').innerHTML =
+        '<th>ROW_NUM</th><th>STD_ID</th><th>STUDENT_NAME</th><th>GENDER</th><th>YEAR</th><th>CLASS</th><th>SUBJECT</th><th>SUBJECT_CODE</th><th>STATUS</th>';
+    } else {
+      document.getElementById('teacherTableHead').innerHTML =
+        '<th>ROW_NUM</th><th>TEACHER_NAME</th><th>PHONE_NO</th><th>EMAIL</th><th>CLASS</th><th>SUBJECT</th><th>TOTAL_ASSIGNED</th><th>CAPTURED</th><th>NOT_CAPTURED</th>';
+    }
 
     if (!visible.length) {
       body.innerHTML = '<tr><td class="monitor-empty" colspan="9">' +
         (teacherListMode === 'unassigned' ?
-          'No class/subject with students is currently unassigned.' :
+          'Every active student subject in the selected year has a staff assignment.' :
           'No assigned staff records with students were found for the selected assessment mode and semester.') +
         '</td></tr>';
+      return;
+    }
+
+    if (teacherListMode === 'unassigned') {
+      body.innerHTML = visible.map(function (row, index) {
+        return '<tr>' +
+          '<td>' + (index + 1) + '</td>' +
+          '<td>' + escapeHtml(row.ass_ref_id || '') + '</td>' +
+          '<td title="' + escapeHtml(row.student_name || '') + '">' + escapeHtml(row.student_name || '') + '</td>' +
+          '<td>' + escapeHtml(row.gender || '') + '</td>' +
+          '<td>' + escapeHtml(row.year_level || '') + '</td>' +
+          '<td>' + escapeHtml(row.class_name || '') + '</td>' +
+          '<td title="' + escapeHtml(row.subject_name || '') + '">' + escapeHtml(row.subject_name || '') + '</td>' +
+          '<td>' + escapeHtml(row.subject_code || '') + '</td>' +
+          '<td>' + escapeHtml(row.status || 'UNASSIGNED') + '</td>' +
+        '</tr>';
+      }).join('');
       return;
     }
 
@@ -244,6 +287,15 @@
   }
 
   function downloadTeacherWorkbook() {
+    if (teacherListMode === 'unassigned') {
+      downloadWorkbook('unassigned-student-subjects.xls',
+        ['ROW_NUM', 'STD_ID', 'STUDENT_NAME', 'GENDER', 'YEAR', 'CLASS', 'SUBJECT', 'SUBJECT_CODE', 'STATUS'],
+        activeTeacherRows.map(function (row, index) {
+          return [index + 1, row.ass_ref_id, row.student_name, row.gender, row.year_level, row.class_name, row.subject_name, row.subject_code, row.status || 'UNASSIGNED'];
+        })
+      );
+      return;
+    }
     downloadWorkbook('teacher-assessment-monitor.xls',
       ['ROW_NUM', 'TEACHER_NAME', 'PHONE_NO', 'EMAIL', 'CLASS', 'SUBJECT', 'TOTAL_ASSIGNED', 'CAPTURED', 'NOT_CAPTURED'],
       activeTeacherRows.map(function (row, index) {

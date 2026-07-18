@@ -1302,21 +1302,27 @@
         (classRow.subjectLinks || []).forEach(function(subject) {
           var key = String(classRow.id) + '|' + String(subject.id);
           if (assignedKeys[key]) return;
-          unassignedRows.push({
-            staff_user_id: null,
-            teacher_name: 'UNASSIGNED',
-            phone_number: '',
-            email: '',
-            class_id: classRow.id,
-            class_name: classRow.name || '',
-            subject_id: subject.id,
-            subject_name: subject.name || '',
-            subject_code: subject.code || '',
-            total_assigned: classStudents.length,
-            captured: 0,
-            not_captured: classStudents.length
+          classStudents.forEach(function(student) {
+            unassignedRows.push({
+              student_id: student.id,
+              ass_ref_id: student.ass_ref_id || '',
+              student_name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase(),
+              gender: student.gender || '',
+              year_level: student.student_level || (student.classes && student.classes.year_level) || classRow.year_level || '',
+              class_id: classRow.id,
+              class_name: classRow.name || '',
+              subject_id: subject.id,
+              subject_name: subject.name || '',
+              subject_code: subject.code || '',
+              status: 'UNASSIGNED'
+            });
           });
         });
+      });
+      var selectedYearStudents = activeStudents.filter(function(student) {
+        var classInfo = student.classes || {};
+        var yearLevel = student.student_level || classInfo.year_level || '';
+        return !filters.yearLevel || String(yearLevel).toLowerCase() === String(filters.yearLevel).toLowerCase();
       });
       var expectedTotal = teacherRows.reduce(function(total, row) { return total + Number(row.total_assigned || 0); }, 0);
       var capturedTotal = teacherRows.reduce(function(total, row) { return total + Number(row.captured || 0); }, 0);
@@ -1331,13 +1337,14 @@
         school_code: school.code || activeSchoolCode(),
         school_name: school.name || '',
         total_students: activeStudents.length,
+        selected_year_students: selectedYearStudents.length,
         expected_total: expectedTotal,
         captured_total: capturedTotal,
         percentage_completed: expectedTotal ? Number(((capturedTotal / expectedTotal) * 100).toFixed(2)) : 0,
         mean_mark: normalizedScores.length ? Number((normalizedScores.reduce(function(a, b) { return a + b; }, 0) / normalizedScores.length).toFixed(2)) : 0,
         teacher_total: Object.keys(teacherIds).length,
         teachers: teacherRows,
-        unassigned_assignments: unassignedRows
+        unassigned_students: unassignedRows
       };
     } catch (fallbackError) {
       throw new Error('Run the school assessment monitor SQL in Supabase, then refresh this page. ' + (fallbackError.message || ''));
