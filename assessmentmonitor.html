@@ -244,7 +244,7 @@
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 18px;
+    padding: 8px;
     background: rgba(0,43,76,.45);
   }
 
@@ -253,28 +253,158 @@
   }
 
   .monitor-modal-box {
-    width: min(760px, 96vw);
-    max-height: 84vh;
-    overflow: auto;
+    width: min(1510px, 99vw);
+    height: min(650px, 94vh);
+    max-height: 94vh;
+    overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    background: #C0EBFF;
+    border-radius: 6px;
+    background: #fff;
     box-shadow: 0 18px 45px rgba(0,43,76,.22);
+    display: flex;
+    flex-direction: column;
   }
 
   .monitor-modal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(245,158,113,.55);
-    font-weight: 900;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .monitor-modal-body {
-    padding: 12px 14px 16px;
+    min-height: 0;
+    padding: 16px 10px 8px;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .teacher-report-filters {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1.15fr) minmax(220px, 1fr) auto;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .teacher-report-filters select {
+    width: 100%;
+    height: 34px;
+    border: 1px solid rgba(0,43,76,.35);
+    border-radius: 3px;
+    background: #fff;
+    color: #002B4C;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .teacher-total-pill {
+    min-height: 46px;
+    border: 1px solid rgba(0,43,76,.22);
+    border-radius: 17px;
+    background: #f3f7fb;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.05;
+  }
+
+  .teacher-total-pill strong {
+    display: block;
+    color: #07820a !important;
+    font-size: 22px;
+  }
+
+  .teacher-report-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .teacher-report-tools select,
+  .teacher-report-tools input {
+    height: 28px;
+    border: 1px solid rgba(0,43,76,.4);
+    border-radius: 2px;
+    background: #fff;
+    color: #002B4C;
+    padding: 3px 6px;
+  }
+
+  .teacher-report-table-scroll {
+    min-height: 0;
+    flex: 1;
+    overflow: auto;
+    border: 1px solid rgba(0,43,76,.35);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .teacher-report-table {
+    width: 100%;
+    min-width: 1160px;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #fff;
+  }
+
+  .teacher-report-table th,
+  .teacher-report-table td {
+    border: 1px solid rgba(0,43,76,.25);
+    padding: 8px 9px;
+    color: #002B4C;
+    font-size: 10px;
+    line-height: 1.25;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .teacher-report-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    font-weight: 900;
+  }
+
+  .teacher-report-table th:nth-child(1),
+  .teacher-report-table td:nth-child(1) { width: 72px; }
+  .teacher-report-table th:nth-child(2),
+  .teacher-report-table td:nth-child(2) { width: 185px; text-align: left; }
+  .teacher-report-table th:nth-child(3),
+  .teacher-report-table td:nth-child(3) { width: 120px; }
+  .teacher-report-table th:nth-child(4),
+  .teacher-report-table td:nth-child(4) { width: 210px; text-align: left; }
+  .teacher-report-table th:nth-child(5),
+  .teacher-report-table td:nth-child(5) { width: 115px; text-align: left; }
+  .teacher-report-table th:nth-child(6),
+  .teacher-report-table td:nth-child(6) { width: 175px; text-align: left; }
+  .teacher-report-table th:nth-child(7),
+  .teacher-report-table td:nth-child(7),
+  .teacher-report-table th:nth-child(8),
+  .teacher-report-table td:nth-child(8),
+  .teacher-report-table th:nth-child(9),
+  .teacher-report-table td:nth-child(9) { width: 105px; }
+
+  .teacher-report-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 10px;
+    border-top: 1px solid rgba(0,43,76,.25);
+    background: #fff;
   }
 
   .monitor-empty {
@@ -310,6 +440,32 @@
 
     .monitor-table-scroll {
       max-height: calc(100vh - 430px);
+    }
+
+    .monitor-modal {
+      padding: 4px;
+    }
+
+    .monitor-modal-box {
+      width: 100vw;
+      height: 96vh;
+      max-height: 96vh;
+    }
+
+    .teacher-report-filters {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .teacher-report-filters .monitor-btn,
+    .teacher-report-tools input {
+      width: 100%;
+    }
+
+    .teacher-report-tools {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 8px;
     }
   }
 </style>
@@ -416,23 +572,58 @@
   <div class="monitor-modal-box">
     <div class="monitor-modal-head">
       <span id="teacherModalTitle">Teacher List</span>
-      <button class="monitor-btn" id="closeTeacherModal" type="button" style="min-width:42px;">X</button>
     </div>
     <div class="monitor-modal-body">
-      <div class="monitor-table-scroll" style="max-height:420px;">
-        <table class="monitor-table" style="min-width:680px;">
+      <div class="teacher-report-filters">
+        <select id="teacherMode" aria-label="Assessment mode">
+          <option>Individual Class Assessments (e.g., Classwork, Quizzes, Homework)</option>
+          <option>Mid-Sem</option>
+          <option>Practical or Portfolio or Performance Assessment (Individual)</option>
+          <option>Group Projects, Research, or Case Studies, Practical/Lab work, Workshops, Performances, Presentations (Out of Class)</option>
+          <option>Supervised Individual Termly</option>
+        </select>
+        <select id="teacherSemester" aria-label="Semester">
+          <option>1st Sem</option>
+          <option>2nd Sem</option>
+        </select>
+        <div class="teacher-total-pill">TOTAL_STAFF<strong id="teacherTotal">0</strong></div>
+        <button class="monitor-btn" id="downloadTeacherList" type="button">Download</button>
+      </div>
+
+      <div class="teacher-report-tools">
+        <label>
+          <select id="teacherPageLength">
+            <option>100</option>
+            <option>50</option>
+            <option>25</option>
+            <option>10</option>
+          </select>
+          entries per page
+        </label>
+        <label>Search: <input id="teacherSearch" type="search" aria-label="Search teacher list" /></label>
+      </div>
+
+      <div class="teacher-report-table-scroll">
+        <table class="teacher-report-table">
           <thead>
             <tr>
-              <th>Staff Name</th>
-              <th>Staff ID</th>
-              <th>Class</th>
-              <th>Subject</th>
-              <th>Status</th>
+              <th>ROW_NUM</th>
+              <th>TEACHER_NAME</th>
+              <th>PHONE_NO</th>
+              <th>EMAIL</th>
+              <th>CLASS</th>
+              <th>SUBJECT</th>
+              <th>TOTAL_ASSIGNED</th>
+              <th>CAPTURED</th>
+              <th>NOT_CAPTURED</th>
             </tr>
           </thead>
           <tbody id="teacherRows"></tbody>
         </table>
       </div>
+    </div>
+    <div class="teacher-report-footer">
+      <button class="monitor-btn" id="closeTeacherModal" type="button">Close</button>
     </div>
   </div>
 </div>
@@ -453,10 +644,17 @@ var monitorData = [
     registered: 786,
     phone: '0244791325',
     email: 'asuomshs1970@gmail.com',
+    teacherTotal: 89,
     teachers: [
-      ['Ama Owusu', 'ASH/STF/001', 'SCI_24', 'Core Mathematics', 'Assigned'],
-      ['Clement Addo', 'ASH/STF/002', 'SCI_24', 'English Language', 'Assigned'],
-      ['Lebron Asar', 'ASH/STF/003', 'SCI_24', 'Physics', 'Assigned']
+      ['ADELAIDE OSEA', '024567709', 'osaseadelaide1@gmail.com', 'G.ARTS 1_25', 'Twi (Akuapem)', 22, 22, 0],
+      ['ADELAIDE OSEA', '024567709', 'osaseadelaide1@gmail.com', 'G.ARTS 4_25', 'Twi (Akuapem)', 82, 82, 0],
+      ['AGBAGBA CHRISTIAN DANSO FOFO', '0530875800', 'CHRISFOFO6@GMAIL.COM', 'G.ARTS 1_25', 'Literature in English', 22, 22, 0],
+      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'SCI_25', 'Physical Education & Health', 48, 48, 0],
+      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 1_25', 'Physical Education & Health', 22, 22, 0],
+      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 2_25', 'Physical Education & Health', 41, 41, 0],
+      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 3_25', 'Physical Education & Health', 39, 39, 0],
+      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 4_25', 'Physical Education & Health', 82, 82, 0],
+      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 5a_25', 'Physical Education & Health', 78, 78, 0]
     ]
   }
 ];
@@ -478,6 +676,8 @@ var unassignedData = [
 ];
 
 var activeRows = [];
+var activeTeacherRows = [];
+var activeTeacherTotal = 0;
 
 function escapeHtml(value) {
   return String(value == null ? '' : value)
@@ -551,28 +751,68 @@ function showUnassigned() {
 
 function openTeacherModal(row) {
   var modal = document.getElementById('teacherModal');
-  var body = document.getElementById('teacherRows');
   var teachers = row && row.teachers ? row.teachers : [];
+  activeTeacherRows = teachers.slice();
+  activeTeacherTotal = Number(row && row.teacherTotal) || teachers.length;
+  document.getElementById('teacherMode').value = document.getElementById('monitorMode').value;
+  document.getElementById('teacherSemester').value = document.getElementById('monitorSemester').value;
+  document.getElementById('teacherSearch').value = '';
+  renderTeacherRows();
+  modal.classList.add('open');
+}
 
-  if (!teachers.length) {
-    body.innerHTML = '<tr><td class="monitor-empty" colspan="5">No teachers assigned for this monitor record.</td></tr>';
-  } else {
-    body.innerHTML = teachers.map(function(t) {
-      return '<tr>' +
-        '<td>' + escapeHtml(t[0]) + '</td>' +
-        '<td>' + escapeHtml(t[1]) + '</td>' +
-        '<td>' + escapeHtml(t[2]) + '</td>' +
-        '<td>' + escapeHtml(t[3]) + '</td>' +
-        '<td>' + escapeHtml(t[4]) + '</td>' +
-      '</tr>';
-    }).join('');
+function renderTeacherRows() {
+  var body = document.getElementById('teacherRows');
+  var query = document.getElementById('teacherSearch').value.trim().toLowerCase();
+  var limit = Number(document.getElementById('teacherPageLength').value) || 100;
+  var filtered = activeTeacherRows.filter(function(t) {
+    return !query || t.join(' ').toLowerCase().indexOf(query) > -1;
+  });
+  var visible = filtered.slice(0, limit);
+  document.getElementById('teacherTotal').textContent = query ? filtered.length : activeTeacherTotal;
+
+  if (!visible.length) {
+    body.innerHTML = '<tr><td class="monitor-empty" colspan="9">No teacher assignment records found.</td></tr>';
+    return;
   }
 
-  modal.classList.add('open');
+  body.innerHTML = visible.map(function(t, index) {
+    return '<tr>' +
+      '<td>' + (index + 1) + '</td>' +
+      '<td title="' + escapeHtml(t[0]) + '">' + escapeHtml(t[0]) + '</td>' +
+      '<td>' + escapeHtml(t[1]) + '</td>' +
+      '<td title="' + escapeHtml(t[2]) + '">' + escapeHtml(t[2]) + '</td>' +
+      '<td>' + escapeHtml(t[3]) + '</td>' +
+      '<td title="' + escapeHtml(t[4]) + '">' + escapeHtml(t[4]) + '</td>' +
+      '<td>' + escapeHtml(t[5]) + '</td>' +
+      '<td>' + escapeHtml(t[6]) + '</td>' +
+      '<td>' + escapeHtml(t[7]) + '</td>' +
+    '</tr>';
+  }).join('');
 }
 
 function closeTeacherModal() {
   document.getElementById('teacherModal').classList.remove('open');
+}
+
+function downloadTeacherWorkbook() {
+  var header = ['ROW_NUM', 'TEACHER_NAME', 'PHONE_NO', 'EMAIL', 'CLASS', 'SUBJECT', 'TOTAL_ASSIGNED', 'CAPTURED', 'NOT_CAPTURED'];
+  var html = '<html><head><meta charset="utf-8"></head><body><table border="1"><thead><tr>' +
+    header.map(function(h) { return '<th>' + escapeHtml(h) + '</th>'; }).join('') +
+    '</tr></thead><tbody>' + activeTeacherRows.map(function(t, index) {
+      return '<tr><td>' + (index + 1) + '</td>' + t.map(function(value) {
+        return '<td>' + escapeHtml(value) + '</td>';
+      }).join('') + '</tr>';
+    }).join('') + '</tbody></table></body></html>';
+  var blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'teacher-assessment-monitor.xls';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 250);
 }
 
 function downloadMonitorWorkbook() {
@@ -612,6 +852,9 @@ document.getElementById('unassignedBtn').addEventListener('click', showUnassigne
 document.getElementById('downloadBtn').addEventListener('click', downloadMonitorWorkbook);
 document.getElementById('monitorSearch').addEventListener('input', function() { renderMonitorRows(activeRows); });
 document.getElementById('closeTeacherModal').addEventListener('click', closeTeacherModal);
+document.getElementById('downloadTeacherList').addEventListener('click', downloadTeacherWorkbook);
+document.getElementById('teacherSearch').addEventListener('input', renderTeacherRows);
+document.getElementById('teacherPageLength').addEventListener('change', renderTeacherRows);
 document.getElementById('teacherModal').addEventListener('click', function(event) {
   if (event.target.id === 'teacherModal') closeTeacherModal();
 });
