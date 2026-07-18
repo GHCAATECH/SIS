@@ -25,13 +25,21 @@
   .grade-legend h4 { margin:0 0 8px; font-size:14px; color:var(--brand); }
   .download-panel { min-height: calc(100vh - 165px); border:1px solid rgba(128,128,128,.3); border-radius:4px; background:#fff; }
   .download-title { padding:10px 18px; color:var(--brand); font-size:16px; font-weight:700; text-transform:uppercase; background:linear-gradient(#fafafa,#eeeeee); border-bottom:1px solid rgba(128,128,128,.3); }
-  .download-form { display:grid; grid-template-columns:180px 230px 230px 160px 250px; gap:26px 18px; align-items:end; padding:34px 42px 22px; }
+  .download-form { display:grid; grid-template-columns:150px 210px 210px 120px 150px minmax(210px, 1fr); gap:18px 14px; align-items:end; padding:28px 34px 18px; }
   .download-form label { display:block; margin-bottom:5px; font-size:12px; font-weight:700; text-transform:uppercase; color:#000; }
   .download-form .select, .download-form .input { width:100%; height:38px; }
-  .download-space { margin:0 26px 18px; min-height:420px; border-right:18px solid #f7f7f7; position:relative; }
+  .download-space { margin:0 26px 18px; min-height:420px; border:1px solid rgba(128,128,128,.3); border-right:18px solid #f7f7f7; position:relative; overflow:auto; background:#fff; }
   .download-space::before, .download-space::after { content:""; position:absolute; right:-14px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; }
   .download-space::before { top:5px; border-bottom:10px solid #8b8b8b; }
   .download-space::after { bottom:5px; border-top:10px solid #8b8b8b; }
+  .download-placeholder { display:grid; min-height:330px; place-items:center; color:var(--text-soft); font-weight:800; text-align:center; }
+  .transcript-filter-table { width:100%; min-width:900px; border-collapse:collapse; }
+  .transcript-filter-table th,
+  .transcript-filter-table td { padding:10px 12px; border:1px solid var(--border); text-align:left; white-space:nowrap; vertical-align:middle; }
+  .transcript-filter-table th { position:sticky; top:0; z-index:2; background:rgba(245, 158, 113, .55); font-weight:900; text-transform:uppercase; }
+  .transcript-filter-table .empty-row td { padding:42px 12px; text-align:center; color:var(--text-soft); font-weight:900; }
+  .transcript-filter-actions { display:flex; align-items:center; gap:8px; }
+  .transcript-filter-count { padding:12px 14px; border-bottom:1px solid var(--border); font-weight:900; color:var(--brand); background:rgba(255,255,255,.5); }
   .student-report-mode #downloadTranscriptModule { display:none; }
   .admin-download-mode #studentTranscriptReport { display:none; }
   .admin-download-mode .page-head { display:none; }
@@ -201,10 +209,16 @@
           <label>Class :</label>
           <select class="select" id="downloadClass"><option value="">***SELECT CLASS***</option></select>
         </div>
-        <button class="btn btn--primary" id="downloadTranscriptBtn" type="button">Download</button>
-        <input class="input" id="downloadSearch" placeholder="SEARCH BY STD_ID..">
+        <button class="btn" id="filterTranscriptBtn" type="button"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn btn--primary" id="downloadTranscriptBtn" type="button"><i class="fas fa-download"></i> Download</button>
+        <div>
+          <label>Search Student:</label>
+          <input class="input" id="downloadSearch" placeholder="Search by STD_ID or name">
+        </div>
       </div>
-      <div class="download-space" id="downloadResultArea"></div>
+      <div class="download-space" id="downloadResultArea">
+        <div class="download-placeholder">Select filters and click Filter to load students for transcript download.</div>
+      </div>
     </section>
 
     <div class="card" id="studentTranscriptReport">
@@ -260,6 +274,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="assets/supabase-client.js?v=20260717-qualitative-captured-by1"></script>
 <script src="assets/shell.js?v=20260716-archive-clearance1"></script>
 <script>
@@ -314,6 +329,7 @@ var ASSESSMENT_WEIGHTS = [
   { match: 'supervised individual termly', weight: 40 },
   { match: 'termly', weight: 40 }
 ];
+var filteredTranscriptStudents = [];
 
 function gradeInfo(score) {
   score = Number(score);
@@ -579,6 +595,23 @@ function studentProgrammeName(student) {
 
 function studentRef(student) {
   return student.ass_ref_id || student.assRef || student.ref || '';
+}
+
+function transcriptStudentSearchText(student) {
+  return [
+    studentRef(student),
+    studentFullName(student),
+    studentClassName(student),
+    studentProgrammeName(student)
+  ].join(' ').toLowerCase();
+}
+
+function safeFileName(value) {
+  return String(value || 'transcript')
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'transcript';
 }
 
 function qualitativeLookupKeys(student) {
@@ -855,40 +888,7 @@ async function initDownloadTranscriptModule() {
   }
   programmeSelect.addEventListener('change', refreshClasses);
   refreshClasses();
-}
-
-async function loadTranscriptByRef(assRef) {
-  assRef = String(assRef || '').trim().toUpperCase();
-  if (!assRef) {
-    Portal.toast('Enter STD_ID to download a student transcript.', true);
-    return;
-  }
-  var student = null;
-  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listStudents) {
-    var students = await AxiomDB.listStudents();
-    student = (students || []).find(function(row) { return String(row.ass_ref_id || '').toUpperCase() === assRef; });
-  }
-  if (!student) {
-    student = localStudents().find(function(row) {
-      return String(row.ass_ref_id || row.assRef || row.ref || '').toUpperCase() === assRef;
-    });
-  }
-  if (!student) {
-    Portal.toast('No student found for that STD_ID.', true);
-    return;
-  }
-  currentUser = {
-    id: student.id,
-    type: 'student',
-    ass_ref_id: student.ass_ref_id || student.assRef,
-    full_name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase() || student.full_name || student.name,
-    class_name: student.classes && student.classes.name ? student.classes.name : (student.class_name || student.className || ''),
-    programme: student.classes && student.classes.programmes ? student.classes.programmes.name : (student.programme || ''),
-    passport_url: student.passport_url || student.photoUrl || ''
-  };
-  document.body.classList.remove('admin-download-mode');
-  document.body.classList.add('student-report-mode');
-  await loadStudentTranscript();
+  renderTranscriptFilterResults([], 'Select filters and click Filter to load students for transcript download.');
 }
 
 async function getStudentTranscriptRows(student) {
@@ -951,7 +951,184 @@ function waitForTranscriptImages(containerSelector) {
   ]);
 }
 
-async function downloadTranscriptSet() {
+async function loadAllTranscriptStudents() {
+  var students = [];
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listStudents) {
+    students = await AxiomDB.listStudents();
+  }
+  if (!students || !students.length) students = localStudents();
+  return students || [];
+}
+
+function filterTranscriptStudentsList(students) {
+  var ref = String(document.getElementById('downloadSearch').value || '').trim().toUpperCase();
+  var className = document.getElementById('downloadClass').value;
+  var programme = document.getElementById('downloadProgramme').value;
+  var year = document.getElementById('downloadYear').value;
+  var search = ref.toLowerCase();
+  return (students || []).filter(function(student) {
+    var matchesSearch = !search || transcriptStudentSearchText(student).indexOf(search) > -1;
+    var matchesClass = !className || studentClassName(student) === className;
+    var matchesProgramme = !programme || studentProgrammeName(student) === programme;
+    var matchesYear = !year || !studentYearLevel(student) || studentYearLevel(student) === year;
+    return matchesSearch && matchesClass && matchesProgramme && matchesYear;
+  });
+}
+
+function renderTranscriptFilterResults(students, message) {
+  var area = document.getElementById('downloadResultArea');
+  filteredTranscriptStudents = students || [];
+  if (!filteredTranscriptStudents.length) {
+    area.innerHTML = '<div class="download-placeholder">'+(message || 'No students found for the selected filters.')+'</div>';
+    return;
+  }
+  area.innerHTML = '<div class="transcript-filter-count">Students Found: '+filteredTranscriptStudents.length+'</div>' +
+    '<table class="transcript-filter-table">' +
+      '<thead><tr><th>STD_ID</th><th>Student Name</th><th>Programme</th><th>Class</th><th>Year</th><th>Action</th></tr></thead>' +
+      '<tbody>' +
+        filteredTranscriptStudents.map(function(student, index) {
+          return '<tr>' +
+            '<td>'+safeAttribute(studentRef(student))+'</td>' +
+            '<td>'+safeAttribute(studentFullName(student))+'</td>' +
+            '<td>'+safeAttribute(studentProgrammeName(student) || '-')+'</td>' +
+            '<td>'+safeAttribute(studentClassName(student) || '-')+'</td>' +
+            '<td>'+safeAttribute(studentYearLevel(student) || '-')+'</td>' +
+            '<td><div class="transcript-filter-actions"><button class="btn btn--primary transcript-row-download" type="button" data-index="'+index+'"><i class="fas fa-download"></i> Download</button></div></td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody>' +
+    '</table>';
+}
+
+async function filterTranscriptStudents() {
+  var students = await loadAllTranscriptStudents();
+  var filtered = filterTranscriptStudentsList(students);
+  renderTranscriptFilterResults(filtered, 'No students found for the selected filters.');
+  if (!filtered.length) Portal.toast('No students found for the selected filters.', true);
+  return filtered;
+}
+
+async function buildTranscriptCards(students) {
+  var cards = [];
+  var refs = [];
+  students.forEach(function(student) {
+    qualitativeLookupKeys(student).forEach(function(key) {
+      if (refs.indexOf(key) === -1) refs.push(key);
+    });
+  });
+  var qualitativeRows = await loadQualitativeRows(refs);
+  for (var i = 0; i < students.length; i++) {
+    var rows = await getStudentTranscriptRows(students[i]);
+    var positionSummaries = await getStudentPositionSummaries(students[i]);
+    cards.push(transcriptCardHtml(profileFromStudent(students[i]), rows, latestQualitativeForRef(qualitativeRows, studentRef(students[i]), students[i]), positionSummaries));
+  }
+  return cards;
+}
+
+function downloadTranscriptHtmlFile(filename, html) {
+  var inlineStyles = Array.from(document.querySelectorAll('style')).map(function(style) {
+    return style.textContent || '';
+  }).join('\n');
+  var documentHtml = '<!doctype html><html><head><meta charset="utf-8"><title>'+safeAttribute(filename)+'</title>' +
+    '<style>'+inlineStyles+' body{margin:0;background:#fff}.print-transcript{page-break-after:always}.transcript-page{min-height:265mm;padding:14mm 16mm;background:#fff;color:#111;font-family:"Times New Roman",Times,serif}</style>' +
+    '</head><body>'+html+'</body></html>';
+  var blob = new Blob([documentHtml], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = filename.replace(/\.pdf$/i, '.html');
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
+async function saveTranscriptFile(students) {
+  if (!students || !students.length) {
+    Portal.toast('No students selected for transcript download.', true);
+    return;
+  }
+  var cards = await buildTranscriptCards(students);
+  var html = cards.join('');
+  var area = document.getElementById('batchTranscriptArea');
+  area.innerHTML = html;
+  document.body.classList.add('printing-transcripts');
+  await waitForTranscriptImages();
+
+  var firstRef = students.length === 1 ? studentRef(students[0]) : '';
+  var className = document.getElementById('downloadClass').value || (students[0] && studentClassName(students[0])) || 'class';
+  var year = document.getElementById('downloadYear').value || '';
+  var filename = safeFileName(firstRef ? 'TRANSCRIPT-'+firstRef : 'TRANSCRIPTS-'+className+'-'+year)+'.pdf';
+
+  try {
+    if (window.html2pdf) {
+      await window.html2pdf()
+        .set({
+          filename: filename,
+          margin: 0,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        })
+        .from(area)
+        .save();
+    } else {
+      downloadTranscriptHtmlFile(filename, html);
+      Portal.toast('PDF library was not available, so an HTML transcript file was downloaded.', true);
+    }
+  } catch (err) {
+    console.error(err);
+    downloadTranscriptHtmlFile(filename, html);
+    Portal.toast('Could not build PDF, so an HTML transcript file was downloaded.', true);
+  } finally {
+    document.body.classList.remove('printing-transcripts');
+  }
+}
+
+async function downloadTranscriptSet(studentsOverride) {
+  var students = studentsOverride || filteredTranscriptStudents;
+  if (!students || !students.length) {
+    students = await filterTranscriptStudents();
+  }
+
+  if (!students.length) {
+    Portal.toast('Filter students before downloading transcript.', true);
+    return;
+  }
+
+  await saveTranscriptFile(students);
+}
+
+async function previewTranscriptByRef(assRef) {
+  assRef = String(assRef || '').trim().toUpperCase();
+  if (!assRef) {
+    Portal.toast('Enter STD_ID to preview a student transcript.', true);
+    return;
+  }
+  var student = null;
+  var students = await loadAllTranscriptStudents();
+  student = (students || []).find(function(row) { return String(studentRef(row)).toUpperCase() === assRef; });
+  if (!student) {
+    Portal.toast('No student found for that STD_ID.', true);
+    return;
+  }
+  currentUser = {
+    id: student.id,
+    type: 'student',
+    ass_ref_id: student.ass_ref_id || student.assRef,
+    full_name: [student.first_name, student.surname, student.other_names].filter(Boolean).join(' ').toUpperCase() || student.full_name || student.name,
+    class_name: student.classes && student.classes.name ? student.classes.name : (student.class_name || student.className || ''),
+    programme: student.classes && student.classes.programmes ? student.classes.programmes.name : (student.programme || ''),
+    passport_url: student.passport_url || student.photoUrl || ''
+  };
+  document.body.classList.remove('admin-download-mode');
+  document.body.classList.add('student-report-mode');
+  await loadStudentTranscript();
+}
+
+/*
+async function legacyPrintTranscriptSet() {
   var ref = String(document.getElementById('downloadSearch').value || '').trim().toUpperCase();
   var className = document.getElementById('downloadClass').value;
   var programme = document.getElementById('downloadProgramme').value;
@@ -1000,6 +1177,7 @@ async function downloadTranscriptSet() {
   await waitForTranscriptImages();
   setTimeout(function() { window.print(); }, 100);
 }
+*/
 
 async function loadStudentTranscript() {
   if (!currentUser || currentUser.type !== 'student') {
@@ -1091,6 +1269,26 @@ document.getElementById('downloadTranscriptBtn').addEventListener('click', funct
   downloadTranscriptSet().catch(function(err) {
     console.error(err);
     Portal.toast('Could not load transcript: ' + (err.message || 'Unknown error'), true);
+  });
+});
+document.getElementById('filterTranscriptBtn').addEventListener('click', function() {
+  filterTranscriptStudents().catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not filter students: ' + (err.message || 'Unknown error'), true);
+  });
+});
+document.getElementById('downloadResultArea').addEventListener('click', function(event) {
+  var button = event.target.closest('.transcript-row-download');
+  if (!button) return;
+  var index = Number(button.getAttribute('data-index'));
+  var student = filteredTranscriptStudents[index];
+  if (!student) {
+    Portal.toast('Select a valid student first.', true);
+    return;
+  }
+  downloadTranscriptSet([student]).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not download student transcript: ' + (err.message || 'Unknown error'), true);
   });
 });
 document.getElementById('printTranscriptBtn').addEventListener('click', function() {
