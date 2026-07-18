@@ -38,7 +38,6 @@
   .transcript-filter-table td { padding:10px 12px; border:1px solid var(--border); text-align:left; white-space:nowrap; vertical-align:middle; }
   .transcript-filter-table th { position:sticky; top:0; z-index:2; background:rgba(245, 158, 113, .55); font-weight:900; text-transform:uppercase; }
   .transcript-filter-table .empty-row td { padding:42px 12px; text-align:center; color:var(--text-soft); font-weight:900; }
-  .transcript-filter-actions { display:flex; align-items:center; gap:8px; }
   .transcript-filter-count { padding:12px 14px; border-bottom:1px solid var(--border); font-weight:900; color:var(--brand); background:rgba(255,255,255,.5); }
   .student-report-mode #downloadTranscriptModule { display:none; }
   .admin-download-mode #studentTranscriptReport { display:none; }
@@ -984,16 +983,15 @@ function renderTranscriptFilterResults(students, message) {
   }
   area.innerHTML = '<div class="transcript-filter-count">Students Found: '+filteredTranscriptStudents.length+'</div>' +
     '<table class="transcript-filter-table">' +
-      '<thead><tr><th>STD_ID</th><th>Student Name</th><th>Programme</th><th>Class</th><th>Year</th><th>Action</th></tr></thead>' +
+      '<thead><tr><th>STD_ID</th><th>Student Name</th><th>Programme</th><th>Class</th><th>Year</th></tr></thead>' +
       '<tbody>' +
-        filteredTranscriptStudents.map(function(student, index) {
+        filteredTranscriptStudents.map(function(student) {
           return '<tr>' +
             '<td>'+safeAttribute(studentRef(student))+'</td>' +
             '<td>'+safeAttribute(studentFullName(student))+'</td>' +
             '<td>'+safeAttribute(studentProgrammeName(student) || '-')+'</td>' +
             '<td>'+safeAttribute(studentClassName(student) || '-')+'</td>' +
             '<td>'+safeAttribute(studentYearLevel(student) || '-')+'</td>' +
-            '<td><div class="transcript-filter-actions"><button class="btn btn--primary transcript-row-download" type="button" data-index="'+index+'"><i class="fas fa-download"></i> Download</button></div></td>' +
           '</tr>';
         }).join('') +
       '</tbody>' +
@@ -1275,20 +1273,6 @@ document.getElementById('filterTranscriptBtn').addEventListener('click', functio
   filterTranscriptStudents().catch(function(err) {
     console.error(err);
     Portal.toast('Could not filter students: ' + (err.message || 'Unknown error'), true);
-  });
-});
-document.getElementById('downloadResultArea').addEventListener('click', function(event) {
-  var button = event.target.closest('.transcript-row-download');
-  if (!button) return;
-  var index = Number(button.getAttribute('data-index'));
-  var student = filteredTranscriptStudents[index];
-  if (!student) {
-    Portal.toast('Select a valid student first.', true);
-    return;
-  }
-  downloadTranscriptSet([student]).catch(function(err) {
-    console.error(err);
-    Portal.toast('Could not download student transcript: ' + (err.message || 'Unknown error'), true);
   });
 });
 document.getElementById('printTranscriptBtn').addEventListener('click', function() {
