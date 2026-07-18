@@ -3,69 +3,623 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>School Monitor — AXIOMBYTE SMS</title>
+<title>School Monitor - AXIOMBYTE SMS</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 <link rel="stylesheet" href="assets/app.css?v=20260717-sky-navy-theme1" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<style>.chart-wrap{ position:relative; height:260px; }</style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260717-sky-navy-theme1" />
 <link rel="stylesheet" href="assets/theme.css?v=20260717-sky-navy-theme2" />
+<style>
+  .monitor-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: calc(100vh - 120px);
+  }
+
+  .monitor-filter-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255,255,255,.42);
+    padding: 10px 14px 14px;
+  }
+
+  .monitor-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(240px, 1fr) minmax(260px, .9fr);
+    gap: 12px 20px;
+    align-items: start;
+  }
+
+  .monitor-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .monitor-field select,
+  .monitor-field input {
+    width: 100%;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: rgba(255,255,255,.72);
+    color: var(--text);
+    font-size: 12px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+
+  .monitor-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 2px;
+  }
+
+  .monitor-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 76px;
+    height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--brand);
+    color: #C0EBFF;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .monitor-btn.monitor-btn--warning {
+    background: #d94c00 !important;
+    border-color: #d94c00 !important;
+    color: #fff !important;
+  }
+
+  .monitor-total-pill {
+    min-height: 43px;
+    border: 1px solid rgba(0,43,76,.22);
+    border-radius: 16px;
+    background: rgba(255,255,255,.56);
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .monitor-total-pill strong {
+    display: block;
+    margin-top: 2px;
+    color: #07820a !important;
+    font-size: 11px;
+  }
+
+  .monitor-table-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255,255,255,.42);
+    padding: 10px 8px 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .monitor-table-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0 10px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .monitor-table-tools select,
+  .monitor-table-tools input {
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: rgba(255,255,255,.72);
+    color: var(--text);
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+
+  .monitor-table-scroll {
+    width: 100%;
+    overflow: auto;
+    border: 1px solid rgba(0,43,76,.35);
+    border-radius: 4px;
+    max-height: calc(100vh - 360px);
+    min-height: 150px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .monitor-table {
+    width: 100%;
+    min-width: 1260px;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: rgba(255,255,255,.5);
+  }
+
+  .monitor-table th,
+  .monitor-table td {
+    border: 1px solid rgba(0,43,76,.35);
+    padding: 7px 8px;
+    font-size: 10px;
+    line-height: 1.25;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .monitor-table th {
+    background: rgba(245,158,113,.55);
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .monitor-table th:nth-child(1),
+  .monitor-table td:nth-child(1) { width: 110px; }
+  .monitor-table th:nth-child(2),
+  .monitor-table td:nth-child(2) { width: 70px; }
+  .monitor-table th:nth-child(3),
+  .monitor-table td:nth-child(3) { width: 150px; }
+  .monitor-table th:nth-child(4),
+  .monitor-table td:nth-child(4) { width: 110px; }
+  .monitor-table th:nth-child(5),
+  .monitor-table td:nth-child(5) { width: 105px; }
+  .monitor-table th:nth-child(6),
+  .monitor-table td:nth-child(6) { width: 150px; }
+  .monitor-table th:nth-child(7),
+  .monitor-table td:nth-child(7) { width: 110px; }
+  .monitor-table th:nth-child(8),
+  .monitor-table td:nth-child(8) { width: 140px; }
+  .monitor-table th:nth-child(9),
+  .monitor-table td:nth-child(9) { width: 130px; }
+  .monitor-table th:nth-child(10),
+  .monitor-table td:nth-child(10) { width: 120px; }
+  .monitor-table th:nth-child(11),
+  .monitor-table td:nth-child(11) { width: 150px; }
+  .monitor-table th:nth-child(12),
+  .monitor-table td:nth-child(12) { width: 170px; }
+
+  .monitor-progress {
+    height: 13px;
+    border-radius: 4px;
+    background: rgba(0,43,76,.12);
+    overflow: hidden;
+  }
+
+  .monitor-progress span {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: #22a943;
+    transition: width .55s ease;
+  }
+
+  .monitor-teacher-btn {
+    min-width: 78px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .monitor-footer-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0 0;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .monitor-pagination {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .monitor-page-box {
+    min-width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,.62);
+    border-radius: 3px;
+  }
+
+  .monitor-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0,43,76,.45);
+  }
+
+  .monitor-modal.open {
+    display: flex;
+  }
+
+  .monitor-modal-box {
+    width: min(760px, 96vw);
+    max-height: 84vh;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #C0EBFF;
+    box-shadow: 0 18px 45px rgba(0,43,76,.22);
+  }
+
+  .monitor-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(245,158,113,.55);
+    font-weight: 900;
+  }
+
+  .monitor-modal-body {
+    padding: 12px 14px 16px;
+  }
+
+  .monitor-empty {
+    padding: 26px 12px !important;
+    text-align: center !important;
+    font-size: 12px !important;
+    font-weight: 800;
+  }
+
+  @media (max-width: 1100px) {
+    .monitor-filter-grid {
+      grid-template-columns: repeat(2, minmax(190px, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    .monitor-filter-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .monitor-actions,
+    .monitor-table-tools,
+    .monitor-footer-row {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .monitor-btn,
+    .monitor-table-tools input {
+      width: 100%;
+    }
+
+    .monitor-table-scroll {
+      max-height: calc(100vh - 430px);
+    }
+  }
+</style>
 </head>
 <body class="portal-shell footer-shell">
 <div class="main">
   <main class="content">
-    <div class="page-head">
-      <span class="ph-ico"><i class="fas fa-chart-line"></i></span>
-      <div><h2>School Monitor</h2><p>Track assessment-capture progress across classes and subjects.</p></div>
-    </div>
+    <section class="monitor-page">
+      <div class="monitor-filter-card" aria-label="School monitor filters">
+        <div class="monitor-filter-grid">
+          <div class="monitor-field">
+            <select id="monitorYear" aria-label="Year">
+              <option>Year 1</option>
+              <option>Year 2</option>
+              <option>Year 3</option>
+            </select>
+            <select id="monitorMode" aria-label="Assessment mode">
+              <option>Individual Class Assessments (e.g., Classwork, Quizzes, Homework)</option>
+              <option>Mid-Sem</option>
+              <option>Practical or Portfolio or Performance Assessment (Individual)</option>
+              <option>Group Projects, Research, or Case Studies, Practical/Lab work, Workshops, Performances, Presentations (Out of Class)</option>
+              <option>Supervised Individual Termly</option>
+            </select>
+            <button class="monitor-btn monitor-btn--warning" id="unassignedBtn" type="button">Unassigned</button>
+          </div>
 
-    <div class="grid cols-4">
-      <div class="card stat"><i class="fas fa-users" style="color:var(--brand)"></i><div class="num">1,284</div><div class="cap">Students</div></div>
-      <div class="card stat"><i class="fas fa-clipboard-check" style="color:var(--green)"></i><div class="num">82%</div><div class="cap">Scores Captured</div></div>
-      <div class="card stat"><i class="fas fa-hourglass-half" style="color:var(--amber)"></i><div class="num">18%</div><div class="cap">Outstanding</div></div>
-      <div class="card stat"><i class="fas fa-book" style="color:var(--purple)"></i><div class="num">30</div><div class="cap">Subjects</div></div>
-    </div>
+          <div class="monitor-field">
+            <select id="monitorSchoolType" aria-label="School type">
+              <option>Public School</option>
+              <option>Private School</option>
+            </select>
+            <select id="monitorSemester" aria-label="Semester">
+              <option>1st Sem</option>
+              <option>2nd Sem</option>
+            </select>
+            <button class="monitor-btn" id="downloadBtn" type="button">Download</button>
+          </div>
 
-    <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:18px; align-items:start">
-      <div class="card card--pad-0">
-        <div class="card__head"><i class="fas fa-list-check"></i> Capture Progress by Subject</div>
-        <div class="card__body" id="progress"></div>
+          <div class="monitor-field">
+            <select id="monitorSchool" aria-label="School">
+              <option>0021101 - ASUOM SENIOR HIGH SCHOOL</option>
+            </select>
+            <button class="monitor-btn" id="filterBtn" type="button">&lt;&lt; Filter &gt;&gt;</button>
+          </div>
+
+          <div class="monitor-total-pill" aria-label="Total students regionally">
+            TOTAL_STUDENTS(REGIONALLY)
+            <strong id="regionalTotal">65877</strong>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card__head" style="border:0;padding:0 0 10px"><i class="fas fa-chart-column"></i> Completion by Class</div>
-        <div class="chart-wrap"><canvas id="classChart"></canvas></div>
+
+      <div class="monitor-table-card">
+        <div class="monitor-table-tools">
+          <label>
+            <select id="pageLength">
+              <option>100</option>
+              <option>50</option>
+              <option>25</option>
+              <option>10</option>
+            </select>
+            entries per page
+          </label>
+          <label>Search: <input id="monitorSearch" type="search" aria-label="Search monitor table" /></label>
+        </div>
+
+        <div class="monitor-table-scroll">
+          <table class="monitor-table" id="monitorTable">
+            <thead>
+              <tr>
+                <th>ACTION</th>
+                <th>ROW_NO</th>
+                <th>PERCENTAGE_COMPLETED</th>
+                <th>MEAN_MARK(%)</th>
+                <th>ACAD_YEAR</th>
+                <th>MODE_OF_ASSESSMENT</th>
+                <th>SCHOOL_NUMBER</th>
+                <th>SCHOOL_NAME</th>
+                <th>NUM_STD_REGISTERED</th>
+                <th>PHONE</th>
+                <th>EMAIL</th>
+              </tr>
+            </thead>
+            <tbody id="monitorRows"></tbody>
+          </table>
+        </div>
+
+        <div class="monitor-footer-row">
+          <span id="monitorInfo">Showing 0 to 0 of 0 entries</span>
+          <div class="monitor-pagination" aria-label="Table pagination">
+            <span>&laquo;</span>
+            <span>&lsaquo;</span>
+            <span class="monitor-page-box">1</span>
+            <span>&rsaquo;</span>
+            <span>&raquo;</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   </main>
 </div>
 
-<script src="assets/shell.js?v=20260716-archive-clearance1"></script>
+<div class="monitor-modal" id="teacherModal" role="dialog" aria-modal="true" aria-labelledby="teacherModalTitle">
+  <div class="monitor-modal-box">
+    <div class="monitor-modal-head">
+      <span id="teacherModalTitle">Teacher List</span>
+      <button class="monitor-btn" id="closeTeacherModal" type="button" style="min-width:42px;">X</button>
+    </div>
+    <div class="monitor-modal-body">
+      <div class="monitor-table-scroll" style="max-height:420px;">
+        <table class="monitor-table" style="min-width:680px;">
+          <thead>
+            <tr>
+              <th>Staff Name</th>
+              <th>Staff ID</th>
+              <th>Class</th>
+              <th>Subject</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="teacherRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/shell.js?v=20260718-monitor1"></script>
 <script>
 Portal.init({ active: 'assessmentmonitor' });
 
-var subjects = [
-  ['Core Mathematics',98],['English Language',95],['Integrated Science',88],
-  ['Social Studies',79],['Elective Mathematics',72],['Physics',64],
-  ['Chemistry',58],['Biology',83],['Economics',45],['Information Technology',91]
+var monitorData = [
+  {
+    rowNo: 1,
+    completed: 100,
+    meanMark: 70.62,
+    acadYear: '2025 / 2026',
+    mode: 'Individual Class Assessments',
+    schoolNumber: '0021101',
+    schoolName: 'ASUOM SENIOR HIGH SCHOOL',
+    registered: 786,
+    phone: '0244791325',
+    email: 'asuomshs1970@gmail.com',
+    teachers: [
+      ['Ama Owusu', 'ASH/STF/001', 'SCI_24', 'Core Mathematics', 'Assigned'],
+      ['Clement Addo', 'ASH/STF/002', 'SCI_24', 'English Language', 'Assigned'],
+      ['Lebron Asar', 'ASH/STF/003', 'SCI_24', 'Physics', 'Assigned']
+    ]
+  }
 ];
-document.getElementById('progress').innerHTML = subjects.map(function(s){
-  var cls = s[1]>=85?'green':s[1]>=60?'amber':'red';
-  return '<div style="padding:9px 0;border-bottom:1px solid var(--border)">'+
-    '<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px">'+
-      '<span>'+s[0]+'</span><span class="badge badge--'+cls+'">'+s[1]+'%</span></div>'+
-    '<div class="progress"><span style="width:0" data-w="'+s[1]+'%"></span></div></div>';
-}).join('');
-// animate bars
-setTimeout(function(){ document.querySelectorAll('.progress > span').forEach(function(b){ b.style.width = b.dataset.w; }); }, 100);
 
-var fontColor = getComputedStyle(document.body).color;
-new Chart(document.getElementById('classChart'), {
-  type:'bar',
-  data:{ labels:['Year 1 A','Year 1 B','Year 2 A','Year 2 B','Year 3 A','Year 3 B'],
-    datasets:[{ label:'% captured', data:[91,86,84,77,69,72], backgroundColor:'#0b6bcb', borderRadius:8, maxBarThickness:46 }] },
-  options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-    scales:{ x:{grid:{display:false},ticks:{color:fontColor}}, y:{beginAtZero:true,max:100,ticks:{color:fontColor,callback:function(v){return v+'%';}},grid:{color:'rgba(125,125,125,.12)'}} } }
+var unassignedData = [
+  {
+    rowNo: 1,
+    completed: 0,
+    meanMark: 0,
+    acadYear: '2025 / 2026',
+    mode: 'Individual Class Assessments',
+    schoolNumber: '0021101',
+    schoolName: 'ASUOM SENIOR HIGH SCHOOL',
+    registered: 0,
+    phone: '0244791325',
+    email: 'asuomshs1970@gmail.com',
+    teachers: []
+  }
+];
+
+var activeRows = [];
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function rowMatchesSearch(row, query) {
+  if (!query) return true;
+  return [
+    row.rowNo, row.completed, row.meanMark, row.acadYear, row.mode,
+    row.schoolNumber, row.schoolName, row.registered, row.phone, row.email
+  ].join(' ').toLowerCase().indexOf(query) > -1;
+}
+
+function renderMonitorRows(rows) {
+  var query = document.getElementById('monitorSearch').value.trim().toLowerCase();
+  var filtered = rows.filter(function(row) { return rowMatchesSearch(row, query); });
+  var tbody = document.getElementById('monitorRows');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td class="monitor-empty" colspan="11">No school monitor records found.</td></tr>';
+    document.getElementById('monitorInfo').textContent = 'Showing 0 to 0 of 0 entries';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(function(row, index) {
+    return '<tr>' +
+      '<td><button class="monitor-btn monitor-teacher-btn" type="button" data-teachers="' + index + '">Teacher List</button></td>' +
+      '<td>' + escapeHtml(row.rowNo) + '</td>' +
+      '<td><strong>' + escapeHtml(row.completed) + '%</strong><div class="monitor-progress"><span style="width:' + Number(row.completed || 0) + '%"></span></div></td>' +
+      '<td>' + escapeHtml(row.meanMark) + '</td>' +
+      '<td>' + escapeHtml(row.acadYear) + '</td>' +
+      '<td>' + escapeHtml(row.mode) + '</td>' +
+      '<td>' + escapeHtml(row.schoolNumber) + '</td>' +
+      '<td title="' + escapeHtml(row.schoolName) + '">' + escapeHtml(row.schoolName) + '</td>' +
+      '<td>' + escapeHtml(row.registered) + '</td>' +
+      '<td>' + escapeHtml(row.phone) + '</td>' +
+      '<td>' + escapeHtml(row.email) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  document.getElementById('monitorInfo').textContent = 'Showing 1 to ' + filtered.length + ' of ' + filtered.length + ' ' + (filtered.length === 1 ? 'entry' : 'entries');
+
+  tbody.querySelectorAll('[data-teachers]').forEach(function(button) {
+    button.addEventListener('click', function() {
+      openTeacherModal(filtered[Number(button.getAttribute('data-teachers'))]);
+    });
+  });
+}
+
+function runFilter() {
+  activeRows = monitorData.map(function(row) {
+    var copy = Object.assign({}, row);
+    copy.mode = document.getElementById('monitorMode').value.split(' (')[0];
+    copy.acadYear = '2025 / 2026';
+    return copy;
+  });
+  renderMonitorRows(activeRows);
+  Portal.toast('School monitor loaded.');
+}
+
+function showUnassigned() {
+  activeRows = unassignedData;
+  renderMonitorRows(activeRows);
+  Portal.toast('Unassigned monitor list loaded.');
+}
+
+function openTeacherModal(row) {
+  var modal = document.getElementById('teacherModal');
+  var body = document.getElementById('teacherRows');
+  var teachers = row && row.teachers ? row.teachers : [];
+
+  if (!teachers.length) {
+    body.innerHTML = '<tr><td class="monitor-empty" colspan="5">No teachers assigned for this monitor record.</td></tr>';
+  } else {
+    body.innerHTML = teachers.map(function(t) {
+      return '<tr>' +
+        '<td>' + escapeHtml(t[0]) + '</td>' +
+        '<td>' + escapeHtml(t[1]) + '</td>' +
+        '<td>' + escapeHtml(t[2]) + '</td>' +
+        '<td>' + escapeHtml(t[3]) + '</td>' +
+        '<td>' + escapeHtml(t[4]) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  modal.classList.add('open');
+}
+
+function closeTeacherModal() {
+  document.getElementById('teacherModal').classList.remove('open');
+}
+
+function downloadMonitorWorkbook() {
+  var rows = activeRows.length ? activeRows : monitorData;
+  var header = ['ROW_NO', 'PERCENTAGE_COMPLETED', 'MEAN_MARK(%)', 'ACAD_YEAR', 'MODE_OF_ASSESSMENT', 'SCHOOL_NUMBER', 'SCHOOL_NAME', 'NUM_STD_REGISTERED', 'PHONE', 'EMAIL'];
+  var html = '<html><head><meta charset="utf-8"></head><body><table border="1"><thead><tr>' +
+    header.map(function(h) { return '<th>' + escapeHtml(h) + '</th>'; }).join('') +
+    '</tr></thead><tbody>' +
+    rows.map(function(row) {
+      return '<tr>' +
+        '<td>' + escapeHtml(row.rowNo) + '</td>' +
+        '<td>' + escapeHtml(row.completed) + '%</td>' +
+        '<td>' + escapeHtml(row.meanMark) + '</td>' +
+        '<td>' + escapeHtml(row.acadYear) + '</td>' +
+        '<td>' + escapeHtml(row.mode) + '</td>' +
+        '<td>' + escapeHtml(row.schoolNumber) + '</td>' +
+        '<td>' + escapeHtml(row.schoolName) + '</td>' +
+        '<td>' + escapeHtml(row.registered) + '</td>' +
+        '<td>' + escapeHtml(row.phone) + '</td>' +
+        '<td>' + escapeHtml(row.email) + '</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table></body></html>';
+  var blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'school-monitor.xls';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 250);
+}
+
+document.getElementById('filterBtn').addEventListener('click', runFilter);
+document.getElementById('unassignedBtn').addEventListener('click', showUnassigned);
+document.getElementById('downloadBtn').addEventListener('click', downloadMonitorWorkbook);
+document.getElementById('monitorSearch').addEventListener('input', function() { renderMonitorRows(activeRows); });
+document.getElementById('closeTeacherModal').addEventListener('click', closeTeacherModal);
+document.getElementById('teacherModal').addEventListener('click', function(event) {
+  if (event.target.id === 'teacherModal') closeTeacherModal();
 });
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') closeTeacherModal();
+});
+
+renderMonitorRows([]);
 </script>
 <footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
   <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>
