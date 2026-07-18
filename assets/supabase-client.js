@@ -1195,6 +1195,125 @@
     });
   }
 
+  async function listSchoolAssessmentMonitor(filters) {
+    var c = db();
+    if (!c) return null;
+    filters = filters || {};
+    var school = await currentSchool();
+    if (!school) return null;
+    var token = activeStaffSessionToken();
+    var rpcResult = await c.rpc('secure_school_assessment_monitor', {
+      p_session_token: token || null,
+      p_school_id: school.id,
+      p_academic_year: filters.academicYear || null,
+      p_year_level: filters.yearLevel || null,
+      p_semester: filters.semester || null,
+      p_mode_name: filters.modeName || null
+    });
+    if (!rpcResult.error) return rpcResult.data || {};
+
+    var missingRpc = rpcResult.error.code === 'PGRST202' ||
+      /secure_school_assessment_monitor|schema cache|function/i.test(rpcResult.error.message || '');
+    if (!missingRpc) throw rpcResult.error;
+
+    try {
+      var fallbackResults = await Promise.all([
+        listStudents(),
+        listStaff(),
+        listAssessmentRecords({
+          academicYear: filters.academicYear || '',
+          yearLevel: filters.yearLevel || '',
+          semester: filters.semester || ''
+        })
+      ]);
+      var students = fallbackResults[0] || [];
+      var staffRows = fallbackResults[1] || [];
+      var records = fallbackResults[2] || [];
+      var assignmentLists = await Promise.all(staffRows.map(function(staff) {
+        return listStaffSubjectClasses(staff.id).catch(function() { return []; });
+      }));
+      var activeStudents = students.filter(function(student) {
+        return ['deleted', 'transferred', 'dropped', 'completed'].indexOf(String(student.status || 'Active').toLowerCase()) < 0;
+      });
+      var wantedMode = String(filters.modeName || '').trim().toLowerCase();
+      records = records.filter(function(record) {
+        var assessment = record.assessments || {};
+        var mode = assessment.assessment_modes || {};
+        return !wantedMode || String(mode.name || '').trim().toLowerCase() === wantedMode;
+      });
+
+      var teacherRows = [];
+      staffRows.forEach(function(staff, staffIndex) {
+        (assignmentLists[staffIndex] || []).forEach(function(assignment) {
+          var classStudents = activeStudents.filter(function(student) {
+            var classInfo = student.classes || {};
+            var classId = student.class_id || classInfo.id || '';
+            var className = classInfo.name || student.class_name || '';
+            var yearLevel = student.student_level || classInfo.year_level || '';
+            return (String(classId) === String(assignment.classId) || className === assignment.className) &&
+              (!filters.yearLevel || !yearLevel || String(yearLevel).toLowerCase() === String(filters.yearLevel).toLowerCase());
+          });
+          var capturedRefs = {};
+          records.forEach(function(record) {
+            var assessment = record.assessments || {};
+            var subject = assessment.subjects || {};
+            var student = record.students || {};
+            if (String(assessment.class_id || '') === String(assignment.classId || '') &&
+                String(subject.name || '').toLowerCase() === String(assignment.subjectName || '').toLowerCase() &&
+                record.score !== null && record.score !== undefined) {
+              capturedRefs[student.ass_ref_id || student.id] = true;
+            }
+          });
+          var captured = Object.keys(capturedRefs).filter(Boolean).length;
+          teacherRows.push({
+            staff_user_id: staff.id,
+            teacher_name: staff.full_name || staff.staff_name || staff.staff_id || 'Unnamed Staff',
+            phone_number: staff.phone || '',
+            email: staff.email || '',
+            class_id: assignment.classId,
+            class_name: assignment.className || '',
+            subject_id: assignment.subjectId,
+            subject_name: assignment.subjectName || '',
+            total_assigned: classStudents.length,
+            captured: captured,
+            not_captured: Math.max(classStudents.length - captured, 0)
+          });
+        });
+      });
+      teacherRows = teacherRows.filter(function(row) {
+        if (!filters.yearLevel) return true;
+        var matchingClassStudent = activeStudents.some(function(student) {
+          var classInfo = student.classes || {};
+          return (String(student.class_id || classInfo.id || '') === String(row.class_id || '') || classInfo.name === row.class_name) &&
+            String(student.student_level || classInfo.year_level || '').toLowerCase() === String(filters.yearLevel).toLowerCase();
+        });
+        return matchingClassStudent || row.total_assigned > 0;
+      });
+      var expectedTotal = teacherRows.reduce(function(total, row) { return total + Number(row.total_assigned || 0); }, 0);
+      var capturedTotal = teacherRows.reduce(function(total, row) { return total + Number(row.captured || 0); }, 0);
+      var normalizedScores = records.map(function(record) {
+        var overall = Number(record.assessments && record.assessments.overall_score);
+        return overall > 0 ? (Number(record.score || 0) / overall) * 100 : null;
+      }).filter(function(value) { return value !== null && isFinite(value); });
+      var teacherIds = {};
+      teacherRows.forEach(function(row) { teacherIds[row.staff_user_id] = true; });
+      return {
+        school_id: school.id,
+        school_code: school.code || activeSchoolCode(),
+        school_name: school.name || '',
+        total_students: activeStudents.length,
+        expected_total: expectedTotal,
+        captured_total: capturedTotal,
+        percentage_completed: expectedTotal ? Number(((capturedTotal / expectedTotal) * 100).toFixed(2)) : 0,
+        mean_mark: normalizedScores.length ? Number((normalizedScores.reduce(function(a, b) { return a + b; }, 0) / normalizedScores.length).toFixed(2)) : 0,
+        teacher_total: Object.keys(teacherIds).length,
+        teachers: teacherRows
+      };
+    } catch (fallbackError) {
+      throw new Error('Run the school assessment monitor SQL in Supabase, then refresh this page. ' + (fallbackError.message || ''));
+    }
+  }
+
   async function recalculateClassPositions(filters) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
@@ -1885,6 +2004,7 @@
     captureAssessmentSetup: captureAssessmentSetup,
     saveAssessmentScores: saveAssessmentScores,
     listAssessmentRecords: listAssessmentRecords,
+    listSchoolAssessmentMonitor: listSchoolAssessmentMonitor,
     recalculateClassPositions: recalculateClassPositions,
     listResultSummaries: listResultSummaries,
     updateSchoolInfo: updateSchoolInfo,

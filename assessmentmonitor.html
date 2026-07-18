@@ -25,9 +25,9 @@
 
   .monitor-filter-grid {
     display: grid;
-    grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(240px, 1fr) minmax(260px, .9fr);
+    grid-template-columns: minmax(130px, .65fr) minmax(280px, 1.45fr) minmax(150px, .7fr) auto minmax(210px, .85fr);
     gap: 12px 20px;
-    align-items: start;
+    align-items: center;
   }
 
   .monitor-field {
@@ -52,8 +52,14 @@
   .monitor-actions {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 8px;
     padding-top: 2px;
+  }
+
+  .monitor-action-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .monitor-btn {
@@ -95,7 +101,7 @@
     display: block;
     margin-top: 2px;
     color: #07820a !important;
-    font-size: 11px;
+    font-size: 18px;
   }
 
   .monitor-table-card {
@@ -427,6 +433,7 @@
     }
 
     .monitor-actions,
+    .monitor-action-field,
     .monitor-table-tools,
     .monitor-footer-row {
       align-items: stretch;
@@ -482,6 +489,9 @@
               <option>Year 2</option>
               <option>Year 3</option>
             </select>
+          </div>
+
+          <div class="monitor-field">
             <select id="monitorMode" aria-label="Assessment mode">
               <option>Individual Class Assessments (e.g., Classwork, Quizzes, Homework)</option>
               <option>Mid-Sem</option>
@@ -489,31 +499,24 @@
               <option>Group Projects, Research, or Case Studies, Practical/Lab work, Workshops, Performances, Presentations (Out of Class)</option>
               <option>Supervised Individual Termly</option>
             </select>
-            <button class="monitor-btn monitor-btn--warning" id="unassignedBtn" type="button">Unassigned</button>
           </div>
 
           <div class="monitor-field">
-            <select id="monitorSchoolType" aria-label="School type">
-              <option>Public School</option>
-              <option>Private School</option>
-            </select>
             <select id="monitorSemester" aria-label="Semester">
               <option>1st Sem</option>
               <option>2nd Sem</option>
             </select>
+          </div>
+
+          <div class="monitor-action-field">
+            <button class="monitor-btn" id="filterBtn" type="button">&lt;&lt; Filter &gt;&gt;</button>
+            <button class="monitor-btn monitor-btn--warning" id="unassignedBtn" type="button">Unassigned</button>
             <button class="monitor-btn" id="downloadBtn" type="button">Download</button>
           </div>
 
-          <div class="monitor-field">
-            <select id="monitorSchool" aria-label="School">
-              <option>0021101 - ASUOM SENIOR HIGH SCHOOL</option>
-            </select>
-            <button class="monitor-btn" id="filterBtn" type="button">&lt;&lt; Filter &gt;&gt;</button>
-          </div>
-
-          <div class="monitor-total-pill" aria-label="Total students regionally">
-            TOTAL_STUDENTS(REGIONALLY)
-            <strong id="regionalTotal">65877</strong>
+          <div class="monitor-total-pill" aria-label="Total students in school">
+            TOTAL STUDENTS
+            <strong id="schoolTotal">0</strong>
           </div>
         </div>
       </div>
@@ -541,12 +544,13 @@
                 <th>PERCENTAGE_COMPLETED</th>
                 <th>MEAN_MARK(%)</th>
                 <th>ACAD_YEAR</th>
+                <th>YEAR</th>
                 <th>MODE_OF_ASSESSMENT</th>
-                <th>SCHOOL_NUMBER</th>
-                <th>SCHOOL_NAME</th>
+                <th>SEMESTER</th>
                 <th>NUM_STD_REGISTERED</th>
-                <th>PHONE</th>
-                <th>EMAIL</th>
+                <th>TOTAL_EXPECTED</th>
+                <th>CAPTURED</th>
+                <th>NOT_CAPTURED</th>
               </tr>
             </thead>
             <tbody id="monitorRows"></tbody>
@@ -628,52 +632,14 @@
   </div>
 </div>
 
-<script src="assets/shell.js?v=20260718-monitor1"></script>
-<script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/supabase-client.js?v=20260718-school-monitor1"></script>
+<script src="assets/shell.js?v=20260718-school-monitor1"></script>
+<script type="text/plain" id="legacyAssessmentMonitorScript">
 Portal.init({ active: 'assessmentmonitor' });
 
-var monitorData = [
-  {
-    rowNo: 1,
-    completed: 100,
-    meanMark: 70.62,
-    acadYear: '2025 / 2026',
-    mode: 'Individual Class Assessments',
-    schoolNumber: '0021101',
-    schoolName: 'ASUOM SENIOR HIGH SCHOOL',
-    registered: 786,
-    phone: '0244791325',
-    email: 'asuomshs1970@gmail.com',
-    teacherTotal: 89,
-    teachers: [
-      ['ADELAIDE OSEA', '024567709', 'osaseadelaide1@gmail.com', 'G.ARTS 1_25', 'Twi (Akuapem)', 22, 22, 0],
-      ['ADELAIDE OSEA', '024567709', 'osaseadelaide1@gmail.com', 'G.ARTS 4_25', 'Twi (Akuapem)', 82, 82, 0],
-      ['AGBAGBA CHRISTIAN DANSO FOFO', '0530875800', 'CHRISFOFO6@GMAIL.COM', 'G.ARTS 1_25', 'Literature in English', 22, 22, 0],
-      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'SCI_25', 'Physical Education & Health', 48, 48, 0],
-      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 1_25', 'Physical Education & Health', 22, 22, 0],
-      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 2_25', 'Physical Education & Health', 41, 41, 0],
-      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 3_25', 'Physical Education & Health', 39, 39, 0],
-      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 4_25', 'Physical Education & Health', 82, 82, 0],
-      ['AGYEN GLEEN', '0548282629', 'AGYEN283@GMAIL.COM', 'G.ARTS 5a_25', 'Physical Education & Health', 78, 78, 0]
-    ]
-  }
-];
-
-var unassignedData = [
-  {
-    rowNo: 1,
-    completed: 0,
-    meanMark: 0,
-    acadYear: '2025 / 2026',
-    mode: 'Individual Class Assessments',
-    schoolNumber: '0021101',
-    schoolName: 'ASUOM SENIOR HIGH SCHOOL',
-    registered: 0,
-    phone: '0244791325',
-    email: 'asuomshs1970@gmail.com',
-    teachers: []
-  }
-];
+var monitorData = [];
+var unassignedData = [];
 
 var activeRows = [];
 var activeTeacherRows = [];
@@ -864,6 +830,7 @@ document.addEventListener('keydown', function(event) {
 
 renderMonitorRows([]);
 </script>
+<script src="assets/assessment-monitor.js?v=20260718-school-monitor1"></script>
 <footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
   <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>
 </footer>
