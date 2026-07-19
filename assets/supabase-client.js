@@ -96,18 +96,12 @@
         name: cachedName || 'ASUOM SENIOR HIGH SCHOOL'
       };
     }
-    var result = await c.from('schools').select('*').eq('code', activeSchoolCode()).limit(1).maybeSingle();
+    var result = await c.from('schools').select('*').eq('code', activeSchoolCode()).limit(1);
     if (result.error) throw result.error;
-    if (!result.data) {
-      var created = await c
-        .from('schools')
-        .insert({ code: activeSchoolCode(), name: 'ASUOM SENIOR HIGH SCHOOL' })
-        .select('*')
-        .single();
-      if (created.error) throw created.error;
-      return created.data;
+    if (!result.data || !result.data.length) {
+      throw new Error('School code ' + activeSchoolCode() + ' was not found or is not accessible to this account.');
     }
-    return result.data;
+    return result.data[0];
   }
 
   function schoolAccessBlocked(school) {
@@ -1402,9 +1396,9 @@
     if (!result.error) return result.data || school;
     if (!/secure_get_school_info|schema cache|function/i.test(result.error.message || '')) throw result.error;
 
-    var fallback = await c.from('schools').select('*').eq('id', school.id).limit(1).maybeSingle();
+    var fallback = await c.from('schools').select('*').eq('id', school.id).limit(1);
     if (fallback.error) throw fallback.error;
-    return fallback.data || school;
+    return fallback.data && fallback.data.length ? fallback.data[0] : school;
   }
 
   async function updateSchoolInfo(payload) {
