@@ -1536,6 +1536,11 @@
     if (uploaded.error) {
       throw new Error('Supabase Storage rejected the document file: ' + uploaded.error.message);
     }
+    var publicInfo = await c.storage.from(bucket).createSignedUrl(path, 315360000);
+    if (publicInfo.error || !publicInfo.data || !publicInfo.data.signedUrl) {
+      await c.storage.from(bucket).remove([path]);
+      throw new Error('Could not create a secure document link: ' + ((publicInfo.error && publicInfo.error.message) || 'Unknown error'));
+    }
     var result = await c.rpc('secure_upload_owner_document', {
       p_owner_type: ownerType,
       p_owner_id: ownerId,
@@ -1543,7 +1548,7 @@
       p_file_name: file.name,
       p_file_type: file.name.split('.').pop().toUpperCase(),
       p_file_size: file.size,
-      p_file_url: path,
+      p_file_url: publicInfo.data.signedUrl,
       p_session_token: staffToken
     });
     if (result.error) {
@@ -2010,6 +2015,19 @@
   async function listDocuments(ownerType, ownerId) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
+    var studentToken = activeStudentSessionToken();
+    if (ownerType === 'student' && studentToken) {
+      var studentDocuments = await c.rpc('secure_student_portal_documents', {
+        p_session_token: studentToken
+      });
+      if (studentDocuments.error) {
+        if (/secure_student_portal_documents|schema cache|function/i.test(studentDocuments.error.message || '')) {
+          throw new Error('Run the student portal documents and transcript SQL in Supabase, then refresh this page.');
+        }
+        throw studentDocuments.error;
+      }
+      return studentDocuments.data || [];
+    }
     var staffToken = activeStaffSessionToken();
     var storedUser = currentStoredUser();
     var schoolAdministrator = storedUser && (storedUser.isAdmin || storedUser.category === 'School Administrator' || storedUser.role === 'School Administrator');
@@ -2043,6 +2061,19 @@
   async function listStudentTranscript(studentId) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !studentId) return null;
+    var studentToken = activeStudentSessionToken();
+    if (studentToken) {
+      var studentTranscript = await c.rpc('secure_student_portal_transcript', {
+        p_session_token: studentToken
+      });
+      if (studentTranscript.error) {
+        if (/secure_student_portal_transcript|schema cache|function/i.test(studentTranscript.error.message || '')) {
+          throw new Error('Run the student portal documents and transcript SQL in Supabase, then refresh this page.');
+        }
+        throw studentTranscript.error;
+      }
+      return studentTranscript.data || { student: {}, scores: [], summaries: [] };
+    }
     var studentResult = await c
       .from('students')
       .select('*, classes(name, programmes(name))')
