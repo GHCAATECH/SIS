@@ -964,13 +964,19 @@ async function parseBulkFile(file) {
   if (!name.endsWith('.xlsx') && !name.endsWith('.xlsm')) throw new Error('Upload an Excel .xlsm or .xlsx file.');
   if (!window.XLSX) throw new Error('Excel reader could not load. Check internet connection and reload.');
   var buffer = await file.arrayBuffer();
-  var workbook = XLSX.read(buffer, { type: 'array' });
+  var workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
   var sheet = workbook.Sheets[workbook.SheetNames[0]];
   return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 }
 
+function normalizeBulkCell(cell) {
+  if (cell === null || cell === undefined) return '';
+  if (cell instanceof Date && !isNaN(cell.getTime())) return cell.toISOString().slice(0, 10);
+  return String(cell).trim();
+}
+
 function normalizeDate(value) {
-  value = (value || '').trim();
+  value = normalizeBulkCell(value);
   return value || null;
 }
 
@@ -1162,15 +1168,20 @@ document.getElementById('uploadBulk').addEventListener('click', function() {
   async function importUsers() {
     var rows = await parseBulkFile(file);
     if (rows.length < 2) throw new Error('The uploaded template has no staff rows.');
-    var headers = rows[0].map(function(header) { return header.trim(); });
+    var headers = rows[0].map(normalizeBulkCell);
     var missing = bulkFields.filter(function(field) { return headers.indexOf(field) === -1; });
     if (missing.length) throw new Error('Template is missing columns: ' + missing.join(', '));
 
     var payloads = rows.slice(1).map(function(row) {
       var record = {};
-      headers.forEach(function(header, idx) { record[header] = (row[idx] || '').trim(); });
+      headers.forEach(function(header, idx) {
+        if (header) record[header] = normalizeBulkCell(row[idx]);
+      });
       return normalizeBulkPayload(record);
+    }).filter(function(payload) {
+      return payload.staff_name || payload.staff_id || payload.email || payload.username;
     });
+    if (!payloads.length) throw new Error('The uploaded template has no completed staff rows.');
 
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createStaffUser) {
       for (var i = 0; i < payloads.length; i++) await AxiomDB.createStaffUser(payloads[i]);
