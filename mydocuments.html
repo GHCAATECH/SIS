@@ -39,7 +39,7 @@
 <body class="portal-shell footer-shell">
 <div class="main">
   <main class="content">
-    <div class="page-head">
+    <div class="page-head" id="documentsPageHead">
       <span class="ph-ico"><i class="fas fa-file-shield"></i></span>
       <div><h2>My Documents</h2><p id="docSubtitle">View documents uploaded to your account.</p></div>
     </div>
@@ -102,6 +102,7 @@ if (!currentUser || !currentUser.id) {
 var ownerType = currentUser.type === 'student' ? 'student' : 'staff';
 document.getElementById('docSubtitle').textContent = ownerType === 'student' ? 'View documents uploaded to your student account.' : 'View documents uploaded to your staff account.';
 document.getElementById('docHeadTitle').textContent = ownerType === 'student' ? 'Student Documents' : 'Staff Documents';
+document.getElementById('documentsPageHead').hidden = ownerType === 'student';
 document.getElementById('documentCardHead').hidden = ownerType === 'student';
 document.getElementById('studentTranscriptCard').style.display = 'none';
 

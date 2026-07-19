@@ -226,8 +226,8 @@
 <div class="main">
   <main class="content">
     <div class="page-head">
-      <span class="ph-ico"><i class="fas fa-file-lines"></i></span>
-      <div><h2>Transcript</h2><p>Generate and print a student's cumulative academic transcript.</p></div>
+      <span class="ph-ico" id="transcriptPageIcon"><i class="fas fa-file-lines"></i></span>
+      <div id="transcriptPageIntro"><h2>Transcript</h2><p>Generate and print a student's cumulative academic transcript.</p></div>
       <div class="ph-actions">
         <button class="btn" id="printTranscriptBtn" type="button"><i class="fas fa-print"></i> Print</button>
         <button class="btn btn--primary" id="saveTranscriptPdfBtn" type="button"><i class="fas fa-file-pdf"></i> Save as PDF</button>
@@ -322,6 +322,10 @@ Portal.init({ active: 'transcript' });
 
 var currentUser = Portal.currentUser();
 document.body.classList.add(currentUser && currentUser.type === 'student' ? 'student-report-mode' : 'admin-download-mode');
+if (currentUser && currentUser.type === 'student') {
+  document.getElementById('transcriptPageIcon').hidden = true;
+  document.getElementById('transcriptPageIntro').hidden = true;
+}
 
 function formatDate(value) {
   if (!value) return '-';
