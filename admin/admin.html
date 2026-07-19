@@ -47,16 +47,26 @@
     .admin-system .form-grid { gap: 8px; }
   }
   @media (min-width: 700px) {
-    body.admin-dashboard .sidebar {
+    body.admin-dashboard:not(.sidebar-collapsed) .sidebar {
       transform: none !important;
       display: flex !important;
     }
-    body.admin-dashboard > .main {
+    body.admin-dashboard:not(.sidebar-collapsed) > .main {
       margin-left: var(--sidebar-w) !important;
       width: calc(100% - var(--sidebar-w)) !important;
     }
-    body.admin-dashboard .hamburger {
+    body.admin-dashboard:not(.sidebar-collapsed) .hamburger {
       display: none !important;
+    }
+    body.admin-dashboard.sidebar-collapsed .sidebar {
+      transform: translateX(calc(-1 * var(--sidebar-w))) !important;
+    }
+    body.admin-dashboard.sidebar-collapsed > .main {
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
+    body.admin-dashboard.sidebar-collapsed .hamburger {
+      display: grid !important;
     }
   }
 </style>
