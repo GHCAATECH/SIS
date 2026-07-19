@@ -45,7 +45,7 @@
     </div>
 
     <div class="card card--pad-0">
-      <div class="card__head"><i class="fas fa-folder-open"></i> <span id="docHeadTitle">My Documents</span></div>
+      <div class="card__head" id="documentCardHead"><i class="fas fa-folder-open"></i> <span id="docHeadTitle">My Documents</span></div>
       <div class="table-wrap">
         <table class="tbl" id="docTable">
           <thead><tr><th>Title</th><th>File Name</th><th>Type</th><th>Uploaded</th><th>Action</th></tr></thead>
@@ -102,6 +102,7 @@ if (!currentUser || !currentUser.id) {
 var ownerType = currentUser.type === 'student' ? 'student' : 'staff';
 document.getElementById('docSubtitle').textContent = ownerType === 'student' ? 'View documents uploaded to your student account.' : 'View documents uploaded to your staff account.';
 document.getElementById('docHeadTitle').textContent = ownerType === 'student' ? 'Student Documents' : 'Staff Documents';
+document.getElementById('documentCardHead').hidden = ownerType === 'student';
 document.getElementById('studentTranscriptCard').style.display = 'none';
 
 function renderDocuments(docs) {
