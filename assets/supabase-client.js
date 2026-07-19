@@ -1039,6 +1039,17 @@
   async function listUserPrivileges(staffUserId) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !staffUserId) return null;
+    var token = activeStaffSessionToken();
+    if (token) {
+      var sessionResult = await c.rpc('secure_list_user_privileges_with_session', {
+        p_session_token: token,
+        p_staff_user_id: staffUserId
+      });
+      if (!sessionResult.error) return sessionResult.data || [];
+      if (!/secure_list_user_privileges_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw sessionResult.error;
+      }
+    }
     var result = await c
       .from('user_privileges')
       .select('page_key')
@@ -1051,6 +1062,18 @@
   async function saveUserPrivileges(staffUserId, pageKeys) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !staffUserId) return null;
+    var token = activeStaffSessionToken();
+    if (token) {
+      var sessionResult = await c.rpc('secure_save_user_privileges_with_session', {
+        p_session_token: token,
+        p_staff_user_id: staffUserId,
+        p_page_keys: pageKeys || []
+      });
+      if (!sessionResult.error) return sessionResult.data || [];
+      if (!/secure_save_user_privileges_with_session|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw sessionResult.error;
+      }
+    }
     var result = await c.rpc('secure_save_user_privileges', {
       p_school_id: school.id,
       p_staff_user_id: staffUserId,
