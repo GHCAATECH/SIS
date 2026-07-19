@@ -652,6 +652,28 @@
     return result.data;
   }
 
+  async function updateSubject(subjectId, payload) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school || !subjectId) return null;
+    var programme = payload.programme === 'All Programmes' ? null : await findProgrammeByName(payload.programme);
+    if (payload.programme !== 'All Programmes' && !programme) throw new Error('Programme was not found for this subject.');
+    var row = {
+      programme_id: programme ? programme.id : null,
+      name: payload.name,
+      code: payload.code || null,
+      subject_type: payload.type || payload.subject_type || 'Elective',
+      applies_to_all_programmes: payload.programme === 'All Programmes'
+    };
+    var result = await c.from('subjects')
+      .update(row)
+      .eq('school_id', school.id)
+      .eq('id', subjectId)
+      .select('*, programmes(name)')
+      .single();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function deleteSubject(subjectId) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !subjectId) return null;
@@ -2170,6 +2192,7 @@
     updateProgramme: updateProgramme,
     deleteProgramme: deleteProgramme,
     createSubject: createSubject,
+    updateSubject: updateSubject,
     deleteSubject: deleteSubject,
     createClass: createClass,
     updateClass: updateClass,

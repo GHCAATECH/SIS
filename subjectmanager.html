@@ -8,6 +8,39 @@
 <link rel="stylesheet" href="assets/app.css?v=20260717-sky-navy-theme1" />
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260717-sky-navy-theme1" />
 <link rel="stylesheet" href="assets/theme.css?v=20260719-icons-sky" />
+<style>
+  .subject-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-top: 1px solid #002B4C;
+    background: #fff;
+  }
+  .subject-page-info { color: #002B4C; font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .subject-page-buttons { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+  .subject-page-button {
+    min-width: 34px;
+    min-height: 32px;
+    padding: 5px 9px;
+    border: 1px solid #002B4C;
+    border-radius: 7px;
+    background: #fff;
+    color: #002B4C;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .subject-page-button:hover:not(:disabled),
+  .subject-page-button.active { background: #002B4C; color: #C0EBFF; }
+  .subject-page-button:disabled { cursor: not-allowed; opacity: .45; }
+  @media (max-width: 640px) {
+    .subject-pagination { align-items: flex-start; flex-direction: column; }
+    .subject-page-buttons { justify-content: flex-start; }
+  }
+</style>
 </head>
 <body class="portal-shell footer-shell">
 <div class="main">
@@ -19,7 +52,7 @@
 
     <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
       <div class="card">
-        <div class="card__head"><i class="fas fa-plus"></i> Add Subject</div>
+        <div class="card__head"><i class="fas fa-plus"></i> <span id="subjectFormTitle">Add Subject</span></div>
         <div class="card__body">
           <form id="subjectForm" class="grid" style="gap:14px">
             <div class="field"><label>Programme <span class="req">*</span></label>
@@ -31,7 +64,10 @@
                 <option>Elective</option>
                 <option>Core</option>
               </select></div>
-            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Add Subject</button>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button type="button" class="btn" id="cancelSubjectEdit" hidden>Cancel</button>
+              <button type="submit" class="btn btn--primary" id="saveSubjectButton"><i class="fas fa-floppy-disk"></i> Add Subject</button>
+            </div>
           </form>
         </div>
       </div>
@@ -44,13 +80,14 @@
             <tbody></tbody>
           </table>
         </div>
+        <div class="subject-pagination" id="subjectPagination" aria-label="Subject table pagination"></div>
       </div>
     </div>
   </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260719-subject-edit-pagination"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'subjectmanager' });
@@ -106,6 +143,9 @@ function programmeName(programme) {
 
 var programmes = loadList(PROGRAMME_KEY, defaultProgrammes);
 var subjects = loadList(SUBJECT_KEY, defaultSubjects);
+var editingSubjectIndex = -1;
+var currentSubjectPage = 1;
+var subjectsPerPage = 10;
 
 function mapDbSubject(subject) {
   return {
@@ -131,12 +171,31 @@ function populateProgrammes() {
 }
 
 function render() {
-  document.querySelector('#subjectTbl tbody').innerHTML = subjects.map(function(s, idx) {
+  var totalPages = Math.max(1, Math.ceil(subjects.length / subjectsPerPage));
+  currentSubjectPage = Math.min(Math.max(currentSubjectPage, 1), totalPages);
+  var startIndex = (currentSubjectPage - 1) * subjectsPerPage;
+  var pageSubjects = subjects.slice(startIndex, startIndex + subjectsPerPage);
+  document.querySelector('#subjectTbl tbody').innerHTML = pageSubjects.length ? pageSubjects.map(function(s, pageIndex) {
+    var idx = startIndex + pageIndex;
     return '<tr><td style="font-weight:600">'+s.name+'</td><td>'+(s.code || '-')+'</td><td>'+s.type+'</td><td>'+s.programme+'</td>'+
       '<td><div class="row-actions">'+
+        '<button class="btn" data-act="Edit" data-i="'+idx+'" title="Edit subject"><i class="fas fa-pen"></i> Edit</button>'+
         '<button class="btn btn--danger" data-act="Drop" data-i="'+idx+'" title="Drop"><i class="fas fa-trash"></i></button>'+
       '</div></td></tr>';
-  }).join('');
+  }).join('') : '<tr><td colspan="5" style="padding:28px;text-align:center;font-weight:700">No subjects found.</td></tr>';
+  renderSubjectPagination(totalPages, startIndex, pageSubjects.length);
+}
+
+function renderSubjectPagination(totalPages, startIndex, visibleCount) {
+  var pagination = document.getElementById('subjectPagination');
+  var first = subjects.length ? startIndex + 1 : 0;
+  var last = subjects.length ? startIndex + visibleCount : 0;
+  var buttons = '<button type="button" class="subject-page-button" data-page="'+(currentSubjectPage - 1)+'" '+(currentSubjectPage === 1 ? 'disabled' : '')+'>Previous</button>';
+  for (var page = 1; page <= totalPages; page += 1) {
+    buttons += '<button type="button" class="subject-page-button'+(page === currentSubjectPage ? ' active' : '')+'" data-page="'+page+'" aria-label="Page '+page+'" '+(page === currentSubjectPage ? 'aria-current="page"' : '')+'>'+page+'</button>';
+  }
+  buttons += '<button type="button" class="subject-page-button" data-page="'+(currentSubjectPage + 1)+'" '+(currentSubjectPage === totalPages ? 'disabled' : '')+'>Next</button>';
+  pagination.innerHTML = '<span class="subject-page-info">Showing '+first+' to '+last+' of '+subjects.length+' subjects</span><div class="subject-page-buttons">'+buttons+'</div>';
 }
 
 populateProgrammes();
@@ -158,6 +217,7 @@ async function refreshSubjectsFromSupabase() {
       saveSubjects();
     }
     populateProgrammes();
+    currentSubjectPage = 1;
     render();
   } catch (err) {
     console.error(err);
@@ -176,33 +236,70 @@ document.getElementById('subjectForm').addEventListener('submit', function(e) {
       code: document.getElementById('sCode').value.trim(),
       type: document.getElementById('sType').value
     };
-    var exists = subjects.some(function(s) {
-      return s.name.toLowerCase() === subject.name.toLowerCase() && s.programme === subject.programme;
+    var exists = subjects.some(function(s, index) {
+      return index !== editingSubjectIndex && s.name.toLowerCase() === subject.name.toLowerCase() && s.programme === subject.programme;
     });
     if (exists) {
       Portal.toast('Subject already exists for this programme.', true);
       return;
     }
-    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createSubject) {
-      subject = mapDbSubject(await AxiomDB.createSubject(subject));
+    var isEditing = editingSubjectIndex > -1;
+    var previous = isEditing ? subjects[editingSubjectIndex] : null;
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      if (isEditing && previous.id && AxiomDB.updateSubject) subject = mapDbSubject(await AxiomDB.updateSubject(previous.id, subject));
+      else if (!isEditing && AxiomDB.createSubject) subject = mapDbSubject(await AxiomDB.createSubject(subject));
     }
-    subjects.push(subject);
+    if (isEditing) subjects[editingSubjectIndex] = Object.assign({}, previous, subject);
+    else {
+      subjects.push(subject);
+      currentSubjectPage = Math.max(1, Math.ceil(subjects.length / subjectsPerPage));
+    }
     saveSubjects();
     render();
-    form.reset();
-    populateProgrammes();
-    Portal.toast('Subject added.');
+    resetSubjectForm();
+    Portal.toast(isEditing ? 'Subject updated.' : 'Subject added.');
   }
   saveSubject().catch(function(err) {
     console.error(err);
-    Portal.toast('Could not add subject: ' + (err.message || 'Unknown error'), true);
+    Portal.toast('Could not save subject: ' + (err.message || 'Unknown error'), true);
   });
+});
+
+function resetSubjectForm() {
+  editingSubjectIndex = -1;
+  document.getElementById('subjectForm').reset();
+  populateProgrammes();
+  document.getElementById('subjectFormTitle').textContent = 'Add Subject';
+  document.getElementById('saveSubjectButton').innerHTML = '<i class="fas fa-floppy-disk"></i> Add Subject';
+  document.getElementById('cancelSubjectEdit').hidden = true;
+}
+
+document.getElementById('cancelSubjectEdit').addEventListener('click', resetSubjectForm);
+
+document.getElementById('subjectPagination').addEventListener('click', function(e) {
+  var button = e.target.closest('button[data-page]');
+  if (!button || button.disabled) return;
+  currentSubjectPage = Number(button.dataset.page) || 1;
+  render();
 });
 
 document.getElementById('subjectTbl').addEventListener('click', function(e) {
   var b = e.target.closest('button[data-act]');
   if (!b) return;
   var i = +b.dataset.i;
+  if (b.dataset.act === 'Edit') {
+    editingSubjectIndex = i;
+    var selected = subjects[i];
+    document.getElementById('sProgramme').value = selected.programme || '';
+    document.getElementById('sName').value = selected.name || '';
+    document.getElementById('sCode').value = selected.code || '';
+    document.getElementById('sType').value = selected.type || 'Elective';
+    document.getElementById('subjectFormTitle').textContent = 'Edit Subject';
+    document.getElementById('saveSubjectButton').innerHTML = '<i class="fas fa-floppy-disk"></i> Save Changes';
+    document.getElementById('cancelSubjectEdit').hidden = false;
+    document.getElementById('sName').focus();
+    return;
+  }
   if (!confirm('Drop '+subjects[i].name+'?')) return;
   async function dropSubject() {
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteSubject && subjects[i].id) {
