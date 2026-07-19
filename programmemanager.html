@@ -19,13 +19,16 @@
 
     <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
       <div class="card">
-        <div class="card__head"><i class="fas fa-plus"></i> Add Programme</div>
+        <div class="card__head"><i class="fas fa-plus"></i> <span id="programmeFormTitle">Add Programme</span></div>
         <div class="card__body">
           <form id="programmeForm" class="grid" style="gap:14px">
             <div class="field"><label>Programme name <span class="req">*</span></label><input class="input" id="pName" required placeholder="e.g. General Science"></div>
             <div class="field"><label>Programme code</label><input class="input" id="pCode" placeholder="e.g. SCI"></div>
             <div class="field"><label>Department <span class="req">*</span></label><select class="select" id="pDept" required><option value="">Select department...</option></select></div>
-            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Add Programme</button>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button type="button" class="btn" id="cancelProgrammeEdit" hidden>Cancel</button>
+              <button type="submit" class="btn btn--primary" id="saveProgrammeButton"><i class="fas fa-floppy-disk"></i> Add Programme</button>
+            </div>
           </form>
         </div>
       </div>
@@ -44,7 +47,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260719-programme-edit"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'programmemanager' });
@@ -79,6 +82,7 @@ function mapDbProgramme(p) {
 }
 
 var programmes = loadProgrammes();
+var editingProgrammeIndex = -1;
 var departments = (function() {
   try {
     var saved = JSON.parse(localStorage.getItem(DEPARTMENT_KEY) || 'null');
@@ -99,6 +103,7 @@ function render() {
   document.querySelector('#programmeTbl tbody').innerHTML = programmes.map(function(p, idx) {
     return '<tr><td style="font-weight:600">'+p.name+'</td><td>'+(p.code || '-')+'</td><td>'+(p.department || '-')+'</td>'+
       '<td><div class="row-actions">'+
+        '<button class="btn" data-act="Edit" data-i="'+idx+'" title="Edit"><i class="fas fa-pen"></i> Edit</button>'+
         '<button class="btn btn--danger" data-act="Drop" data-i="'+idx+'" title="Drop"><i class="fas fa-trash"></i></button>'+
       '</div></td></tr>';
   }).join('');
@@ -135,7 +140,7 @@ document.getElementById('programmeForm').addEventListener('submit', function(e) 
   var form = this;
   async function saveProgramme() {
     var name = document.getElementById('pName').value.trim();
-    if (programmes.some(function(p) { return p.name.toLowerCase() === name.toLowerCase(); })) {
+    if (programmes.some(function(p, index) { return index !== editingProgrammeIndex && p.name.toLowerCase() === name.toLowerCase(); })) {
       Portal.toast('Programme already exists.', true);
       return;
     }
@@ -144,25 +149,51 @@ document.getElementById('programmeForm').addEventListener('submit', function(e) 
       code: document.getElementById('pCode').value.trim(),
       department: document.getElementById('pDept').value.trim()
     };
-    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createProgramme) {
-      programme = mapDbProgramme(await AxiomDB.createProgramme(programme));
+    var isEditing = editingProgrammeIndex > -1;
+    var previous = isEditing ? programmes[editingProgrammeIndex] : null;
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      if (isEditing && previous.id && AxiomDB.updateProgramme) programme = mapDbProgramme(await AxiomDB.updateProgramme(previous.id, programme));
+      else if (!isEditing && AxiomDB.createProgramme) programme = mapDbProgramme(await AxiomDB.createProgramme(programme));
     }
-    programmes.push(programme);
+    if (isEditing) programmes[editingProgrammeIndex] = Object.assign({}, previous, programme);
+    else programmes.push(programme);
     saveProgrammes();
     render();
-    form.reset();
-    Portal.toast('Programme added.');
+    resetProgrammeForm();
+    Portal.toast(isEditing ? 'Programme updated.' : 'Programme added.');
   }
   saveProgramme().catch(function(err) {
     console.error(err);
-    Portal.toast('Could not add programme: ' + (err.message || 'Unknown error'), true);
+    Portal.toast('Could not save programme: ' + (err.message || 'Unknown error'), true);
   });
 });
+
+function resetProgrammeForm() {
+  editingProgrammeIndex = -1;
+  document.getElementById('programmeForm').reset();
+  document.getElementById('programmeFormTitle').textContent = 'Add Programme';
+  document.getElementById('saveProgrammeButton').innerHTML = '<i class="fas fa-floppy-disk"></i> Add Programme';
+  document.getElementById('cancelProgrammeEdit').hidden = true;
+}
+
+document.getElementById('cancelProgrammeEdit').addEventListener('click', resetProgrammeForm);
 
 document.getElementById('programmeTbl').addEventListener('click', function(e) {
   var b = e.target.closest('button[data-act]');
   if (!b) return;
   var i = +b.dataset.i;
+  if (b.dataset.act === 'Edit') {
+    editingProgrammeIndex = i;
+    var selected = programmes[i];
+    document.getElementById('pName').value = selected.name || '';
+    document.getElementById('pCode').value = selected.code || '';
+    document.getElementById('pDept').value = selected.department || '';
+    document.getElementById('programmeFormTitle').textContent = 'Edit Programme';
+    document.getElementById('saveProgrammeButton').innerHTML = '<i class="fas fa-floppy-disk"></i> Save Changes';
+    document.getElementById('cancelProgrammeEdit').hidden = false;
+    document.getElementById('pName').focus();
+    return;
+  }
   if (!confirm('Drop '+programmes[i].name+'?')) return;
   async function dropProgramme() {
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteProgramme && programmes[i].id) {

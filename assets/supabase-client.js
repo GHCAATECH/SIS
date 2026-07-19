@@ -605,6 +605,27 @@
     return result.data;
   }
 
+  async function updateProgramme(programmeId, payload) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school || !programmeId) return null;
+    var department = await findDepartmentByName(payload.department);
+    if (!department) throw new Error('Select a valid department for this programme.');
+    var row = {
+      name: payload.name,
+      code: payload.code || null,
+      department_id: department.id,
+      department: department.name
+    };
+    var result = await c.from('programmes')
+      .update(row)
+      .eq('school_id', school.id)
+      .eq('id', programmeId)
+      .select('*, departments(id, name, code)')
+      .single();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function deleteProgramme(programmeId) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !programmeId) return null;
@@ -2146,6 +2167,7 @@
     listSubjects: listSubjects,
     listClasses: listClasses,
     createProgramme: createProgramme,
+    updateProgramme: updateProgramme,
     deleteProgramme: deleteProgramme,
     createSubject: createSubject,
     deleteSubject: deleteSubject,
