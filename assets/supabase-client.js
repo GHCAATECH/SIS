@@ -1392,16 +1392,37 @@
     return result.data || [];
   }
 
+  async function getSchoolInfo() {
+    var c = db(), school = await currentSchool();
+    if (!c || !school) return null;
+    var result = await c.rpc('secure_get_school_info', {
+      p_session_token: activeStaffSessionToken() || null,
+      p_school_id: school.id
+    });
+    if (!result.error) return result.data || school;
+    if (!/secure_get_school_info|schema cache|function/i.test(result.error.message || '')) throw result.error;
+
+    var fallback = await c.from('schools').select('*').eq('id', school.id).limit(1).maybeSingle();
+    if (fallback.error) throw fallback.error;
+    return fallback.data || school;
+  }
+
   async function updateSchoolInfo(payload) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
-    var result = await c
-      .from('schools')
-      .update({ name: payload.name || school.name })
-      .eq('id', school.id)
-      .select('*')
-      .single();
-    if (result.error) throw result.error;
+    var result = await c.rpc('secure_update_school_info', {
+      p_session_token: activeStaffSessionToken() || null,
+      p_school_id: school.id,
+      p_payload: payload || {}
+    });
+    if (result.error) {
+      if (/secure_update_school_info|schema cache|function/i.test(result.error.message || '')) {
+        throw new Error('Run the secure school information SQL in Supabase, then try again.');
+      }
+      throw result.error;
+    }
+    if (!result.data || !result.data.id) throw new Error('School information was not updated.');
+    setActiveSchool(result.data.code || school.code, result.data.id, result.data.name || school.name);
     return result.data;
   }
 
@@ -2049,6 +2070,7 @@
     listSchoolAssessmentMonitor: listSchoolAssessmentMonitor,
     recalculateClassPositions: recalculateClassPositions,
     listResultSummaries: listResultSummaries,
+    getSchoolInfo: getSchoolInfo,
     updateSchoolInfo: updateSchoolInfo,
     qualitativeAssessmentSetup: qualitativeAssessmentSetup,
     saveQualitativeAssessment: saveQualitativeAssessment,

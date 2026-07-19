@@ -52,7 +52,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260717-qualitative-captured-by1"></script>
+<script src="assets/supabase-client.js?v=20260719-school-info1"></script>
 <script src="assets/shell.js?v=20260719-admin-nav1"></script>
 <script>
 Portal.init({ active: 'schoolupdate' });
@@ -95,11 +95,11 @@ loadSchoolInfo();
 async function refreshSchoolInfoFromSupabase() {
   if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
   try {
-    var school = await AxiomDB.currentSchool();
+    var school = AxiomDB.getSchoolInfo ? await AxiomDB.getSchoolInfo() : await AxiomDB.currentSchool();
     if (school) {
       var local = {};
       try { local = JSON.parse(localStorage.getItem(SCHOOL_INFO_KEY) || '{}'); } catch (e) {}
-      applySchoolInfo(Object.assign({}, local, { code: school.code, name: school.name }));
+      applySchoolInfo(Object.assign({}, local, school));
     }
   } catch (err) {
     console.error(err);
@@ -116,10 +116,12 @@ document.getElementById('schoolForm').addEventListener('submit', function(e){
   e.preventDefault();
   async function saveSchoolInfo() {
     var payload = schoolPayload();
-    localStorage.setItem(SCHOOL_INFO_KEY, JSON.stringify(payload));
+    var saved = payload;
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.updateSchoolInfo) {
-      await AxiomDB.updateSchoolInfo(payload);
+      saved = await AxiomDB.updateSchoolInfo(payload);
     }
+    localStorage.setItem(SCHOOL_INFO_KEY, JSON.stringify(saved || payload));
+    applySchoolInfo(saved || payload);
     Portal.toast('School information updated.');
   }
   saveSchoolInfo().catch(function(err) {
