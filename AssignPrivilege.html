@@ -231,6 +231,27 @@
     width: 780px;
     max-width: 780px;
   }
+  #privilegeModal .privilege-modal {
+    display: flex;
+    flex-direction: column;
+    max-height: min(760px, calc(100dvh - 36px));
+    overflow: hidden;
+  }
+  #privilegeModal .modal__head { flex: 0 0 auto; }
+  #privilegeModal .modal__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  #privilegeTree {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 5px;
+    scrollbar-gutter: stable;
+  }
   .subject-class-modal,
   .view-subject-modal { max-height:90vh; }
   .subject-class-modal .modal__body,
@@ -335,6 +356,30 @@
     padding-top: 14px;
     border-top: 1px solid #e5e7eb;
     margin-top: 16px;
+  }
+  #privilegeModal .privilege-actions {
+    flex: 0 0 auto;
+    margin: 14px -18px -18px;
+    padding: 14px 18px 18px;
+    background: #fff;
+    border-top: 1px solid #002B4C;
+  }
+  #privilegeModal .privilege-actions .btn {
+    width: auto !important;
+    min-width: 138px;
+    min-height: 40px;
+    padding: 8px 15px !important;
+    white-space: nowrap !important;
+  }
+  #privilegeModal #cancelPrivilege {
+    background: #fff !important;
+    border-color: #002B4C !important;
+    color: #002B4C !important;
+  }
+  #privilegeModal #savePrivilege {
+    background: #002B4C !important;
+    border-color: #002B4C !important;
+    color: #C0EBFF !important;
   }
   .privilege-selectbar {
     display: flex;
@@ -453,6 +498,9 @@
     .user-type-tabs button { flex: 1 0 max-content; }
     .search-control { margin-left: auto; }
     .users-table-wrap { max-height: none; }
+    .privilege-groups { grid-template-columns: 1fr; }
+    #privilegeModal .privilege-actions { margin-left: -14px; margin-right: -14px; margin-bottom: -14px; padding: 12px 14px 14px; }
+    #privilegeModal .privilege-actions .btn { flex: 1 1 0; min-width: 0; }
   }
 
   /* ===============================
@@ -737,7 +785,7 @@
 <div class="modal-backdrop" id="privilegeModal">
   <div class="modal privilege-modal">
     <div class="modal__head">
-      <h4>Assign privilege To User:</h4>
+      <h4>Assign Privileges to User</h4>
       <button class="icon-btn" id="closePrivilege" type="button" aria-label="Close"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="modal__body">
@@ -817,7 +865,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/supabase-client.js?v=20260719-school-info2"></script>
-<script src="assets/shell.js?v=20260719-portal-switch1"></script>
+<script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script src="assets/staff-ranks.js"></script>
 <script>
 Portal.init({ active: 'AssignPrivilege' });
@@ -837,10 +885,12 @@ var privilegeGroups = [
   {
     title: 'Web Pages',
     items: [
-      ['student-transcript-portal', 'AXIOMBYTE SMS'],
       ['registerstudent', 'Register Student'],
       ['cass', 'Capture Assessment'],
+      ['schemeofwork', 'Scheme of Work'],
+      ['clearance', 'Clearance'],
       ['studentperprogram', 'Manage Students'],
+      ['studentarchive', 'Student Archive'],
       ['downloadresult', 'Assessment Records'],
       ['qualitativeaccessment', 'Qualitative Assessment'],
       ['transcript', 'Transcript'],
@@ -851,14 +901,16 @@ var privilegeGroups = [
   {
     title: 'Settings',
     items: [
-      ['settings', 'SETTINGS'],
       ['schoolupdate', 'Update School Info'],
       ['registeruser', 'Add User'],
       ['AssignPrivilege', 'Manage Users'],
       ['logintrace', 'Login Trace'],
+      ['documentmanager', 'Document Uploads'],
       ['departmentmanager', 'Add / Manage Departments'],
       ['programmemanager', 'Add / Manage Programmes'],
-      ['classmanager', 'Add / Manage Classes']
+      ['subjectmanager', 'Add / Manage Subjects'],
+      ['classmanager', 'Add / Manage Classes'],
+      ['housemanager', 'Add / Manage Houses']
     ]
   }
 ];
@@ -1495,24 +1547,30 @@ function selectedPrivilegeKeys() {
 
 async function saveActivePrivileges() {
   if (!activePrivilegeUser) return;
+  var saveButton = document.getElementById('savePrivilege');
+  var originalButtonHtml = saveButton.innerHTML;
   var keys = selectedPrivilegeKeys();
+  saveButton.disabled = true;
+  saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
   saveLocalPrivileges(activePrivilegeUser[5], keys);
 
-  if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(activePrivilegeUser[5]) && AxiomDB.saveUserPrivileges) {
-    try {
+  try {
+    if (window.AxiomDB && AxiomDB.isConfigured() && isUuid(activePrivilegeUser[5]) && AxiomDB.saveUserPrivileges) {
       await AxiomDB.saveUserPrivileges(activePrivilegeUser[5], keys);
-      Portal.toast('Privileges saved for ' + activePrivilegeUser[0] + '.');
+      Portal.toast('Privileges saved for ' + activePrivilegeUser[0] + '. Module access will update on the user\'s next page load.');
       closePrivilegeModal();
       return;
-    } catch (err) {
-      console.error(err);
-      Portal.toast('Saved locally. Run the user_privileges SQL to save to Supabase.', true);
-      return;
     }
-  }
 
-  Portal.toast('Privileges saved locally for ' + activePrivilegeUser[0] + '.');
-  closePrivilegeModal();
+    Portal.toast('Privileges saved locally for ' + activePrivilegeUser[0] + '.');
+    closePrivilegeModal();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not save privileges online: ' + (err.message || 'Unknown error'), true);
+  } finally {
+    saveButton.disabled = false;
+    saveButton.innerHTML = originalButtonHtml;
+  }
 }
 
 function userCategory(user) {

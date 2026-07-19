@@ -109,6 +109,22 @@
     catch (e) { return null; }
   }
 
+  async function refreshCurrentUserPrivileges() {
+    var user = currentUser();
+    if (!user || user.isSuperAdmin || user.type === 'student' || !user.id) return user;
+    if (!w.AxiomDB || !AxiomDB.isConfigured || !AxiomDB.isConfigured() || !AxiomDB.listUserPrivileges) return user;
+    try {
+      var privileges = await AxiomDB.listUserPrivileges(user.id);
+      if (Array.isArray(privileges)) {
+        user.privileges = privileges;
+        localStorage.setItem('axiom_current_user', JSON.stringify(user));
+      }
+    } catch (err) {
+      console.warn('Could not refresh current user privileges.', err);
+    }
+    return user;
+  }
+
   function setSidebarCollapsed(collapsed) {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
     try {
@@ -416,7 +432,8 @@
       opts = opts || {};
       var active = opts.active || '';
       var title = opts.title || lookupTitle(active) || 'Dashboard';
-      function go() {
+      async function go() {
+        await refreshCurrentUserPrivileges();
         wire(active, title, opts.subtitle);
         var user = currentUser();
         var pageKey = active || (location.pathname.split('/').pop() || '').replace('.html', '');
