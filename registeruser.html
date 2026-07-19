@@ -120,27 +120,27 @@
     width: 100%;
     max-width: none;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 10px;
-    margin: 0 0 12px;
+    gap: 6px;
+    margin: 0 0 6px;
   }
   .user-reg-step {
-    min-height: 58px;
-    gap: 10px;
-    padding: 10px 14px;
+    min-height: 38px;
+    gap: 6px;
+    padding: 4px 8px;
     border: 1px solid #dbe4ee;
     border-radius: 8px;
     color: #475569;
     background: #fff;
     box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 700;
   }
   .user-reg-step span {
-    width: 34px;
-    height: 34px;
+    width: 24px;
+    height: 24px;
     color: #0f766e;
     background: #ccfbf1;
-    font-size: 13px;
+    font-size: 11px;
   }
   .user-reg-step.active {
     color: #fff;
@@ -278,8 +278,13 @@
     max-width: none;
     display: flex;
     justify-content: flex-end;
-    margin: 0 0 8px;
+    margin: 0 0 5px;
     flex: none;
+  }
+  .bulk-upload-toolbar .btn {
+    min-height: 34px !important;
+    padding: 5px 10px !important;
+    font-size: 11px !important;
   }
   .bulk-upload-modal {
     position: fixed;
@@ -367,9 +372,9 @@
   @media (max-width: 680px) {
     body.user-registration-page { overflow: auto; }
     .user-registration-page .content { height: auto; min-height: calc(100dvh - var(--header-h)); overflow: visible; }
-    .user-registration-progress { gap: 6px; }
-    .user-reg-step { min-height: 48px; }
-    .user-reg-step span { width: 28px; height: 28px; }
+    .user-registration-progress { gap: 4px; }
+    .user-reg-step { min-height: 34px; padding: 3px; }
+    .user-reg-step span { width: 22px; height: 22px; }
     .staff-form .form-grid { grid-template-columns: 1fr; }
     .staff-section .card__head { margin: 10px 10px 0; padding: 13px 14px; font-size: 17px; }
     .staff-section .card__body,
