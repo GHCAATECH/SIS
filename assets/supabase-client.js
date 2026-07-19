@@ -1515,10 +1515,27 @@
     if (!session || !session.user) {
       throw new Error('Your account needs a Supabase Auth session for document storage. Logout and login again; if this continues, reset the school administrator password from Super Admin.');
     }
+    var staffToken = activeStaffSessionToken();
+    if (!staffToken) {
+      throw new Error('Your staff login session has expired. Logout and login again.');
+    }
+    var prepared = await c.rpc('secure_prepare_document_upload', {
+      p_session_token: staffToken
+    });
+    if (prepared.error) {
+      if (/secure_prepare_document_upload|schema cache|function/i.test(prepared.error.message || '')) {
+        throw new Error('Run the document storage preparation SQL in Supabase, then refresh this page.');
+      }
+      throw new Error('Could not prepare document upload: ' + prepared.error.message);
+    }
+    var preparedSchool = prepared.data || {};
+    var schoolCode = preparedSchool.school_code || school.code;
     var bucket = ownerType === 'student' ? 'student-documents' : 'staff-documents';
-    var path = school.code + '/' + ownerType + '/' + ownerId + '/' + Date.now() + '-' + file.name;
+    var path = schoolCode + '/' + ownerType + '/' + ownerId + '/' + Date.now() + '-' + file.name;
     var uploaded = await c.storage.from(bucket).upload(path, file, { upsert: false });
-    if (uploaded.error) throw uploaded.error;
+    if (uploaded.error) {
+      throw new Error('Supabase Storage rejected the document file: ' + uploaded.error.message);
+    }
     var publicInfo = await c.storage.from(bucket).createSignedUrl(path, 315360000);
     var result = await c.rpc('secure_upload_owner_document', {
       p_owner_type: ownerType,
@@ -1528,7 +1545,7 @@
       p_file_type: file.name.split('.').pop().toUpperCase(),
       p_file_size: file.size,
       p_file_url: publicInfo && publicInfo.data ? publicInfo.data.signedUrl : path,
-      p_session_token: activeStaffSessionToken() || null
+      p_session_token: staffToken
     });
     if (result.error) {
       await c.storage.from(bucket).remove([path]);
