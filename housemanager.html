@@ -19,10 +19,16 @@
 
     <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
       <div class="card">
-        <div class="card__head"><i class="fas fa-plus"></i> Add House</div>
+        <div class="card__head"><i class="fas fa-plus"></i> <span id="houseFormTitle">Add House</span></div>
         <div class="card__body">
           <form id="houseForm" class="grid" style="gap:14px">
             <div class="field"><label>House name <span class="req">*</span></label><input class="input" id="hName" required placeholder="e.g. Unity House"></div>
+            <div class="field"><label>House gender <span class="req">*</span></label>
+              <select class="select" id="hGender" required>
+                <option value="">Select house gender...</option>
+                <option>Male</option>
+                <option>Female</option>
+              </select></div>
             <div class="field"><label>Residential Status <span class="req">*</span></label>
               <select class="select" id="hResidentialStatus" required>
                 <option value="">Select residential status...</option>
@@ -31,7 +37,10 @@
               </select></div>
             <div class="field"><label>House parent / patron</label><input class="input" id="hPatron" placeholder="e.g. Mr. K. Boateng"></div>
             <div class="field"><label>Capacity</label><input class="input" id="hCapacity" type="number" min="1" placeholder="e.g. 120"></div>
-            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Add House</button>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button type="button" class="btn" id="cancelHouseEdit" hidden>Cancel</button>
+              <button type="submit" class="btn btn--primary" id="saveHouseButton"><i class="fas fa-floppy-disk"></i> Add House</button>
+            </div>
           </form>
         </div>
       </div>
@@ -40,7 +49,7 @@
         <div class="card__head"><i class="fas fa-table-list"></i> Existing Houses</div>
         <div class="table-wrap">
           <table class="tbl" id="houseTbl">
-            <thead><tr><th>House</th><th>Residential Status</th><th>Patron</th><th>Capacity</th><th>Actions</th></tr></thead>
+            <thead><tr><th>House</th><th>Gender</th><th>Residential Status</th><th>Patron</th><th>Capacity</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -50,16 +59,16 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260719-house-gender-edit"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'housemanager' });
 
 var STORAGE_KEY = 'axiom_houses';
 var defaultHouses = [
-  { name: 'Unity House', residentialStatus: 'Boarding', patron: 'Mr. K. Boateng', capacity: 120 },
-  { name: 'Liberty House', residentialStatus: 'Boarding', patron: 'Mr. S. Adjei', capacity: 110 },
-  { name: 'Day Students', residentialStatus: 'Day', patron: 'Mrs. A. Owusu', capacity: 300 }
+  { name: 'Unity House', gender: 'Male', residentialStatus: 'Boarding', patron: 'Mr. K. Boateng', capacity: 120 },
+  { name: 'Liberty House', gender: 'Female', residentialStatus: 'Boarding', patron: 'Mr. S. Adjei', capacity: 110 },
+  { name: 'Day Students', gender: '', residentialStatus: 'Day', patron: 'Mrs. A. Owusu', capacity: 300 }
 ];
 
 function loadHouses() {
@@ -76,6 +85,7 @@ function saveHouses() {
 }
 
 var houses = loadHouses();
+var editingHouseIndex = -1;
 
 function houseStatus(house) {
   return house.residentialStatus || house.residential_status || house.status || (house.gender ? 'Boarding' : '');
@@ -85,6 +95,7 @@ function mapDbHouse(house) {
   return {
     id: house.id,
     name: house.name,
+    gender: house.gender || '',
     residentialStatus: house.residential_status || house.residentialStatus,
     patron: house.patron || '',
     capacity: house.capacity || ''
@@ -92,12 +103,13 @@ function mapDbHouse(house) {
 }
 
 function render() {
-  document.querySelector('#houseTbl tbody').innerHTML = houses.map(function(h, idx) {
-    return '<tr><td style="font-weight:600">'+h.name+'</td><td>'+houseStatus(h)+'</td><td>'+(h.patron || '-')+'</td><td>'+(h.capacity || '-')+'</td>'+
+  document.querySelector('#houseTbl tbody').innerHTML = houses.length ? houses.map(function(h, idx) {
+    return '<tr><td style="font-weight:600">'+h.name+'</td><td>'+(h.gender || '-')+'</td><td>'+houseStatus(h)+'</td><td>'+(h.patron || '-')+'</td><td>'+(h.capacity || '-')+'</td>'+
       '<td><div class="row-actions">'+
+        '<button class="btn" data-act="Edit" data-i="'+idx+'" title="Edit house"><i class="fas fa-pen"></i> Edit</button>'+
         '<button class="btn btn--danger" data-act="Drop" data-i="'+idx+'" title="Drop"><i class="fas fa-trash"></i></button>'+
       '</div></td></tr>';
-  }).join('');
+  }).join('') : '<tr><td colspan="6" style="padding:28px;text-align:center;font-weight:700">No houses found.</td></tr>';
 }
 render();
 
@@ -123,29 +135,58 @@ document.getElementById('houseForm').addEventListener('submit', function(e) {
   async function saveHouse() {
     var house = {
       name: document.getElementById('hName').value.trim(),
+      gender: document.getElementById('hGender').value,
       residentialStatus: document.getElementById('hResidentialStatus').value,
       patron: document.getElementById('hPatron').value.trim(),
       capacity: document.getElementById('hCapacity').value
     };
-    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createHouse) {
-      house = mapDbHouse(await AxiomDB.createHouse(house));
+    var isEditing = editingHouseIndex > -1;
+    var previous = isEditing ? houses[editingHouseIndex] : null;
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      if (isEditing && previous.id && AxiomDB.updateHouse) house = mapDbHouse(await AxiomDB.updateHouse(previous.id, house));
+      else if (!isEditing && AxiomDB.createHouse) house = mapDbHouse(await AxiomDB.createHouse(house));
     }
-    houses.push(house);
+    if (isEditing) houses[editingHouseIndex] = Object.assign({}, previous, house);
+    else houses.push(house);
     saveHouses();
     render();
-    form.reset();
-    Portal.toast('House added.');
+    resetHouseForm();
+    Portal.toast(isEditing ? 'House updated.' : 'House added.');
   }
   saveHouse().catch(function(err) {
     console.error(err);
-    Portal.toast('Could not add house: ' + (err.message || 'Unknown error'), true);
+    Portal.toast('Could not save house: ' + (err.message || 'Unknown error'), true);
   });
 });
+
+function resetHouseForm() {
+  editingHouseIndex = -1;
+  document.getElementById('houseForm').reset();
+  document.getElementById('houseFormTitle').textContent = 'Add House';
+  document.getElementById('saveHouseButton').innerHTML = '<i class="fas fa-floppy-disk"></i> Add House';
+  document.getElementById('cancelHouseEdit').hidden = true;
+}
+
+document.getElementById('cancelHouseEdit').addEventListener('click', resetHouseForm);
 
 document.getElementById('houseTbl').addEventListener('click', function(e) {
   var b = e.target.closest('button[data-act]');
   if (!b) return;
   var i = +b.dataset.i;
+  if (b.dataset.act === 'Edit') {
+    editingHouseIndex = i;
+    var selected = houses[i];
+    document.getElementById('hName').value = selected.name || '';
+    document.getElementById('hGender').value = selected.gender || '';
+    document.getElementById('hResidentialStatus').value = houseStatus(selected) || '';
+    document.getElementById('hPatron').value = selected.patron || '';
+    document.getElementById('hCapacity').value = selected.capacity || '';
+    document.getElementById('houseFormTitle').textContent = 'Edit House';
+    document.getElementById('saveHouseButton').innerHTML = '<i class="fas fa-floppy-disk"></i> Save Changes';
+    document.getElementById('cancelHouseEdit').hidden = false;
+    document.getElementById('hName').focus();
+    return;
+  }
   if (confirm('Drop '+houses[i].name+'?')) {
     async function dropHouse() {
       if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteHouse && houses[i].id) {

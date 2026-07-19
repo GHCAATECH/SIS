@@ -786,6 +786,7 @@
       .insert({
         school_id: school.id,
         name: payload.name,
+        gender: payload.gender || null,
         residential_status: payload.residentialStatus || payload.residential_status,
         patron: payload.patron || null,
         capacity: payload.capacity ? Number(payload.capacity) : null
@@ -1604,6 +1605,26 @@
     return result.data;
   }
 
+  async function updateHouse(houseId, payload) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school || !houseId) return null;
+    var result = await c
+      .from('houses')
+      .update({
+        name: payload.name,
+        gender: payload.gender || null,
+        residential_status: payload.residentialStatus || payload.residential_status,
+        patron: payload.patron || null,
+        capacity: payload.capacity ? Number(payload.capacity) : null
+      })
+      .eq('school_id', school.id)
+      .eq('id', houseId)
+      .select('*')
+      .single();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function listDocumentOwners() {
     var c = db();
     if (!c) return null;
@@ -2199,6 +2220,7 @@
     deleteClass: deleteClass,
     listHouses: listHouses,
     createHouse: createHouse,
+    updateHouse: updateHouse,
     deleteHouse: deleteHouse,
     listStudents: listStudents,
     createStudent: createStudent,
