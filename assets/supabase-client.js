@@ -1210,10 +1210,15 @@
       p_semester: filters.semester || null,
       p_mode_name: filters.modeName || null
     });
-    if (!rpcResult.error) return rpcResult.data || {};
+    if (!rpcResult.error) {
+      var rpcPayload = rpcResult.data || {};
+      var hasSelectedYearTotal = Object.prototype.hasOwnProperty.call(rpcPayload, 'selected_year_students');
+      var hasIndividualUnassigned = Array.isArray(rpcPayload.unassigned_students);
+      if (hasSelectedYearTotal && hasIndividualUnassigned) return rpcPayload;
+    }
 
-    var missingRpc = rpcResult.error.code === 'PGRST202' ||
-      /secure_school_assessment_monitor|schema cache|function/i.test(rpcResult.error.message || '');
+    var missingRpc = !rpcResult.error || rpcResult.error.code === 'PGRST202' ||
+      /secure_school_assessment_monitor|schema cache|function/i.test((rpcResult.error && rpcResult.error.message) || '');
     if (!missingRpc) throw rpcResult.error;
 
     try {
