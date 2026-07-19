@@ -92,6 +92,7 @@ function houseStatus(house) {
 }
 
 function mapDbHouse(house) {
+  if (!house) throw new Error('Supabase did not return the saved house. Refresh the page to verify the record.');
   return {
     id: house.id,
     name: house.name,
@@ -142,6 +143,15 @@ document.getElementById('houseForm').addEventListener('submit', function(e) {
     };
     var isEditing = editingHouseIndex > -1;
     var previous = isEditing ? houses[editingHouseIndex] : null;
+    var duplicate = houses.some(function(existing, index) {
+      return index !== editingHouseIndex &&
+        String(existing.name || '').trim().toLowerCase() === house.name.toLowerCase() &&
+        String(existing.gender || '').trim().toLowerCase() === house.gender.toLowerCase();
+    });
+    if (duplicate) {
+      Portal.toast('A '+house.gender+' house with this name already exists.', true);
+      return;
+    }
     if (window.AxiomDB && AxiomDB.isConfigured()) {
       if (isEditing && previous.id && AxiomDB.updateHouse) house = mapDbHouse(await AxiomDB.updateHouse(previous.id, house));
       else if (!isEditing && AxiomDB.createHouse) house = mapDbHouse(await AxiomDB.createHouse(house));
@@ -155,6 +165,10 @@ document.getElementById('houseForm').addEventListener('submit', function(e) {
   }
   saveHouse().catch(function(err) {
     console.error(err);
+    if (err && err.code === '23505') {
+      Portal.toast('A '+document.getElementById('hGender').value+' house with this name already exists.', true);
+      return;
+    }
     Portal.toast('Could not save house: ' + (err.message || 'Unknown error'), true);
   });
 });

@@ -790,11 +790,37 @@
         residential_status: payload.residentialStatus || payload.residential_status,
         patron: payload.patron || null,
         capacity: payload.capacity ? Number(payload.capacity) : null
-      })
+    })
       .select('*')
       .single();
     if (result.error) throw result.error;
-    return result.data;
+    return result.data || {
+      name: payload.name,
+      gender: payload.gender || '',
+      residential_status: payload.residentialStatus || payload.residential_status || '',
+      patron: payload.patron || '',
+      capacity: payload.capacity ? Number(payload.capacity) : null
+    };
+  }
+
+  async function updateHouse(houseId, payload) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school || !houseId) return null;
+    var result = await c
+      .from('houses')
+      .update({
+        name: payload.name,
+        gender: payload.gender || null,
+        residential_status: payload.residentialStatus || payload.residential_status,
+        patron: payload.patron || null,
+        capacity: payload.capacity ? Number(payload.capacity) : null
+      })
+      .eq('school_id', school.id)
+      .eq('id', houseId)
+      .select('*')
+      .single();
+    if (result.error) throw result.error;
+    return result.data || Object.assign({}, payload, { id: houseId });
   }
 
   async function deleteHouse(houseId) {
@@ -1602,26 +1628,6 @@
       }
       throw result.error;
     }
-    return result.data;
-  }
-
-  async function updateHouse(houseId, payload) {
-    var c = db(), school = await currentSchool();
-    if (!c || !school || !houseId) return null;
-    var result = await c
-      .from('houses')
-      .update({
-        name: payload.name,
-        gender: payload.gender || null,
-        residential_status: payload.residentialStatus || payload.residential_status,
-        patron: payload.patron || null,
-        capacity: payload.capacity ? Number(payload.capacity) : null
-      })
-      .eq('school_id', school.id)
-      .eq('id', houseId)
-      .select('*')
-      .single();
-    if (result.error) throw result.error;
     return result.data;
   }
 
