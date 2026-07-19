@@ -1183,21 +1183,56 @@ document.getElementById('uploadBulk').addEventListener('click', function() {
     });
     if (!payloads.length) throw new Error('The uploaded template has no completed staff rows.');
 
+    var uploadedCount = 0;
+    var duplicateRows = [];
+
+    function isDuplicateAccountError(error) {
+      return String(error && error.code || '') === '23505' || /duplicate key|unique constraint/i.test(error && error.message || '');
+    }
+
+    function duplicateAccountLabel(payload, error) {
+      var message = String(error && error.message || '');
+      var field = /email/i.test(message) ? 'email' : (/staff[_ ]?id/i.test(message) ? 'staff ID' : 'username');
+      var value = field === 'email' ? payload.email : (field === 'staff ID' ? payload.staff_id : payload.username);
+      return (payload.staff_name || payload.staff_id || 'Unnamed row') + ' - ' + field + ' "' + (value || '') + '" already exists';
+    }
+
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.createStaffUser) {
-      for (var i = 0; i < payloads.length; i++) await AxiomDB.createStaffUser(payloads[i]);
+      for (var i = 0; i < payloads.length; i++) {
+        try {
+          await AxiomDB.createStaffUser(payloads[i]);
+          uploadedCount += 1;
+        } catch (createError) {
+          if (!isDuplicateAccountError(createError)) throw createError;
+          duplicateRows.push(duplicateAccountLabel(payloads[i], createError));
+        }
+      }
     } else {
       var localUsers = JSON.parse(localStorage.getItem('axiom_local_staff_users') || '[]');
       payloads.forEach(function(payload, idx) {
+        var duplicate = localUsers.some(function(user) {
+          return (payload.username && String(user.username || '').trim().toLowerCase() === payload.username.toLowerCase()) ||
+            (payload.email && String(user.email || '').trim().toLowerCase() === payload.email.toLowerCase());
+        });
+        if (duplicate) {
+          duplicateRows.push((payload.staff_name || payload.staff_id || 'Unnamed row') + ' - username or email already exists');
+          return;
+        }
         payload.id = 'STAFF-BULK-' + Date.now() + '-' + idx;
         payload.privileges = [];
         localUsers.push(payload);
+        uploadedCount += 1;
       });
       localStorage.setItem('axiom_local_staff_users', JSON.stringify(localUsers));
     }
 
-    document.getElementById('bulkStatus').textContent = payloads.length + ' staff users uploaded successfully.';
+    var resultMessage = uploadedCount + ' staff user' + (uploadedCount === 1 ? '' : 's') + ' uploaded successfully.';
+    if (duplicateRows.length) {
+      resultMessage += ' ' + duplicateRows.length + ' duplicate row' + (duplicateRows.length === 1 ? '' : 's') + ' skipped: ' + duplicateRows.join('; ') + '.';
+    }
+    document.getElementById('bulkStatus').textContent = resultMessage;
     document.getElementById('bulkFile').value = '';
-    Portal.toast(payloads.length + ' staff users uploaded.');
+    Portal.toast(resultMessage);
   }
 
   importUsers().catch(function(err) {
