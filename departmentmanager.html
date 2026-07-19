@@ -8,20 +8,17 @@
 <link rel="stylesheet" href="assets/app.css?v=20260717-sky-navy-theme1" />
 <style>
   .department-layout { display:grid; grid-template-columns:minmax(300px,.7fr) minmax(600px,1.5fr); gap:16px; align-items:start; }
-  .linked-count { display:inline-flex; min-width:30px; justify-content:center; padding:4px 8px; border-radius:999px; color:var(--brand); background:var(--brand-soft); font-size:12px; font-weight:800; }
   #departmentTable { width:100%; table-layout:fixed; }
   #departmentTable th, #departmentTable td { padding:9px 10px; vertical-align:middle; }
-  #departmentTable th:nth-child(1) { width:30%; }
-  #departmentTable th:nth-child(2) { width:13%; }
-  #departmentTable th:nth-child(3), #departmentTable th:nth-child(4) { width:13%; text-align:center; }
-  #departmentTable th:nth-child(5) { width:31%; }
-  #departmentTable td:nth-child(3), #departmentTable td:nth-child(4) { text-align:center; }
+  #departmentTable th:nth-child(1) { width:42%; }
+  #departmentTable th:nth-child(2) { width:18%; }
+  #departmentTable th:nth-child(3) { width:40%; }
   #departmentTable .row-actions { display:flex; align-items:center; justify-content:flex-start; gap:6px; flex-wrap:nowrap; }
   #departmentTable .row-actions .btn { min-width:0; min-height:30px; padding:5px 9px; font-size:11px; }
   #departmentTable td:first-child { white-space:normal; overflow-wrap:anywhere; }
   @media (max-width:980px) { .department-layout { grid-template-columns:1fr; } }
   @media (max-width:700px) {
-    #departmentTable { min-width:640px; }
+    #departmentTable { min-width:500px; }
     .department-layout .table-wrap { overflow-x:auto; }
   }
 </style>
@@ -56,7 +53,7 @@
         <div class="card__head"><span><i class="fas fa-table-list"></i> Existing Departments</span><button class="btn btn--sm" id="refreshDepartments" type="button"><i class="fas fa-rotate"></i> Refresh</button></div>
         <div class="table-wrap">
           <table class="tbl" id="departmentTable">
-            <thead><tr><th>Department</th><th>Code</th><th>Programmes</th><th>Classes</th><th>Action</th></tr></thead>
+            <thead><tr><th>Department</th><th>Code</th><th>Action</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -91,11 +88,9 @@ function programmeDepartment(programme) { return programme.department || (progra
 
 function renderDepartments() {
   var body = document.querySelector('#departmentTable tbody');
-  if (!departments.length) { body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-faint)">No departments created.</td></tr>'; return; }
+  if (!departments.length) { body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text-faint)">No departments created.</td></tr>'; return; }
   body.innerHTML = departments.map(function(department, index) {
-    var programmeCount = programmes.filter(function(programme) { return sameName(programmeDepartment(programme), department.name); }).length;
-    var classCount = classes.filter(function(classRow) { return sameName(classRow.department, department.name) || programmes.some(function(programme) { return sameName(programme.name, classRow.programme) && sameName(programmeDepartment(programme), department.name); }); }).length;
-    return '<tr><td><b>'+esc(department.name)+'</b></td><td>'+esc(department.code || '-')+'</td><td><span class="linked-count">'+programmeCount+'</span></td><td><span class="linked-count">'+classCount+'</span></td><td><div class="row-actions"><button class="btn btn--sm" type="button" data-edit-department="'+index+'"><i class="fas fa-pen"></i> Edit</button><button class="btn btn--danger btn--sm" type="button" data-delete-department="'+index+'"><i class="fas fa-trash"></i> Delete</button></div></td></tr>';
+    return '<tr><td><b>'+esc(department.name)+'</b></td><td>'+esc(department.code || '-')+'</td><td><div class="row-actions"><button class="btn btn--sm" type="button" data-edit-department="'+index+'"><i class="fas fa-pen"></i> Edit</button><button class="btn btn--danger btn--sm" type="button" data-delete-department="'+index+'"><i class="fas fa-trash"></i> Delete</button></div></td></tr>';
   }).join('');
 }
 
