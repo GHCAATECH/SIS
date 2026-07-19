@@ -459,6 +459,80 @@
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260717-sky-navy-theme1" />
 <link rel="stylesheet" href="assets/theme.css?v=20260717-sky-navy-theme2" />
+<style id="add-user-palette">
+  body.user-registration-page,
+  body.user-registration-page > .main,
+  body.user-registration-page .content {
+    background: #C0EBFF !important;
+    color: #002B4C !important;
+  }
+
+  body.user-registration-page :where(
+    .staff-form,
+    .staff-section,
+    .staff-section *,
+    .bulk-upload-toolbar,
+    .bulk-upload-modal,
+    .bulk-upload-modal *,
+    .user-wizard-actions,
+    .user-stage-count
+  ) {
+    color: #002B4C;
+  }
+
+  body.user-registration-page :where(
+    .card,
+    .staff-section,
+    .user-reg-step,
+    .input,
+    .select,
+    input,
+    select,
+    textarea,
+    .photo-preview,
+    .multi-dropdown__trigger,
+    .multi-dropdown__panel,
+    .bulk-upload-modal__dialog,
+    .bulk-upload-modal__head,
+    .bulk-status,
+    .user-wizard-actions
+  ) {
+    border-color: #002B4C !important;
+  }
+
+  body.user-registration-page :where(
+    button,
+    .btn,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"]
+  ) {
+    background: #002B4C !important;
+    border-color: #002B4C !important;
+    color: #C0EBFF !important;
+  }
+
+  body.user-registration-page :where(
+    button,
+    .btn,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"]
+  ) :where(i, span, strong, b) {
+    color: #C0EBFF !important;
+  }
+
+  body.user-registration-page .user-reg-step.active {
+    background: #002B4C !important;
+    border-color: #002B4C !important;
+    color: #C0EBFF !important;
+  }
+  body.user-registration-page .user-reg-step.active strong { color: #C0EBFF !important; }
+  body.user-registration-page .user-reg-step.active span {
+    background: #C0EBFF !important;
+    color: #002B4C !important;
+  }
+</style>
 </head>
 <body class="user-registration-page portal-shell footer-shell">
 <div class="main">
