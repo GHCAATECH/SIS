@@ -525,3 +525,20 @@ html body.landing-page .footer-bottom {
 html body.landing-page .footer-bottom {
   border-top-color: #002B4C !important;
 }
+
+/* Keep iconography consistent across every portal and public page. */
+html body i,
+html body i::before,
+html body .fa,
+html body .fas,
+html body .far,
+html body .fab,
+html body .fa-solid,
+html body .fa-regular,
+html body .fa-brands,
+html body svg.svg-inline--fa,
+html body svg.lucide,
+html body svg[class*="icon"] {
+  color: #C0EBFF !important;
+  stroke: currentColor;
+}
