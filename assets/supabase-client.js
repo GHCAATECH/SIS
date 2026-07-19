@@ -1511,6 +1511,10 @@
   async function uploadOwnerDocument(ownerType, ownerId, title, file) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
+    var session = await authSession();
+    if (!session || !session.user) {
+      throw new Error('Your account needs a Supabase Auth session for document storage. Logout and login again; if this continues, reset the school administrator password from Super Admin.');
+    }
     var bucket = ownerType === 'student' ? 'student-documents' : 'staff-documents';
     var path = school.code + '/' + ownerType + '/' + ownerId + '/' + Date.now() + '-' + file.name;
     var uploaded = await c.storage.from(bucket).upload(path, file, { upsert: false });
@@ -1528,7 +1532,10 @@
     if (ownerType === 'student') record.student_id = ownerId;
     else record.staff_user_id = ownerId;
     var result = await c.from('documents').insert(record).select('*').single();
-    if (result.error) throw result.error;
+    if (result.error) {
+      await c.storage.from(bucket).remove([path]);
+      throw result.error;
+    }
     return result.data;
   }
 

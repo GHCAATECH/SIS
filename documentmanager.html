@@ -34,7 +34,7 @@
       <div class="card">
         <div class="card__head"><i class="fas fa-upload"></i> Upload Document</div>
         <div class="card__body">
-          <form id="docForm" class="grid" style="gap:14px">
+          <form id="docForm" class="grid" style="gap:14px" novalidate>
             <div class="field"><label>Owner type <span class="req">*</span></label>
               <select class="select" id="ownerType" required>
                 <option value="">Select owner type...</option>
@@ -54,7 +54,7 @@
               <select class="select" id="ownerId" required disabled><option value="">Search for an owner first...</option></select></div>
             <div class="field"><label>Document title <span class="req">*</span></label><input class="input" id="docTitle" required placeholder="e.g. Birth Certificate"></div>
             <div class="field"><label>Document file <span class="req">*</span></label><input class="input" id="docFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required></div>
-            <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Upload Document</button>
+            <button type="submit" class="btn btn--primary" id="uploadDocumentButton"><i class="fas fa-floppy-disk"></i> Upload Document</button>
           </form>
         </div>
       </div>
@@ -78,7 +78,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-document-owners1"></script>
+<script src="assets/supabase-client.js?v=20260719-document-owners2"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'documentmanager' });
@@ -258,44 +258,58 @@ document.getElementById('docForm').addEventListener('submit', function(e) {
   var form = this;
   async function save() {
     var ownerSelect = document.getElementById('ownerId');
-    var selectedOwner = ownerSelect.options[ownerSelect.selectedIndex];
     var ownerType = document.getElementById('ownerType').value;
     var file = document.getElementById('docFile').files[0];
     var title = document.getElementById('docTitle').value.trim();
+    var uploadButton = document.getElementById('uploadDocumentButton');
 
-    if (window.AxiomDB && AxiomDB.isConfigured()) {
-      var saved = await AxiomDB.uploadOwnerDocument(ownerType, ownerSelect.value, title, file);
-      documents.push({
-        id: saved.id,
-        ownerType: ownerType,
-        ownerId: ownerSelect.value,
-        ownerName: selectedOwner.dataset.name,
-        title: saved.title,
-        fileName: saved.file_name,
-        fileType: saved.file_type,
-        fileSize: saved.file_size
-      });
-    } else {
-      documents.push({
-        id: 'DOC-' + Date.now(),
-        ownerType: ownerType,
-        ownerId: ownerSelect.value,
-        ownerName: selectedOwner.dataset.name,
-        title: title,
-        fileName: file.name,
-        fileType: fileType(file.name),
-        fileSize: file.size
-      });
-      saveDocuments();
+    if (!ownerType) throw new Error('Select Student or Staff.');
+    if (!ownerSelect.value) throw new Error('Search for and select the student or staff member.');
+    if (!title) throw new Error('Enter a document title.');
+    if (!file) throw new Error('Choose a document file.');
+
+    var selectedOwner = ownerSelect.options[ownerSelect.selectedIndex];
+    uploadButton.disabled = true;
+    uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+    try {
+      if (window.AxiomDB && AxiomDB.isConfigured()) {
+        var saved = await AxiomDB.uploadOwnerDocument(ownerType, ownerSelect.value, title, file);
+        documents.push({
+          id: saved.id,
+          ownerType: ownerType,
+          ownerId: ownerSelect.value,
+          ownerName: selectedOwner.dataset.name,
+          title: saved.title,
+          fileName: saved.file_name,
+          fileType: saved.file_type,
+          fileSize: saved.file_size
+        });
+      } else {
+        documents.push({
+          id: 'DOC-' + Date.now(),
+          ownerType: ownerType,
+          ownerId: ownerSelect.value,
+          ownerName: selectedOwner.dataset.name,
+          title: title,
+          fileName: file.name,
+          fileType: fileType(file.name),
+          fileSize: file.size
+        });
+        saveDocuments();
+      }
+      form.reset();
+      updateOwnerSearchMode();
+      renderDocuments();
+      Portal.toast('Document uploaded successfully.');
+    } finally {
+      uploadButton.disabled = false;
+      uploadButton.innerHTML = '<i class="fas fa-floppy-disk"></i> Upload Document';
     }
-    form.reset();
-    updateOwnerSearchMode();
-    renderDocuments();
-    Portal.toast('Document uploaded.');
   }
   save().catch(function(err) {
     console.error(err);
-    Portal.toast('Could not upload document.', true);
+    Portal.toast('Could not upload document: ' + (err.message || 'Unknown error'), true);
   });
 });
 
