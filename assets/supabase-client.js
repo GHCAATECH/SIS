@@ -1539,7 +1539,9 @@
       p_session_token: activeStaffSessionToken() || null
     });
     if (result.error) {
-      if (/secure_document_owner_directory|schema cache|function/i.test(result.error.message || '')) return null;
+      if (/secure_document_owner_directory|schema cache|function/i.test(result.error.message || '')) {
+        throw new Error('Run the document owner directory SQL in Supabase, then refresh this page.');
+      }
       throw result.error;
     }
     return result.data || { classes: [], students: [], staff: [] };
