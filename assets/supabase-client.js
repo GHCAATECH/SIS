@@ -1532,6 +1532,19 @@
     return result.data;
   }
 
+  async function listDocumentOwners() {
+    var c = db();
+    if (!c) return null;
+    var result = await c.rpc('secure_document_owner_directory', {
+      p_session_token: activeStaffSessionToken() || null
+    });
+    if (result.error) {
+      if (/secure_document_owner_directory|schema cache|function/i.test(result.error.message || '')) return null;
+      throw result.error;
+    }
+    return result.data || { classes: [], students: [], staff: [] };
+  }
+
   async function uploadStudentPassport(assRefId, file) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !assRefId || !file) return null;
@@ -2088,6 +2101,7 @@
     recalculateClassPositions: recalculateClassPositions,
     listResultSummaries: listResultSummaries,
     getSchoolInfo: getSchoolInfo,
+    listDocumentOwners: listDocumentOwners,
     updateSchoolInfo: updateSchoolInfo,
     qualitativeAssessmentSetup: qualitativeAssessmentSetup,
     saveQualitativeAssessment: saveQualitativeAssessment,

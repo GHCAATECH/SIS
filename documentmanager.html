@@ -8,6 +8,19 @@
 <link rel="stylesheet" href="assets/app.css?v=20260717-sky-navy-theme1" />
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260717-sky-navy-theme1" />
 <link rel="stylesheet" href="assets/theme.css?v=20260717-sky-navy-theme2" />
+<style>
+  .document-layout { display:grid; grid-template-columns:minmax(320px, .9fr) minmax(0, 2fr); gap:18px; align-items:start; }
+  .owner-search-row { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; }
+  .owner-search-row .btn { min-width:104px; }
+  .owner-search-status { min-height:18px; margin:5px 0 0; color:#002B4C; font-size:12px; font-weight:700; }
+  .owner-search-status.is-empty { color:#b42318; }
+  #ownerId:disabled { cursor:not-allowed; opacity:.72; }
+  @media (max-width: 980px) { .document-layout { grid-template-columns:1fr; } }
+  @media (max-width: 520px) {
+    .owner-search-row { grid-template-columns:1fr; }
+    .owner-search-row .btn { width:100%; }
+  }
+</style>
 </head>
 <body class="portal-shell footer-shell">
 <div class="main">
@@ -17,7 +30,7 @@
       <div><h2>Document Uploads</h2><p>Upload titled documents for students and staff from one place.</p></div>
     </div>
 
-    <div class="grid" style="grid-template-columns:1fr 2fr; align-items:start">
+    <div class="document-layout">
       <div class="card">
         <div class="card__head"><i class="fas fa-upload"></i> Upload Document</div>
         <div class="card__body">
@@ -28,8 +41,17 @@
                 <option value="student">Student</option>
                 <option value="staff">Staff</option>
               </select></div>
-            <div class="field"><label>Owner <span class="req">*</span></label>
-              <select class="select" id="ownerId" required><option value="">Select owner type first...</option></select></div>
+            <div class="field" id="studentClassField" hidden><label>Student class</label>
+              <select class="select" id="ownerClass"><option value="">All Classes</option></select></div>
+            <div class="field"><label id="ownerSearchLabel">Search owner</label>
+              <div class="owner-search-row">
+                <input class="input" id="ownerSearch" placeholder="Select owner type first..." disabled>
+                <button class="btn btn--primary" type="button" id="searchOwner" disabled><i class="fas fa-magnifying-glass"></i> Search</button>
+              </div>
+              <p class="owner-search-status" id="ownerSearchStatus" aria-live="polite"></p>
+            </div>
+            <div class="field"><label>Search results / owner <span class="req">*</span></label>
+              <select class="select" id="ownerId" required disabled><option value="">Search for an owner first...</option></select></div>
             <div class="field"><label>Document title <span class="req">*</span></label><input class="input" id="docTitle" required placeholder="e.g. Birth Certificate"></div>
             <div class="field"><label>Document file <span class="req">*</span></label><input class="input" id="docFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required></div>
             <button type="submit" class="btn btn--primary"><i class="fas fa-floppy-disk"></i> Upload Document</button>
@@ -56,45 +78,58 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260719-document-owners1"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'documentmanager' });
 
-var students = [
-  { id: 'STP24001', name: 'Mensah Kwabena' },
-  { id: 'STP24002', name: 'Owusu Abena' },
-  { id: 'STP24003', name: 'Asante Yaw' },
-  { id: 'STP24004', name: 'Boateng Akosua' },
-  { id: 'STP24005', name: 'Adjei Kofi' }
-];
-var staff = [
-  { id: 'admin', name: 'Admin' },
-  { id: 'g.asante', name: 'Grace Asante' },
-  { id: 'k.boateng', name: 'Kojo Boateng' },
-  { id: 'm.owusu', name: 'Mary Owusu' },
-  { id: 's.adjei', name: 'Samuel Adjei' }
-];
+var students = [];
+var staff = [];
+var ownerClasses = [];
 var STORAGE_KEY = 'axiom_documents';
 var documents = loadDocuments();
 
 async function loadOwnersFromSupabase() {
   if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
   try {
-    var dbStudents = await AxiomDB.listStudents();
-    var dbStaff = await AxiomDB.listStaff();
+    var directory = AxiomDB.listDocumentOwners ? await AxiomDB.listDocumentOwners() : null;
+    var dbStudents;
+    var dbStaff;
+    if (directory) {
+      dbStudents = directory.students || [];
+      dbStaff = directory.staff || [];
+      ownerClasses = (directory.classes || []).map(function(row) {
+        return { id: row.id, name: row.name || 'Unnamed Class' };
+      });
+    } else {
+      dbStudents = await AxiomDB.listStudents();
+      dbStaff = await AxiomDB.listStaff();
+    }
     if (dbStudents && dbStudents.length) {
       students = dbStudents.map(function(row) {
         return {
           id: row.id,
-          name: [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ') + ' (STD_ID: ' + row.ass_ref_id + ')'
+          code: row.student_id || row.ass_ref_id || '',
+          name: row.name || [row.first_name, row.surname, row.other_names].filter(Boolean).join(' '),
+          classId: row.class_id || '',
+          className: row.class_name || (row.classes && row.classes.name) || 'Unassigned Class'
         };
       });
     }
     if (dbStaff && dbStaff.length) {
-      staff = dbStaff.map(function(row) { return { id: row.id, name: row.full_name }; });
+      staff = dbStaff.map(function(row) {
+        return { id: row.id, code: row.staff_id || '', name: row.name || row.full_name || row.staff_name || '' };
+      });
     }
-    populateOwners();
+    if (!ownerClasses.length) {
+      var classMap = {};
+      students.forEach(function(student) {
+        if (student.classId && !classMap[student.classId]) classMap[student.classId] = { id: student.classId, name: student.className };
+      });
+      ownerClasses = Object.keys(classMap).map(function(key) { return classMap[key]; });
+    }
+    populateOwnerClasses();
+    resetOwnerResults('Owner directory loaded. Enter a name or ID, then click Search.');
   } catch (err) {
     console.error(err);
     Portal.toast('Could not load owners from Supabase: ' + (err.message || 'Unknown error'), true);
@@ -127,18 +162,66 @@ function ownerTypeLabel(type) {
   return type === 'student' ? 'Student' : 'Staff';
 }
 
-function populateOwners() {
-  var type = document.getElementById('ownerType').value;
+function populateOwnerClasses() {
+  var classSelect = document.getElementById('ownerClass');
+  classSelect.innerHTML = '<option value="">All Classes</option>';
+  ownerClasses.slice().sort(function(a, b) { return a.name.localeCompare(b.name); }).forEach(function(item) {
+    var option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = item.name;
+    classSelect.appendChild(option);
+  });
+}
+
+function resetOwnerResults(message) {
   var ownerSelect = document.getElementById('ownerId');
-  var owners = ownerList(type);
-  ownerSelect.innerHTML = '<option value="">'+(owners.length ? 'Select owner...' : 'Select owner type first...')+'</option>';
+  ownerSelect.innerHTML = '<option value="">Search for an owner first...</option>';
+  ownerSelect.disabled = true;
+  var status = document.getElementById('ownerSearchStatus');
+  status.classList.remove('is-empty');
+  status.textContent = message || '';
+}
+
+function updateOwnerSearchMode() {
+  var type = document.getElementById('ownerType').value;
+  var searchInput = document.getElementById('ownerSearch');
+  var searchButton = document.getElementById('searchOwner');
+  document.getElementById('studentClassField').hidden = type !== 'student';
+  document.getElementById('ownerSearchLabel').textContent = type === 'student' ? 'Search student by name or Student ID' : type === 'staff' ? 'Search staff by name or Staff ID' : 'Search owner';
+  searchInput.disabled = !type;
+  searchButton.disabled = !type;
+  searchInput.placeholder = type === 'student' ? 'Enter student name or Student ID...' : type === 'staff' ? 'Enter staff name or Staff ID...' : 'Select owner type first...';
+  searchInput.value = '';
+  document.getElementById('ownerClass').value = '';
+  resetOwnerResults(type ? 'Enter a name or ID, then click Search.' : 'Select an owner type first.');
+}
+
+function searchOwners() {
+  var type = document.getElementById('ownerType').value;
+  if (!type) {
+    Portal.toast('Select Student or Staff first.', true);
+    return;
+  }
+  var query = document.getElementById('ownerSearch').value.trim().toLowerCase();
+  var classId = type === 'student' ? document.getElementById('ownerClass').value : '';
+  var owners = ownerList(type).filter(function(owner) {
+    var matchesClass = !classId || owner.classId === classId;
+    var searchable = (owner.name + ' ' + (owner.code || '')).toLowerCase();
+    return matchesClass && (!query || searchable.indexOf(query) > -1);
+  }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+  var ownerSelect = document.getElementById('ownerId');
+  ownerSelect.innerHTML = '<option value="">'+(owners.length ? 'Select from '+owners.length+' result'+(owners.length === 1 ? '' : 's')+'...' : 'No matching owner found')+'</option>';
   owners.forEach(function(owner) {
     var option = document.createElement('option');
     option.value = owner.id;
-    option.textContent = owner.name + ' (' + owner.id + ')';
+    option.textContent = owner.name + (owner.code ? ' - ' + owner.code : '') + (type === 'student' && owner.className ? ' - ' + owner.className : '');
     option.dataset.name = owner.name;
     ownerSelect.appendChild(option);
   });
+  ownerSelect.disabled = !owners.length;
+  var status = document.getElementById('ownerSearchStatus');
+  status.classList.toggle('is-empty', !owners.length);
+  status.textContent = owners.length ? owners.length + ' matching ' + ownerTypeLabel(type).toLowerCase() + (owners.length === 1 ? '' : 's') + ' found.' : 'No matching ' + ownerTypeLabel(type).toLowerCase() + ' found.';
 }
 
 function renderDocuments() {
@@ -156,7 +239,17 @@ function renderDocuments() {
   document.getElementById('docEmpty').style.display = filtered.length ? 'none' : 'block';
 }
 
-document.getElementById('ownerType').addEventListener('change', populateOwners);
+document.getElementById('ownerType').addEventListener('change', updateOwnerSearchMode);
+document.getElementById('ownerClass').addEventListener('change', function() {
+  if (document.getElementById('ownerType').value === 'student') searchOwners();
+});
+document.getElementById('searchOwner').addEventListener('click', searchOwners);
+document.getElementById('ownerSearch').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    searchOwners();
+  }
+});
 document.getElementById('filterType').addEventListener('change', renderDocuments);
 document.getElementById('search').addEventListener('input', renderDocuments);
 
@@ -196,7 +289,7 @@ document.getElementById('docForm').addEventListener('submit', function(e) {
       saveDocuments();
     }
     form.reset();
-    populateOwners();
+    updateOwnerSearchMode();
     renderDocuments();
     Portal.toast('Document uploaded.');
   }
@@ -225,7 +318,8 @@ document.getElementById('docTable').addEventListener('click', function(e) {
   });
 });
 
-populateOwners();
+populateOwnerClasses();
+updateOwnerSearchMode();
 renderDocuments();
 loadOwnersFromSupabase();
 </script>
