@@ -399,6 +399,31 @@
     font-size: 12px;
     line-height: 1.45;
   }
+  .bulk-upload-modal .bulk-status::before {
+    display: inline-block;
+    width: 18px;
+    margin-right: 6px;
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+  }
+  .bulk-upload-modal .bulk-status.is-success {
+    border-color: #002B4C !important;
+    background: rgba(34, 197, 94, .22) !important;
+    font-weight: 700;
+  }
+  .bulk-upload-modal .bulk-status.is-success::before { content: "\f058"; }
+  .bulk-upload-modal .bulk-status.is-warning {
+    border-color: #002B4C !important;
+    background: rgba(245, 158, 11, .22) !important;
+    font-weight: 700;
+  }
+  .bulk-upload-modal .bulk-status.is-warning::before { content: "\f071"; }
+  .bulk-upload-modal .bulk-status.is-error {
+    border-color: #002B4C !important;
+    background: rgba(239, 68, 68, .2) !important;
+    font-weight: 700;
+  }
+  .bulk-upload-modal .bulk-status.is-error::before { content: "\f06a"; }
   body.bulk-upload-open { overflow: hidden !important; }
   .multi-dropdown { position:relative; width:100%; }
   .multi-dropdown__trigger { width:100%; min-height:40px; padding:8px 36px 8px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text); text-align:left; cursor:pointer; position:relative; }
@@ -1160,10 +1185,14 @@ document.getElementById('downloadTemplate').addEventListener('click', function()
 
 document.getElementById('uploadBulk').addEventListener('click', function() {
   var file = document.getElementById('bulkFile').files[0];
+  var bulkStatusElement = document.getElementById('bulkStatus');
   if (!file) {
     Portal.toast('Choose a completed Excel template first.', true);
     return;
   }
+
+  bulkStatusElement.classList.remove('is-success', 'is-warning', 'is-error');
+  bulkStatusElement.textContent = 'Uploading staff users...';
 
   async function importUsers() {
     var rows = await parseBulkFile(file);
@@ -1230,14 +1259,19 @@ document.getElementById('uploadBulk').addEventListener('click', function() {
     if (duplicateRows.length) {
       resultMessage += ' ' + duplicateRows.length + ' duplicate row' + (duplicateRows.length === 1 ? '' : 's') + ' skipped: ' + duplicateRows.join('; ') + '.';
     }
-    document.getElementById('bulkStatus').textContent = resultMessage;
+    bulkStatusElement.classList.add(uploadedCount > 0 ? 'is-success' : 'is-warning');
+    bulkStatusElement.textContent = uploadedCount > 0
+      ? 'Upload successful. ' + resultMessage
+      : 'No new staff users were uploaded. ' + resultMessage;
     document.getElementById('bulkFile').value = '';
-    Portal.toast(resultMessage);
+    Portal.toast(uploadedCount > 0 ? 'Upload successful. ' + resultMessage : resultMessage, uploadedCount === 0);
   }
 
   importUsers().catch(function(err) {
     console.error(err);
-    document.getElementById('bulkStatus').textContent = 'Upload failed: ' + (err.message || 'Unknown error');
+    bulkStatusElement.classList.remove('is-success', 'is-warning');
+    bulkStatusElement.classList.add('is-error');
+    bulkStatusElement.textContent = 'Upload failed: ' + (err.message || 'Unknown error');
     Portal.toast('Bulk upload failed: ' + (err.message || 'Unknown error'), true);
   });
 });
