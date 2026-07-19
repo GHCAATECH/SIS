@@ -32,6 +32,8 @@
   @media (max-width: 900px) {
     .student-profile-strip { grid-template-columns: repeat(2, 1fr); }
   }
+  body.student-documents-mode #documentsPageHead,
+  body.student-documents-mode #documentCardHead { display:none !important; }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260717-sky-navy-theme1" />
 <link rel="stylesheet" href="assets/theme.css?v=20260717-sky-navy-theme2" />
@@ -100,10 +102,15 @@ if (!currentUser || !currentUser.id) {
   location.href = 'login.html';
 }
 var ownerType = currentUser.type === 'student' ? 'student' : 'staff';
+if (ownerType === 'student') document.body.classList.add('student-documents-mode');
 document.getElementById('docSubtitle').textContent = ownerType === 'student' ? 'View documents uploaded to your student account.' : 'View documents uploaded to your staff account.';
 document.getElementById('docHeadTitle').textContent = ownerType === 'student' ? 'Student Documents' : 'Staff Documents';
 document.getElementById('documentsPageHead').hidden = ownerType === 'student';
 document.getElementById('documentCardHead').hidden = ownerType === 'student';
+if (ownerType === 'student') {
+  document.getElementById('documentsPageHead').style.setProperty('display', 'none', 'important');
+  document.getElementById('documentCardHead').style.setProperty('display', 'none', 'important');
+}
 document.getElementById('studentTranscriptCard').style.display = 'none';
 
 function renderDocuments(docs) {

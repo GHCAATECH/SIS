@@ -72,6 +72,8 @@
     font-size:13px;
     line-height:1;
   }
+  body.student-report-mode #transcriptPageIcon,
+  body.student-report-mode #transcriptPageIntro { display:none !important; }
   .student-report-mode #downloadTranscriptModule { display:none; }
   .admin-download-mode #studentTranscriptReport { display:none; }
   .admin-download-mode .page-head { display:none; }
@@ -325,6 +327,8 @@ document.body.classList.add(currentUser && currentUser.type === 'student' ? 'stu
 if (currentUser && currentUser.type === 'student') {
   document.getElementById('transcriptPageIcon').hidden = true;
   document.getElementById('transcriptPageIntro').hidden = true;
+  document.getElementById('transcriptPageIcon').style.setProperty('display', 'none', 'important');
+  document.getElementById('transcriptPageIntro').style.setProperty('display', 'none', 'important');
 }
 
 function formatDate(value) {
