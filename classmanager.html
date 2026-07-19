@@ -363,6 +363,14 @@ function populateSubjects(selectedSubjects) {
   var matchingSubjects = subjects.filter(function(subject) {
     return programme && subjectMatchesProgramme(subject, programme);
   });
+  var hasSelectedSubjects = Array.isArray(selectedSubjects);
+  if (!hasSelectedSubjects) {
+    selectedSubjects = matchingSubjects.filter(function(subject) {
+      return String(subject.type || '').toLowerCase() === 'core';
+    }).map(function(subject) {
+      return subject.name;
+    });
+  }
   selectedSubjects = (selectedSubjects || []).slice(0, 12);
   box.innerHTML = '';
   for (var i = 0; i < 12; i++) {
