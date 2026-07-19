@@ -273,6 +273,79 @@
   .bulk-card__title i { color: #0f766e; margin-right: 6px; }
   .bulk-card .bulk-actions { grid-template-columns: auto minmax(220px, 1fr) auto; }
   .bulk-card .bulk-status { display: none; }
+  .bulk-upload-toolbar {
+    width: 100%;
+    max-width: none;
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 8px;
+    flex: none;
+  }
+  .bulk-upload-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0, 43, 76, .55);
+  }
+  .bulk-upload-modal[hidden] { display: none !important; }
+  .bulk-upload-modal__dialog {
+    width: min(100%, 620px);
+    max-height: calc(100dvh - 36px);
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 22px 55px rgba(0, 43, 76, .25);
+  }
+  .bulk-upload-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .bulk-upload-modal__head h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 18px;
+  }
+  .bulk-upload-modal__close {
+    width: 36px;
+    height: 36px;
+    min-width: 36px !important;
+    padding: 0 !important;
+  }
+  .bulk-upload-modal__body { padding: 18px; }
+  .bulk-upload-modal__body > p {
+    margin: 0 0 16px;
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .bulk-upload-modal .bulk-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .bulk-upload-modal .bulk-actions .btn,
+  .bulk-upload-modal .bulk-actions .input { width: 100%; min-height: 42px !important; }
+  .bulk-upload-modal .bulk-status {
+    display: block;
+    margin-top: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text-soft);
+    background: var(--surface-2);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  body.bulk-upload-open { overflow: hidden !important; }
   .multi-dropdown { position:relative; width:100%; }
   .multi-dropdown__trigger { width:100%; min-height:40px; padding:8px 36px 8px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text); text-align:left; cursor:pointer; position:relative; }
   .multi-dropdown__trigger::after { content:'\25BC'; position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:10px; }
@@ -303,15 +376,9 @@
     .user-reg-stage[data-stage="0"] .personal-info-body { padding: 14px 10px; }
     .photo-input,
     .photo-upload { grid-template-columns: 1fr; gap: 12px; }
-    .bulk-card {
-      position: static;
-      width: 100%;
-      max-width: none;
-      margin: 12px auto 0;
-      grid-template-columns: 1fr;
-      transform: none;
-    }
-    .bulk-card .bulk-actions { grid-template-columns: 1fr; }
+    .bulk-upload-toolbar .btn { width: auto !important; }
+    .bulk-upload-modal { align-items: flex-start; padding: 10px; }
+    .bulk-upload-modal__dialog { max-height: calc(100dvh - 20px); }
   }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260717-sky-navy-theme1" />
@@ -320,6 +387,11 @@
 <body class="user-registration-page portal-shell footer-shell">
 <div class="main">
   <main class="content">
+    <div class="bulk-upload-toolbar">
+      <button type="button" class="btn btn--primary" id="openBulkUpload" aria-controls="bulkUploadModal" aria-expanded="false">
+        <i class="fas fa-file-arrow-up"></i> Bulk Upload
+      </button>
+    </div>
     <div class="user-registration-progress" aria-label="User registration progress">
       <div class="user-reg-step active" data-step="0"><span>1</span><strong>Personal</strong></div>
       <div class="user-reg-step" data-step="1"><span>2</span><strong>Employment</strong></div>
@@ -434,16 +506,6 @@
         </div>
       </div>
 
-      <div class="bulk-card">
-        <div class="bulk-card__title"><i class="fas fa-file-arrow-up"></i> Bulk Upload Staff Users</div>
-        <div class="bulk-actions">
-          <button type="button" class="btn btn--success" id="downloadTemplate"><i class="fas fa-download"></i> Download Excel Template</button>
-          <input class="input" id="bulkFile" type="file" accept=".xlsx,.xlsm" aria-label="Upload completed staff template">
-          <button type="button" class="btn btn--primary" id="uploadBulk"><i class="fas fa-cloud-arrow-up"></i> Upload Users</button>
-        </div>
-        <div class="bulk-status" id="bulkStatus">Template must keep the same column headers. Use one staff member per row. Accepted files: .xlsm, .xlsx.</div>
-      </div>
-
       <div class="btn-row user-final-actions" id="userFinalActions">
         <button type="submit" class="btn btn--primary"><i class="fas fa-user-plus"></i> Create User</button>
         <button type="reset" class="btn btn--ghost">Clear</button>
@@ -454,6 +516,26 @@
         <button type="button" class="btn btn--primary" id="userStageNext">Next <i class="fas fa-arrow-right"></i></button>
       </div>
     </form>
+
+    <div class="bulk-upload-modal" id="bulkUploadModal" role="dialog" aria-modal="true" aria-labelledby="bulkUploadTitle" aria-hidden="true" hidden>
+      <div class="bulk-upload-modal__dialog">
+        <div class="bulk-upload-modal__head">
+          <h2 id="bulkUploadTitle"><i class="fas fa-file-arrow-up"></i> Bulk Upload Staff Users</h2>
+          <button type="button" class="btn btn--ghost bulk-upload-modal__close" id="closeBulkUpload" aria-label="Close bulk upload" title="Close">
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>
+        <div class="bulk-upload-modal__body">
+          <p>Download the Excel template, complete one staff member per row, then upload the completed file.</p>
+          <div class="bulk-actions">
+            <button type="button" class="btn btn--success" id="downloadTemplate"><i class="fas fa-download"></i> Download Excel Template</button>
+            <input class="input" id="bulkFile" type="file" accept=".xlsx,.xlsm" aria-label="Upload completed staff template">
+            <button type="button" class="btn btn--primary" id="uploadBulk"><i class="fas fa-cloud-arrow-up"></i> Upload Users</button>
+          </div>
+          <div class="bulk-status" id="bulkStatus">Template must keep the same column headers. Accepted files: .xlsm and .xlsx.</div>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -889,6 +971,32 @@ populatePositionOptions();
 loadHousesFromSupabase();
 loadDepartmentsFromSupabase();
 showUserRegistrationStage(0);
+
+var bulkUploadModal = document.getElementById('bulkUploadModal');
+var openBulkUploadButton = document.getElementById('openBulkUpload');
+var closeBulkUploadButton = document.getElementById('closeBulkUpload');
+
+function setBulkUploadModal(open) {
+  bulkUploadModal.hidden = !open;
+  bulkUploadModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+  openBulkUploadButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.body.classList.toggle('bulk-upload-open', open);
+  if (open) closeBulkUploadButton.focus();
+  else openBulkUploadButton.focus();
+}
+
+openBulkUploadButton.addEventListener('click', function() {
+  setBulkUploadModal(true);
+});
+closeBulkUploadButton.addEventListener('click', function() {
+  setBulkUploadModal(false);
+});
+bulkUploadModal.addEventListener('click', function(event) {
+  if (event.target === bulkUploadModal) setBulkUploadModal(false);
+});
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape' && !bulkUploadModal.hidden) setBulkUploadModal(false);
+});
 
 document.getElementById('downloadTemplate').addEventListener('click', function() {
   if (!window.XLSX) {
