@@ -41,6 +41,50 @@
   }
   .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
   .photo-upload .input { flex: 1; min-width: 0; }
+  .user-reg-stage[data-stage="0"] .form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 176px;
+    align-items: start;
+  }
+  .profile-photo-field {
+    grid-column: 4;
+    grid-row: 1 / span 3;
+    align-self: start;
+    min-width: 0;
+  }
+  .profile-photo-field .photo-input,
+  .profile-photo-field .photo-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+  }
+  .profile-photo-field .photo-preview {
+    width: 140px;
+    height: 170px;
+    flex: none;
+    margin: 0 auto;
+  }
+  .profile-photo-field #profilePhoto {
+    width: 100%;
+    min-width: 0;
+    min-height: 32px !important;
+    height: 32px;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+  }
+  .profile-photo-field #profilePhoto::file-selector-button {
+    height: 24px;
+    margin: 0 6px 0 0;
+    padding: 3px 7px;
+    border: 0;
+    border-radius: 5px;
+    color: var(--button-text, #c0ebff);
+    background: var(--button-bg, #002b4c);
+    font: inherit;
+    cursor: pointer;
+  }
   .user-reg-stage[data-stage="0"] .form-grid > .field { margin-bottom: 10px; }
   .user-reg-stage[data-stage="0"] .form-grid > .field:last-child { margin-bottom: 0 !important; }
   .section-note { color: var(--text-faint); font-size: 12px; margin-top: 4px; }
@@ -370,6 +414,15 @@
     .user-reg-step { justify-content: center; padding: 8px 5px; }
     .user-reg-step strong { display: none; }
     .staff-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .user-reg-stage[data-stage="0"] .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .profile-photo-field { grid-column: 1 / -1; grid-row: auto; }
+    .profile-photo-field .photo-input,
+    .profile-photo-field .photo-upload {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 220px);
+      align-items: end;
+      justify-content: start;
+    }
     .staff-section .card__head { margin: 14px 18px 0; }
     .staff-section .card__body,
     .user-reg-stage[data-stage="0"] .personal-info-body { padding: 58px 18px 18px; }
@@ -386,6 +439,14 @@
     .user-reg-step { min-height: 34px; padding: 3px; }
     .user-reg-step span { width: 22px; height: 22px; }
     .staff-form .form-grid { grid-template-columns: 1fr; }
+    .user-reg-stage[data-stage="0"] .form-grid { grid-template-columns: 1fr; }
+    .profile-photo-field { grid-column: 1; }
+    .profile-photo-field .photo-input,
+    .profile-photo-field .photo-upload {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+    .profile-photo-field .photo-preview { margin: 0; }
     .staff-section .card__head { margin: 10px 10px 0; padding: 13px 14px; font-size: 17px; }
     .staff-section .card__body,
     .user-reg-stage[data-stage="0"] .personal-info-body { padding: 14px 10px; }
@@ -429,7 +490,7 @@
             <div class="field"><label>Ghana Card Number</label><input class="input" id="ghanaCardNumber" placeholder="GHA-XXXXXXXXX-X"></div>
             <div class="field"><label>Social Security Number (SSNIT)</label><input class="input" id="socialSecurityNumber" placeholder="SSNIT number"></div>
             <div class="field"><label>NTC Number <span class="section-note">(Teaching staff)</span></label><input class="input" id="ntcNumber" placeholder="NTC number"></div>
-            <div class="field col-span">
+            <div class="field profile-photo-field">
               <label>Profile Photo</label>
               <div class="photo-input photo-upload">
                 <div class="photo-preview" id="photoPreview"><i class="fas fa-user"></i></div>
