@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/app.css?v=20260717-sky-navy-theme1" />
 <style>
   .class-shell {
-    max-width: 670px;
+    max-width: 1040px;
     margin: 0 auto;
     padding: 10px 0 26px;
   }
@@ -33,11 +33,18 @@
     color: #374151;
     background: #fff;
   }
-  .subject-pair-grid {
+  .subject-selection-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px 30px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px 18px;
     margin-top: 8px;
+  }
+  .subject-option { min-width: 0; }
+  .subject-option label {
+    display: block;
+    margin: 0 0 5px;
+    font-size: 11px;
+    white-space: nowrap;
   }
   .class-actions {
     display: flex;
@@ -73,8 +80,11 @@
 
   @media (max-width: 760px) {
     .class-shell { max-width: none; }
-    .subject-pair-grid { grid-template-columns: 1fr; gap: 14px; }
+    .subject-selection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .class-actions { margin-top: 28px; }
+  }
+  @media (max-width: 460px) {
+    .subject-selection-grid { grid-template-columns: 1fr; }
   }
 </style>
 <link rel="stylesheet" href="assets/fit-wrap.css?v=20260717-sky-navy-theme1" />
@@ -88,22 +98,15 @@
 
       <form id="classForm" class="class-form">
         <div class="field">
-          <label>Department: <span class="req">*</span></label>
-          <select class="select" id="classDepartment" required>
-            <option value="">***SELECT DEPARTMENT***</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Learning Area: <span class="req">*</span></label>
-          <select class="select" id="learningArea" required>
-            <option value="">***SELECT LEARNING AREA***</option>
+          <label>Programme: <span class="req">*</span></label>
+          <select class="select" id="programmeSelect" required>
+            <option value="">***SELECT PROGRAMME***</option>
           </select>
         </div>
 
         <div style="margin-top:20px">
           <label>Subjects: <span class="req">*</span></label>
-          <div class="subject-pair-grid" id="subjectSelectors"></div>
+          <div class="subject-selection-grid" id="subjectSelectors"></div>
         </div>
 
         <div class="field" style="margin-top:0">
@@ -123,7 +126,7 @@
       <div class="card__head"><i class="fas fa-table-list"></i> Existing Classes</div>
       <div class="table-wrap">
         <table class="tbl" id="classTable">
-          <thead><tr><th>Class Name</th><th>Department</th><th>Learning Area</th><th>Subjects</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Class Name</th><th>Programme</th><th>Subjects</th><th>Actions</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -138,7 +141,6 @@
 Portal.init({ active: 'classmanager' });
 
 var PROGRAMME_KEY = 'axiom_programmes';
-var DEPARTMENT_KEY = 'axiom_departments';
 var SUBJECT_KEY = 'axiom_subjects';
 var CLASS_KEY = 'axiom_classes';
 var editingIndex = -1;
@@ -151,8 +153,6 @@ var defaultProgrammes = [
   { name: 'Home Economics', department: 'Home Economics Department' },
   { name: 'Agricultural Science', department: 'Agriculture Department' }
 ];
-
-var defaultDepartments = [];
 
 var defaultSubjects = [
   { name: 'Core Mathematics', type: 'Core', programme: 'All Programmes' },
@@ -201,10 +201,6 @@ var classes = loadList(CLASS_KEY, [
   { name: 'SCI_24', department:'Science Department', programme: 'General Science', subjects: ['Core Mathematics', 'English Language', 'Integrated Science', 'Social Studies', 'Physics', 'Chemistry'] },
   { name: 'BUS_24', department:'Business Department', programme: 'Business', subjects: ['Core Mathematics', 'English Language', 'Social Studies', 'Financial Accounting', 'Cost Accounting', 'Business Management'] }
 ]);
-var departments = loadList(DEPARTMENT_KEY, defaultDepartments);
-var legacyDepartmentNames = ['Science Department','Arts Department','Business Department','Visual Arts Department','Home Economics Department','Agriculture Department'];
-departments = departments.filter(function(department) { return legacyDepartmentNames.indexOf(department.name) === -1; });
-saveList(DEPARTMENT_KEY, departments);
 var programmes = loadList(PROGRAMME_KEY, defaultProgrammes);
 var subjects = loadList(SUBJECT_KEY, defaultSubjects);
 
@@ -218,67 +214,54 @@ function mapDbSubject(subject) {
   };
 }
 
-function programmeDepartment(programme) {
-  return programme.department || (programme.departments && programme.departments.name) || '';
-}
-
-function classDepartment(classRow) {
-  if (classRow.department) return classRow.department;
-  var programme = programmes.find(function(item) { return itemName(item) === classRow.programme; });
-  return programme ? programmeDepartment(programme) : '';
-}
-
-function populateDepartments() {
-  var select = document.getElementById('classDepartment');
-  select.innerHTML = '<option value="">***SELECT DEPARTMENT***</option>';
-  departments.forEach(function(department) {
-    if (!department.name) return;
-    var option = document.createElement('option');
-    option.value = department.name;
-    option.textContent = department.name.toUpperCase();
-    select.appendChild(option);
-  });
-}
-
 function populateProgrammes() {
-  var select = document.getElementById('learningArea');
-  var selectedDepartment = document.getElementById('classDepartment').value;
-  select.innerHTML = '<option value="">***SELECT LEARNING AREA***</option>';
+  var select = document.getElementById('programmeSelect');
+  var selectedProgramme = select.value;
+  select.innerHTML = '<option value="">***SELECT PROGRAMME***</option>';
   programmes.forEach(function(programme) {
     var name = itemName(programme);
-    if (!name || !selectedDepartment || programmeDepartment(programme) !== selectedDepartment) return;
+    if (!name) return;
     var option = document.createElement('option');
     option.value = name;
     option.textContent = name.toUpperCase();
+    option.selected = name === selectedProgramme;
     select.appendChild(option);
   });
 }
 
-function makeSubjectSelect(index, subjects, selectedValue) {
+function makeSubjectSelect(index, availableSubjects, selectedValue, selectedValues) {
+  var field = document.createElement('div');
+  field.className = 'subject-option';
+  var label = document.createElement('label');
+  label.textContent = 'Subject ' + String(index + 1).padStart(2, '0') + (index === 0 ? ' *' : '');
   var select = document.createElement('select');
   select.className = 'select subject-select';
+  select.dataset.slot = index;
   select.required = index === 0;
   select.innerHTML = '<option value="">***SELECT SUBJECT***</option>';
-  subjects.forEach(function(subject) {
+  availableSubjects.forEach(function(subject) {
     var option = document.createElement('option');
     option.value = subject.name;
     option.textContent = subject.name.toUpperCase();
     if (subject.name === selectedValue) option.selected = true;
+    if (subject.name !== selectedValue && selectedValues.indexOf(subject.name) > -1) option.disabled = true;
     select.appendChild(option);
   });
-  return select;
+  field.appendChild(label);
+  field.appendChild(select);
+  return field;
 }
 
 function populateSubjects(selectedSubjects) {
-  var programme = document.getElementById('learningArea').value;
+  var programme = document.getElementById('programmeSelect').value;
   var box = document.getElementById('subjectSelectors');
   var matchingSubjects = subjects.filter(function(subject) {
     return programme && subjectMatchesProgramme(subject, programme);
   });
-  selectedSubjects = selectedSubjects || [];
+  selectedSubjects = (selectedSubjects || []).slice(0, 12);
   box.innerHTML = '';
   for (var i = 0; i < 12; i++) {
-    box.appendChild(makeSubjectSelect(i, matchingSubjects, selectedSubjects[i] || ''));
+    box.appendChild(makeSubjectSelect(i, matchingSubjects, selectedSubjects[i] || '', selectedSubjects));
   }
 }
 
@@ -291,14 +274,13 @@ function selectedSubjects() {
 function resetForm() {
   editingIndex = -1;
   document.getElementById('classForm').reset();
-  populateDepartments();
   populateProgrammes();
   populateSubjects();
 }
 
 function renderClasses() {
   document.querySelector('#classTable tbody').innerHTML = classes.map(function(cls, idx) {
-    return '<tr><td style="font-weight:700">'+cls.name+'</td><td>'+classDepartment(cls)+'</td><td>'+cls.programme+'</td><td class="subject-summary">'+cls.subjects.join(', ')+'</td>'+
+    return '<tr><td style="font-weight:700">'+cls.name+'</td><td>'+cls.programme+'</td><td class="subject-summary">'+cls.subjects.join(', ')+'</td>'+
       '<td><div class="row-actions">'+
         '<button class="btn btn--sm" data-act="Edit" data-i="'+idx+'"><i class="fas fa-pen"></i></button>'+
         '<button class="btn btn--danger btn--sm" data-act="Drop" data-i="'+idx+'"><i class="fas fa-trash"></i></button>'+
@@ -306,7 +288,6 @@ function renderClasses() {
   }).join('');
 }
 
-populateDepartments();
 populateProgrammes();
 populateSubjects();
 renderClasses();
@@ -314,15 +295,10 @@ renderClasses();
 async function refreshAcademicSetupFromSupabase() {
   if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
   try {
-    var setup = await Promise.all([AxiomDB.listDepartments ? AxiomDB.listDepartments() : [], AxiomDB.listProgrammes(), AxiomDB.listSubjects(), AxiomDB.listClasses()]);
-    var dbDepartments = (setup[0] || []).filter(function(department) { return legacyDepartmentNames.indexOf(department.name) === -1; });
-    var dbProgrammes = setup[1];
-    var dbSubjects = setup[2];
-    var dbClasses = setup[3];
-    if (dbDepartments && dbDepartments.length) {
-      departments = dbDepartments;
-      saveList(DEPARTMENT_KEY, departments);
-    }
+    var setup = await Promise.all([AxiomDB.listProgrammes(), AxiomDB.listSubjects(), AxiomDB.listClasses()]);
+    var dbProgrammes = setup[0];
+    var dbSubjects = setup[1];
+    var dbClasses = setup[2];
     if (dbProgrammes && dbProgrammes.length) {
       programmes = dbProgrammes.map(function(p) {
         return { id: p.id, name: p.name, code: p.code || '', department_id: p.department_id || '', department: (p.departments && p.departments.name) || p.department || '' };
@@ -337,7 +313,6 @@ async function refreshAcademicSetupFromSupabase() {
       classes = dbClasses;
       saveClasses();
     }
-    populateDepartments();
     populateProgrammes();
     populateSubjects();
     renderClasses();
@@ -348,13 +323,18 @@ async function refreshAcademicSetupFromSupabase() {
 }
 refreshAcademicSetupFromSupabase();
 
-document.getElementById('learningArea').addEventListener('change', function() {
+document.getElementById('programmeSelect').addEventListener('change', function() {
   populateSubjects();
 });
 
-document.getElementById('classDepartment').addEventListener('change', function() {
-  populateProgrammes();
-  populateSubjects();
+document.getElementById('subjectSelectors').addEventListener('change', function(e) {
+  if (!e.target.matches('.subject-select')) return;
+  var selected = selectedSubjects();
+  if (new Set(selected).size !== selected.length) {
+    Portal.toast('Each subject can be selected only once.', true);
+    e.target.value = '';
+  }
+  populateSubjects(selectedSubjects());
 });
 
 document.getElementById('classForm').addEventListener('submit', function(e) {
@@ -367,10 +347,13 @@ document.getElementById('classForm').addEventListener('submit', function(e) {
     }
     var classRecord = {
       name: document.getElementById('className').value.trim(),
-      department: document.getElementById('classDepartment').value,
-      programme: document.getElementById('learningArea').value,
+      programme: document.getElementById('programmeSelect').value,
       subjects: selected.slice(0, 12)
     };
+    if (new Set(selected).size !== selected.length) {
+      Portal.toast('A subject cannot be selected more than once.', true);
+      return;
+    }
     var wasUpdate = editingIndex > -1;
     if (window.AxiomDB && AxiomDB.isConfigured()) {
       if (editingIndex > -1 && classes[editingIndex].id && AxiomDB.updateClass) {
@@ -425,9 +408,7 @@ document.getElementById('classTable').addEventListener('click', function(e) {
     return;
   }
   editingIndex = i;
-  document.getElementById('classDepartment').value = classDepartment(classes[i]);
-  populateProgrammes();
-  document.getElementById('learningArea').value = classes[i].programme;
+  document.getElementById('programmeSelect').value = classes[i].programme;
   populateSubjects(classes[i].subjects);
   document.getElementById('className').value = classes[i].name;
   Portal.toast('Class loaded for editing.');
