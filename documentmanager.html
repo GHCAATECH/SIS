@@ -78,7 +78,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-document-storage-auth"></script>
+<script src="assets/supabase-client.js?v=20260719-document-view"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'documentmanager' });
@@ -152,6 +152,47 @@ function saveDocuments() {
 function fileType(fileName) {
   var parts = fileName.split('.');
   return parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+}
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function ownerById(type, id) {
+  return ownerList(type).find(function(owner) { return owner.id === id; });
+}
+
+async function loadDocumentsFromSupabase() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listDocuments) return;
+  try {
+    var rows = await AxiomDB.listDocuments();
+    documents = (rows || []).map(function(row) {
+      var type = row.owner_type;
+      var ownerId = type === 'student' ? row.student_id : row.staff_user_id;
+      var owner = ownerById(type, ownerId);
+      return {
+        id: row.id,
+        ownerType: type,
+        ownerId: ownerId,
+        ownerName: owner ? owner.name : 'Unknown owner',
+        title: row.title || 'Untitled Document',
+        fileName: row.file_name || 'Document',
+        fileType: row.file_type || fileType(row.file_name || ''),
+        fileSize: row.file_size || 0,
+        fileUrl: row.file_url || ''
+      };
+    });
+    saveDocuments();
+    renderDocuments();
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load uploaded documents: ' + (err.message || 'Unknown error'), true);
+  }
 }
 
 function ownerList(type) {
@@ -233,8 +274,8 @@ function renderDocuments() {
     return matchesType && matchesQuery;
   });
   document.querySelector('#docTable tbody').innerHTML = filtered.map(function(doc) {
-    return '<tr><td style="font-weight:600">'+doc.title+'</td><td>'+doc.ownerName+'</td><td>'+ownerTypeLabel(doc.ownerType)+'</td><td>'+doc.fileName+'</td><td><span class="badge badge--gray">'+doc.fileType+'</span></td>'+
-      '<td><div class="row-actions"><button class="btn btn--danger" type="button" data-id="'+doc.id+'" title="Delete"><i class="fas fa-trash"></i></button></div></td></tr>';
+    return '<tr><td style="font-weight:600">'+escapeHtml(doc.title)+'</td><td>'+escapeHtml(doc.ownerName)+'</td><td>'+ownerTypeLabel(doc.ownerType)+'</td><td>'+escapeHtml(doc.fileName)+'</td><td><span class="badge badge--gray">'+escapeHtml(doc.fileType)+'</span></td>'+
+      '<td><div class="row-actions"><button class="btn btn--primary" type="button" data-action="view" data-id="'+escapeHtml(doc.id)+'" title="View document"><i class="fas fa-eye"></i> View</button><button class="btn btn--danger" type="button" data-action="delete" data-id="'+escapeHtml(doc.id)+'" title="Delete"><i class="fas fa-trash"></i></button></div></td></tr>';
   }).join('');
   document.getElementById('docEmpty').style.display = filtered.length ? 'none' : 'block';
 }
@@ -283,7 +324,8 @@ document.getElementById('docForm').addEventListener('submit', function(e) {
           title: saved.title,
           fileName: saved.file_name,
           fileType: saved.file_type,
-          fileSize: saved.file_size
+          fileSize: saved.file_size,
+          fileUrl: saved.file_url || ''
         });
       } else {
         documents.push({
@@ -294,7 +336,8 @@ document.getElementById('docForm').addEventListener('submit', function(e) {
           title: title,
           fileName: file.name,
           fileType: fileType(file.name),
-          fileSize: file.size
+          fileSize: file.size,
+          fileUrl: URL.createObjectURL(file)
         });
         saveDocuments();
       }
@@ -316,6 +359,31 @@ document.getElementById('docForm').addEventListener('submit', function(e) {
 document.getElementById('docTable').addEventListener('click', function(e) {
   var b = e.target.closest('button[data-id]');
   if (!b) return;
+  var doc = documents.find(function(item) { return item.id === b.dataset.id; });
+  if (b.dataset.action === 'view') {
+    var previewWindow = window.open('about:blank', '_blank');
+    if (!previewWindow) {
+      Portal.toast('Allow pop-ups for this site to view the document.', true);
+      return;
+    }
+    previewWindow.opener = null;
+    async function viewDoc() {
+      if (!doc) throw new Error('Document record was not found.');
+      var url = doc.fileUrl;
+      if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.documentViewUrl) {
+        url = await AxiomDB.documentViewUrl(doc.ownerType, doc.fileUrl);
+      }
+      if (!url) throw new Error('This document is not available for viewing.');
+      previewWindow.location.replace(url);
+    }
+    viewDoc().catch(function(err) {
+      previewWindow.close();
+      console.error(err);
+      Portal.toast('Could not open document: ' + (err.message || 'Unknown error'), true);
+    });
+    return;
+  }
+  if (b.dataset.action !== 'delete') return;
   async function deleteDoc() {
     if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteDocument) {
       await AxiomDB.deleteDocument(b.dataset.id);
@@ -335,7 +403,7 @@ document.getElementById('docTable').addEventListener('click', function(e) {
 populateOwnerClasses();
 updateOwnerSearchMode();
 renderDocuments();
-loadOwnersFromSupabase();
+loadOwnersFromSupabase().then(loadDocumentsFromSupabase);
 </script>
 <footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
   <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>

@@ -1536,7 +1536,6 @@
     if (uploaded.error) {
       throw new Error('Supabase Storage rejected the document file: ' + uploaded.error.message);
     }
-    var publicInfo = await c.storage.from(bucket).createSignedUrl(path, 315360000);
     var result = await c.rpc('secure_upload_owner_document', {
       p_owner_type: ownerType,
       p_owner_id: ownerId,
@@ -1544,7 +1543,7 @@
       p_file_name: file.name,
       p_file_type: file.name.split('.').pop().toUpperCase(),
       p_file_size: file.size,
-      p_file_url: publicInfo && publicInfo.data ? publicInfo.data.signedUrl : path,
+      p_file_url: path,
       p_session_token: staffToken
     });
     if (result.error) {
@@ -2011,12 +2010,34 @@
   async function listDocuments(ownerType, ownerId) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
+    var staffToken = activeStaffSessionToken();
+    var storedUser = currentStoredUser();
+    var schoolAdministrator = storedUser && (storedUser.isAdmin || storedUser.category === 'School Administrator' || storedUser.role === 'School Administrator');
+    if (staffToken && schoolAdministrator) {
+      var prepared = await c.rpc('secure_prepare_document_upload', {
+        p_session_token: staffToken
+      });
+      if (prepared.error) throw prepared.error;
+    }
     var query = c.from('documents').select('*').eq('school_id', school.id).order('uploaded_at', { ascending: false });
     if (ownerType === 'staff') query = query.eq('owner_type', 'staff').eq('staff_user_id', ownerId);
     if (ownerType === 'student') query = query.eq('owner_type', 'student').eq('student_id', ownerId);
     var result = await query;
     if (result.error) throw result.error;
     return result.data;
+  }
+
+  async function documentViewUrl(ownerType, fileUrl) {
+    var value = String(fileUrl || '').trim();
+    if (!value) throw new Error('This document does not have a stored file path.');
+    if (/^https?:\/\//i.test(value)) return value;
+    var c = db();
+    if (!c) throw new Error('Supabase is not configured.');
+    var bucket = ownerType === 'student' ? 'student-documents' : 'staff-documents';
+    var signed = await c.storage.from(bucket).createSignedUrl(value, 3600);
+    if (signed.error) throw signed.error;
+    if (!signed.data || !signed.data.signedUrl) throw new Error('Could not create a secure document link.');
+    return signed.data.signedUrl;
   }
 
   async function listStudentTranscript(studentId) {
@@ -2148,6 +2169,7 @@
     reviewStudentClearance: reviewStudentClearance,
     uploadOwnerDocument: uploadOwnerDocument,
     listDocuments: listDocuments,
+    documentViewUrl: documentViewUrl,
     listStudentTranscript: listStudentTranscript,
     deleteDocument: deleteDocument
   };
