@@ -64,21 +64,6 @@
     background: #111827;
   }
   .user-type-tabs button.active { background: #08aeea; }
-  .entries-control {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    color: #000;
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .entries-control .select {
-    width: 52px;
-    min-height: 23px;
-    padding: 2px 4px;
-    border-radius: 2px;
-    color: #000;
-  }
   .search-control {
     display: flex;
     align-items: center;
@@ -714,15 +699,6 @@
   <main class="content">
     <div class="card card--pad-0 users-card">
       <div class="users-tools">
-        <div class="entries-control">
-          <select class="select" id="entriesCount">
-            <option>100</option>
-            <option>50</option>
-            <option>25</option>
-            <option>10</option>
-          </select>
-          <span>entries per page</span>
-        </div>
         <div class="user-type-tabs" id="userTypeTabs">
           <button type="button" class="active" data-category="Teaching Staff"><i class="fas fa-chalkboard-user"></i> Teaching Staff</button>
           <button type="button" data-category="Non-Teaching Staff"><i class="fas fa-user-tie"></i> Non-Teaching Staff</button>
