@@ -8,15 +8,17 @@
 <link rel="stylesheet" href="assets/app.css?v=20260717-sky-navy-theme1" />
 <style>
   .class-shell {
-    max-width: 1040px;
-    margin: 0 auto;
-    padding: 10px 0 26px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 6px 0 18px;
   }
   .required-note {
     text-align: center;
     color: #1e90ff;
     font-size: 18px;
-    margin: 0 0 28px;
+    margin: 0 0 16px;
+    text-align: left;
   }
   .class-form label {
     color: #000;
@@ -36,21 +38,21 @@
   .subject-selection-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px 18px;
-    margin-top: 8px;
+    gap: 10px 12px;
+    margin-top: 6px;
   }
   .subject-option { min-width: 0; }
   .subject-option label {
     display: block;
-    margin: 0 0 5px;
+    margin: 0 0 3px;
     font-size: 11px;
     white-space: nowrap;
   }
   .class-actions {
     display: flex;
     gap: 6px;
-    margin-top: 60px;
-    padding-bottom: 20px;
+    margin-top: 24px;
+    padding-bottom: 14px;
     border-bottom: 1px solid #e5e7eb;
   }
   .class-actions .btn {
@@ -69,8 +71,8 @@
     color: #fff;
   }
   .class-list {
-    max-width: 940px;
-    margin: 24px auto 0;
+    max-width: none;
+    margin: 18px 0 0;
   }
   .subject-summary {
     max-width: 360px;
@@ -80,8 +82,8 @@
 
   @media (max-width: 760px) {
     .class-shell { max-width: none; }
-    .subject-selection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .class-actions { margin-top: 28px; }
+    .subject-selection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .class-actions { margin-top: 18px; }
   }
   @media (max-width: 460px) {
     .subject-selection-grid { grid-template-columns: 1fr; }
