@@ -1520,20 +1520,21 @@
     var uploaded = await c.storage.from(bucket).upload(path, file, { upsert: false });
     if (uploaded.error) throw uploaded.error;
     var publicInfo = await c.storage.from(bucket).createSignedUrl(path, 315360000);
-    var record = {
-      school_id: school.id,
-      owner_type: ownerType,
-      title: title,
-      file_name: file.name,
-      file_type: file.name.split('.').pop().toUpperCase(),
-      file_size: file.size,
-      file_url: publicInfo && publicInfo.data ? publicInfo.data.signedUrl : path
-    };
-    if (ownerType === 'student') record.student_id = ownerId;
-    else record.staff_user_id = ownerId;
-    var result = await c.from('documents').insert(record).select('*').single();
+    var result = await c.rpc('secure_upload_owner_document', {
+      p_owner_type: ownerType,
+      p_owner_id: ownerId,
+      p_title: title,
+      p_file_name: file.name,
+      p_file_type: file.name.split('.').pop().toUpperCase(),
+      p_file_size: file.size,
+      p_file_url: publicInfo && publicInfo.data ? publicInfo.data.signedUrl : path,
+      p_session_token: activeStaffSessionToken() || null
+    });
     if (result.error) {
       await c.storage.from(bucket).remove([path]);
+      if (/secure_upload_owner_document|schema cache|function/i.test(result.error.message || '')) {
+        throw new Error('Run the secure document upload SQL in Supabase, then refresh this page.');
+      }
       throw result.error;
     }
     return result.data;
