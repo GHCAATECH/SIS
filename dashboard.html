@@ -216,12 +216,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/supabase-client.js?v=20260719-school-info2"></script>
-<script src="assets/shell.js?v=20260719-admin-dashboard1"></script>
+<script src="assets/shell.js?v=20260719-portal-switch1"></script>
 <script>
 var dashboardUser = Portal.currentUser();
-var dashboardActive = Portal.isSchoolAdmin(dashboardUser) ? 'staffportal' : 'dashboard';
+var dashboardIsAdminUser = Portal.isSchoolAdmin(dashboardUser);
 try {
-  if (dashboardActive === 'staffportal') {
+  if (dashboardIsAdminUser) {
     sessionStorage.setItem('axiom_staff_portal_mode', '1');
     sessionStorage.removeItem('axiom_admin_portal_mode');
   } else {
@@ -229,7 +229,7 @@ try {
     sessionStorage.removeItem('axiom_admin_portal_mode');
   }
 } catch (e) {}
-Portal.init({ active: dashboardActive, title: dashboardActive === 'staffportal' ? 'Staff Portal' : 'Dashboard' });
+Portal.init({ active: 'dashboard', title: dashboardIsAdminUser ? 'User Portal' : 'Dashboard' });
 
 $(function () {
   var currentUser = dashboardUser;

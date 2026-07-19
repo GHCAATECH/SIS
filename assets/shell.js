@@ -61,9 +61,19 @@
     );
   }
 
+  function isUserPortalMode() {
+    try {
+      return sessionStorage.getItem('axiom_staff_portal_mode') === '1' &&
+        sessionStorage.getItem('axiom_admin_portal_mode') !== '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
   function isSchoolAdminPortal(user) {
-    return isSchoolAdmin(user) ||
-      norm(location.hostname).indexOf('schooladmin.') === 0 ||
+    if (isSchoolAdmin(user)) return !isUserPortalMode();
+    if (user) return false;
+    return norm(location.hostname).indexOf('schooladmin.') === 0 ||
       location.pathname.replace(/\\/g, '/').indexOf('/admin/') > -1;
   }
 
@@ -136,6 +146,7 @@
             if (item.key === 'mydocuments') return items;
             if (item.key === 'dashboard') {
               items.push({ key: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie', href: 'admin/admin.html' });
+              items.push({ key: 'switchuserportal', label: 'Switch to User Portal', icon: 'fa-repeat', href: 'dashboard.html' });
               return items;
             }
             items.push(item);
@@ -178,10 +189,14 @@
     }
     if (user.id && allowed.indexOf('mydocuments') < 0) allowed.push('mydocuments');
     if (user.id && allowed.indexOf('clearance') < 0) allowed.push('clearance');
-    return NAV.map(function (group) {
+    var userNav = NAV.map(function (group) {
       var items = group.items.filter(function (item) { return allowed.indexOf(item.key) > -1; });
       return { title: group.title, items: items };
     }).filter(function (group) { return group.items.length; });
+    if (isSchoolAdmin(user) && userNav.length) {
+      userNav[0].items.push({ key: 'switchadminportal', label: 'Switch to Admin Portal', icon: 'fa-repeat', href: 'admin/admin.html' });
+    }
+    return userNav;
   }
 
   function allowedPageKeys() {
