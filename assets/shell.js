@@ -133,6 +133,7 @@
         return {
           title: group.title,
           items: group.items.reduce(function (items, item) {
+            if (item.key === 'mydocuments') return items;
             if (item.key === 'dashboard') {
               items.push({ key: 'dashboard', label: pageBase() === '../' ? 'Dashboard' : 'Back to Admin Portal', icon: 'fa-chart-pie', href: 'admin/admin.html' });
               return items;
