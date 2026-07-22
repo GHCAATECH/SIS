@@ -38,29 +38,29 @@
   }
   @keyframes statSpin { to { transform: rotate(360deg); } }
   .admin-content .section-title { margin: 12px 0 8px; font-size: 13px; }
-  .admin-tiles { gap: 10px; }
-  .tile { display:flex; align-items:center; gap:14px; color:var(--text); transition:transform .18s ease, box-shadow .18s ease; }
-  .tile:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
-  .tile .ico { width:46px; height:46px; border-radius:12px; flex:none; display:grid; place-items:center; font-size:19px; color:#fff; background:linear-gradient(135deg,var(--brand),var(--accent)); }
-  .tile small { color:var(--text-faint); }
-  .admin-tiles .tile { min-height: 58px; padding: 10px 12px; gap: 10px; }
-  .admin-tiles .tile .ico { width: 36px; height: 36px; border-radius: 8px; font-size: 15px; }
   .admin-system .card__body { padding: 12px; }
+  .residential-card { overflow: hidden; border: 1px solid var(--border); }
+  .residential-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .residential-table { width: 100%; min-width: 780px; border-collapse: collapse; table-layout: fixed; background: var(--surface); }
+  .residential-table th,
+  .residential-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: center; white-space: nowrap; color: var(--text); }
+  .residential-title { background: #002B4C; color: #C0EBFF !important; font-size: 15px; font-weight: 800; letter-spacing: .04em; text-align: center; }
+  .residential-group { background: rgba(0, 43, 76, .12); font-weight: 800; color: var(--text); }
+  .residential-subhead { background: rgba(0, 43, 76, .06); font-size: 12px; font-weight: 800; }
+  .residential-year { text-align: left !important; font-weight: 800; }
+  .residential-total-row th,
+  .residential-total-row td { background: rgba(0, 43, 76, .1); font-weight: 900; }
+  .residential-empty { padding: 18px; text-align: center; color: var(--text-soft); font-weight: 700; }
   @media (max-width: 900px) {
     .admin-content { padding: 12px; overflow: visible; }
     .admin-stats { grid-template-columns: repeat(2, 1fr); }
-    .admin-tiles { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 520px) {
     .admin-content { padding: 10px; }
-    .admin-stats,
-    .admin-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+    .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
     .admin-stats .card { padding: 8px; }
     .admin-stats .stat .num { font-size: 17px; }
     .admin-stats .stat .cap { font-size: 10px; }
-    .admin-tiles .tile { min-height: 52px; padding: 8px; }
-    .admin-tiles .tile .ico { width: 30px; height: 30px; font-size: 13px; }
-    .admin-tiles .tile small { display: none; }
     .admin-system .form-grid { gap: 8px; }
   }
   @media (min-width: 700px) {
@@ -146,9 +146,32 @@
       <div class="card stat" aria-busy="true"><div class="stat-top"><span class="stat-icon"><i class="fas fa-book"></i></span><span class="stat-trend">Live</span></div><div class="num is-loading" id="adminSubjects">...</div><div class="cap">Available Subjects</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
     </div>
 
-    <div class="section-title"><i class="fas fa-bolt"></i> Quick Actions <span class="rule"></span></div>
-    <div class="grid cols-3 admin-tiles" id="tiles"></div>
-
+    <div class="section-title"><i class="fas fa-house-user"></i> Residential Statistics <span class="rule"></span></div>
+    <div class="card residential-card" id="residentialCard" aria-busy="true">
+      <div class="residential-table-wrap">
+        <table class="residential-table" aria-label="Residential student statistics">
+          <thead>
+            <tr><th class="residential-title" colspan="7">RESIDENTIAL</th></tr>
+            <tr>
+              <th rowspan="2">YEAR</th>
+              <th class="residential-group" colspan="3">BOARDERS</th>
+              <th class="residential-group" colspan="3">DAY</th>
+            </tr>
+            <tr>
+              <th class="residential-subhead">Female</th>
+              <th class="residential-subhead">Male</th>
+              <th class="residential-subhead">Total</th>
+              <th class="residential-subhead">Female</th>
+              <th class="residential-subhead">Male</th>
+              <th class="residential-subhead">Total</th>
+            </tr>
+          </thead>
+          <tbody id="residentialRows">
+            <tr><td colspan="7" class="residential-empty">Loading residential statistics...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <div class="section-title"><i class="fas fa-circle-info"></i> System Overview <span class="rule"></span></div>
     <div class="admin-lower">
       <div class="card admin-system"><div class="card__body">
@@ -178,19 +201,6 @@ try {
   sessionStorage.setItem('axiom_admin_portal_mode', '1');
 } catch (e) {}
 Portal.init({ active: 'dashboard', title: 'Administration Overview' });
-var tiles = [
-  ['registeruser','Add User','Create a new portal account','fa-user-plus'],
-  ['AssignPrivilege','Manage Users','Roles & privileges','fa-users-gear'],
-  ['classmanager','Manage Classes','Add or edit classes','fa-layer-group'],
-  ['schoolupdate','School Info','Profile & crest','fa-school'],
-  ['logintrace','Login Trace','Sign-in audit log','fa-shoe-prints'],
-  ['assessmentmonitor','School Monitor','Capture progress','fa-chart-line']
-];
-document.getElementById('tiles').innerHTML = tiles.map(function(t){
-  return '<a class="card tile" href="../'+t[0]+'.html"><span class="ico"><i class="fas '+t[3]+'"></i></span>'+
-    '<span><b>'+t[1]+'</b><br><small>'+t[2]+'</small></span></a>';
-}).join('');
-
 function safeList(key) {
   try {
     var value = JSON.parse(localStorage.getItem(key) || '[]');
@@ -227,6 +237,88 @@ function isActiveClass(row) {
 function isActiveSubject(row) {
   return String(row && row.status || 'Active').trim().toLowerCase() !== 'deleted';
 }
+function normalizeStudentYear(row) {
+  var raw = row && (row.student_level || row.year_level || (row.classes && row.classes.year_level) || row.level || row.year || '');
+  raw = String(raw).trim().toLowerCase();
+  if (/year\s*1|^1$|form\s*1/.test(raw)) return 'YEAR 1';
+  if (/year\s*2|^2$|form\s*2/.test(raw)) return 'YEAR 2';
+  if (/year\s*3|^3$|form\s*3/.test(raw)) return 'YEAR 3';
+  var admitted = Number(row && (row.year_admitted || row.admission_year || row.admissionYear));
+  if (admitted) {
+    var diff = new Date().getFullYear() - admitted;
+    if (diff === 0) return 'YEAR 1';
+    if (diff === 1) return 'YEAR 2';
+    if (diff === 2) return 'YEAR 3';
+  }
+  return '';
+}
+function normalizeResidential(row) {
+  var status = String(row && (row.residential_status || row.residentialStatus || row.boarding_status || '') || '').trim().toLowerCase();
+  if (/board|boarding|boarder/.test(status)) return 'boarders';
+  if (/day/.test(status)) return 'day';
+  return '';
+}
+function normalizeGender(row) {
+  var gender = String(row && row.gender || '').trim().toLowerCase();
+  if (gender === 'f' || gender.indexOf('female') === 0) return 'female';
+  if (gender === 'm' || gender.indexOf('male') === 0) return 'male';
+  return '';
+}
+function emptyResidentialStats() {
+  var stats = {};
+  ['YEAR 1', 'YEAR 2', 'YEAR 3'].forEach(function(year) {
+    stats[year] = { boarders: { female: 0, male: 0 }, day: { female: 0, male: 0 } };
+  });
+  return stats;
+}
+function renderResidentialStats(students, hasLoadError) {
+  var body = document.getElementById('residentialRows');
+  var card = document.getElementById('residentialCard');
+  if (!body) return;
+  var stats = emptyResidentialStats();
+  var counted = 0;
+  (students || []).forEach(function(student) {
+    var year = normalizeStudentYear(student);
+    var residential = normalizeResidential(student);
+    var gender = normalizeGender(student);
+    if (!year || !residential || !gender || !stats[year]) return;
+    stats[year][residential][gender] += 1;
+    counted += 1;
+  });
+  if (card) card.setAttribute('aria-busy', 'false');
+  if (hasLoadError && !(students || []).length) {
+    body.innerHTML = '<tr><td colspan="7" class="residential-empty">Could not load residential statistics.</td></tr>';
+    return;
+  }
+  if (!counted) {
+    body.innerHTML = '<tr><td colspan="7" class="residential-empty">No residential student data found.</td></tr>';
+    return;
+  }
+  var totals = { boarders: { female: 0, male: 0 }, day: { female: 0, male: 0 } };
+  var rows = ['YEAR 1', 'YEAR 2', 'YEAR 3'].map(function(year) {
+    var row = stats[year];
+    totals.boarders.female += row.boarders.female;
+    totals.boarders.male += row.boarders.male;
+    totals.day.female += row.day.female;
+    totals.day.male += row.day.male;
+    return residentialRow(year, row);
+  });
+  rows.push(residentialRow('TOTAL', totals, true));
+  body.innerHTML = rows.join('');
+}
+function residentialRow(label, row, totalRow) {
+  var boardersTotal = row.boarders.female + row.boarders.male;
+  var dayTotal = row.day.female + row.day.male;
+  return '<tr class="' + (totalRow ? 'residential-total-row' : '') + '">' +
+    '<th class="residential-year">' + label + '</th>' +
+    '<td>' + row.boarders.female.toLocaleString() + '</td>' +
+    '<td>' + row.boarders.male.toLocaleString() + '</td>' +
+    '<td>' + boardersTotal.toLocaleString() + '</td>' +
+    '<td>' + row.day.female.toLocaleString() + '</td>' +
+    '<td>' + row.day.male.toLocaleString() + '</td>' +
+    '<td>' + dayTotal.toLocaleString() + '</td>' +
+    '</tr>';
+}
 function localSubjectsFromClasses(classes) {
   var seen = {};
   (classes || []).forEach(function(cls) {
@@ -236,7 +328,7 @@ function localSubjectsFromClasses(classes) {
   });
   return Object.keys(seen).length;
 }
-function renderAdminCounts(students, staff, classes, subjects) {
+function renderAdminCounts(students, staff, classes, subjects, hasLoadError) {
   var deletedRefs = locallyDeletedStudentRefs();
   students = (students || []).filter(function(row) { return isActiveStudent(row, deletedRefs); });
   staff = (staff || []).filter(function(row) {
@@ -248,12 +340,14 @@ function renderAdminCounts(students, staff, classes, subjects) {
   setAdminCount('adminUsers', staff.length);
   setAdminCount('adminClasses', classes.length);
   setAdminCount('adminSubjects', (subjects && subjects.length) || localSubjectsFromClasses(classes));
+  renderResidentialStats(students, hasLoadError);
 }
 async function loadAdminCounts() {
   var students = safeList('axiom_registered_students');
   var staff = safeList('axiom_local_staff_users');
   var classes = safeList('axiom_classes');
   var subjects = safeList('axiom_subjects');
+  var hasLoadError = false;
   if (window.AxiomDB && AxiomDB.isConfigured()) {
     try {
       var results = await Promise.all([
@@ -273,9 +367,10 @@ async function loadAdminCounts() {
     } catch (err) {
       console.error(err);
       Portal.toast('Could not load admin counts from Supabase. Showing local totals.', true);
+      hasLoadError = true;
     }
   }
-  renderAdminCounts(students, staff, classes, subjects);
+  renderAdminCounts(students, staff, classes, subjects, hasLoadError);
 }
 loadAdminCounts();
 </script>
