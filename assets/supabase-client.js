@@ -2305,6 +2305,39 @@
     return signed.data.signedUrl;
   }
 
+  async function listTranscriptStudents(filters) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school) return null;
+    filters = normalizeListFilters(filters || {});
+    var result = await c.rpc('secure_list_transcript_students', {
+      p_school_id: school.id,
+      p_filters: filters
+    });
+    if (!result.error) return result.data || [];
+    if (!/secure_list_transcript_students|schema cache|function/i.test(result.error.message || '')) throw result.error;
+    return listStudents({
+      classId: filters.classId || '',
+      yearLevel: filters.yearLevel || filters.year || '',
+      search: filters.search || '',
+      limit: filters.limit || 500,
+      page: filters.page || 1
+    });
+  }
+
+  async function listTranscriptPayloads(studentIds) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school) return null;
+    var ids = normalizeIdList(studentIds);
+    if (!ids.length) return [];
+    var result = await c.rpc('secure_list_transcript_payloads', {
+      p_school_id: school.id,
+      p_student_ids: ids
+    });
+    if (!result.error) return result.data || [];
+    if (/secure_list_transcript_payloads|schema cache|function/i.test(result.error.message || '')) return null;
+    throw result.error;
+  }
+
   async function listStudentTranscript(studentId) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !studentId) return null;
@@ -2453,6 +2486,8 @@
     uploadOwnerDocument: uploadOwnerDocument,
     listDocuments: listDocuments,
     documentViewUrl: documentViewUrl,
+    listTranscriptStudents: listTranscriptStudents,
+    listTranscriptPayloads: listTranscriptPayloads,
     listStudentTranscript: listStudentTranscript,
     deleteDocument: deleteDocument
   };

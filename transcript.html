@@ -317,7 +317,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-student-portal-data"></script>
+<script src="assets/supabase-client.js?v=20260722-transcript-filter1"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'transcript' });
@@ -382,6 +382,7 @@ var ASSESSMENT_WEIGHTS = [
   { match: 'termly', weight: 40 }
 ];
 var filteredTranscriptStudents = [];
+var transcriptClasses = [];
 
 function gradeInfo(score) {
   score = Number(score);
@@ -924,6 +925,7 @@ async function initDownloadTranscriptModule() {
       Portal.toast('Could not load transcript setup from Supabase. Showing local setup.', true);
     }
   }
+  transcriptClasses = classes || [];
   var programmes = [];
   classes.forEach(function(cls) {
     var programme = cls.programme || (cls.programmes && cls.programmes.name) || '';
@@ -1003,10 +1005,37 @@ function waitForTranscriptImages(containerSelector) {
   ]);
 }
 
-async function loadAllTranscriptStudents() {
+function selectedTranscriptFilters() {
+  var classValue = document.getElementById('downloadClass').value;
+  var selectedClass = transcriptClasses.find(function(cls) {
+    return String(cls.id || '') === classValue || String(cls.name || '') === classValue;
+  }) || null;
+  return {
+    yearLevel: document.getElementById('downloadYear').value,
+    programmeName: document.getElementById('downloadProgramme').value,
+    classId: selectedClass && selectedClass.id ? selectedClass.id : '',
+    className: selectedClass && selectedClass.name ? selectedClass.name : classValue,
+    search: String(document.getElementById('downloadSearch').value || '').trim(),
+    page: 1,
+    limit: 500
+  };
+}
+
+async function loadAllTranscriptStudents(filters) {
+  filters = filters || {};
   var students = [];
-  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listStudents) {
-    students = await AxiomDB.listStudents();
+  if (window.AxiomDB && AxiomDB.isConfigured()) {
+    if (AxiomDB.listTranscriptStudents) {
+      students = await AxiomDB.listTranscriptStudents(filters);
+    } else if (AxiomDB.listStudents) {
+      students = await AxiomDB.listStudents({
+        classId: filters.classId || '',
+        yearLevel: filters.yearLevel || filters.year || '',
+        search: filters.search || '',
+        limit: filters.limit || 500,
+        page: filters.page || 1
+      });
+    }
   }
   if (!students || !students.length) students = localStudents();
   return students || [];
@@ -1053,11 +1082,54 @@ function renderTranscriptFilterResults(students, message) {
 }
 
 async function filterTranscriptStudents() {
-  var students = await loadAllTranscriptStudents();
-  var filtered = filterTranscriptStudentsList(students);
+  var filters = selectedTranscriptFilters();
+  var students = await loadAllTranscriptStudents(filters);
+  var filtered = (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listTranscriptStudents)
+    ? (students || [])
+    : filterTranscriptStudentsList(students);
   renderTranscriptFilterResults(filtered, 'No students found for the selected filters.');
   if (!filtered.length) Portal.toast('No students found for the selected filters.', true);
   return filtered;
+}
+
+function transcriptPayloadMap(payloads) {
+  var map = {};
+  (payloads || []).forEach(function(item) {
+    if (item && item.student && item.student.id) map[item.student.id] = item;
+  });
+  return map;
+}
+
+function transcriptRowsFromPayload(payload) {
+  return ((payload && payload.scores) || []).map(function(row) {
+    var assessment = row.assessments || {};
+    return {
+      subject: assessment.subjects && assessment.subjects.name ? assessment.subjects.name : '-',
+      subject_type: assessment.subjects && assessment.subjects.subject_type ? assessment.subjects.subject_type : 'Elective',
+      academic_year: assessment.academic_year || '',
+      year_level: assessment.year_level || 'Year 1',
+      semester: assessment.semester || '1st Sem',
+      modeName: assessment.assessment_modes && assessment.assessment_modes.name ? assessment.assessment_modes.name : '',
+      overall_score: assessment.overall_score,
+      score: row.score === null || row.score === undefined ? '' : row.score,
+      grade: row.grade || '',
+      remark: row.remark || ''
+    };
+  });
+}
+
+async function loadTranscriptPayloadsForStudents(students) {
+  if (!(window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listTranscriptPayloads)) return {};
+  var ids = (students || []).map(function(student) { return student.id; }).filter(Boolean);
+  if (!ids.length) return {};
+  try {
+    var payloads = await AxiomDB.listTranscriptPayloads(ids);
+    if (payloads) return transcriptPayloadMap(payloads);
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load transcript batch data. Using single-student fallback.', true);
+  }
+  return {};
 }
 
 async function buildTranscriptCards(students) {
@@ -1069,10 +1141,13 @@ async function buildTranscriptCards(students) {
     });
   });
   var qualitativeRows = await loadQualitativeRows(refs);
+  var payloadsByStudent = await loadTranscriptPayloadsForStudents(students);
   for (var i = 0; i < students.length; i++) {
-    var rows = await getStudentTranscriptRows(students[i]);
-    var positionSummaries = await getStudentPositionSummaries(students[i]);
-    cards.push(transcriptCardHtml(profileFromStudent(students[i]), rows, latestQualitativeForRef(qualitativeRows, studentRef(students[i]), students[i]), positionSummaries));
+    var payload = payloadsByStudent[students[i].id];
+    var profile = payload && payload.student ? profileFromStudent(payload.student) : profileFromStudent(students[i]);
+    var rows = payload ? transcriptRowsFromPayload(payload) : await getStudentTranscriptRows(students[i]);
+    var positionSummaries = payload ? (payload.summaries || []) : await getStudentPositionSummaries(students[i]);
+    cards.push(transcriptCardHtml(profile, rows, latestQualitativeForRef(qualitativeRows, studentRef(students[i]), students[i]), positionSummaries));
   }
   return cards;
 }
@@ -1152,7 +1227,7 @@ async function previewTranscriptByRef(assRef) {
     return;
   }
   var student = null;
-  var students = await loadAllTranscriptStudents();
+  var students = await loadAllTranscriptStudents({ search: assRef, limit: 25 });
   student = (students || []).find(function(row) { return String(studentRef(row)).toUpperCase() === assRef; });
   if (!student) {
     Portal.toast('No student found for that STD_ID.', true);
