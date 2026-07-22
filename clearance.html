@@ -288,7 +288,7 @@
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260722-clearance-filter1"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'clearance', title: 'Student Clearance', onReady: startClearance });
@@ -298,6 +298,10 @@ var records = [];
 var staff = [];
 var students = [];
 var activeFormRecords = null;
+var clearanceReloadTimer = null;
+var clearanceRecordsPage = 1;
+var clearanceRecordsLimit = 500;
+var clearanceClassOptions = [];
 var defaultPositions = ['Administrator','Headmaster','Assistant Headmaster (Administration)','Assistant Headmaster (Academics)','Head of Department (HOD)','Form Master/Form Mistress','House Staff','Senior Housemaster','Senior Housemistress','Bursar','Accountant','Librarian','Storekeeper','School Nurse','Laboratory Technician','ICT Coordinator','Examinations Officer','Secretary','Other'];
 function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]; }); }
 function studentName(student) {
@@ -506,6 +510,7 @@ function populateAdminClearanceFilters() {
   var years = {};
   var classes = {};
   for (var year = 2024; year <= 2070; year++) years[String(year)] = true;
+  clearanceClassOptions.forEach(function(cls) { if (cls && cls.name) classes[cls.name] = true; });
   records.forEach(function(row) {
     var rowYear = rowCompletedYear(row);
     var cls = rowClassName(row);
@@ -520,6 +525,45 @@ function populateAdminClearanceFilters() {
   }).join('');
   if (selectedYear && years[selectedYear]) yearSelect.value = selectedYear;
   if (selectedClass && classes[selectedClass]) classSelect.value = selectedClass;
+}
+function selectedClearanceFilters() {
+  return {
+    admin: true,
+    status: document.getElementById('statusFilter') ? document.getElementById('statusFilter').value : '',
+    completedYear: document.getElementById('completedYearFilter') ? document.getElementById('completedYearFilter').value : '',
+    className: document.getElementById('classFilter') ? document.getElementById('classFilter').value : '',
+    search: document.getElementById('adminRecordSearch') ? document.getElementById('adminRecordSearch').value.trim() : '',
+    page: clearanceRecordsPage,
+    limit: clearanceRecordsLimit
+  };
+}
+function isAdminClearanceMode() {
+  return canSetup() && !isStaffClearanceView() && !isStudentClearanceView();
+}
+async function reloadClearanceRecords() {
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listStudentClearances || !isAdminClearanceMode()) {
+    renderRecords();
+    return;
+  }
+  document.getElementById('recordsBody').innerHTML = '<tr><td colspan="11" class="muted">Loading clearance records...</td></tr>';
+  records = await AxiomDB.listStudentClearances(selectedClearanceFilters()) || [];
+  records = completedClearanceRows(records);
+  renderStudentClearanceSummary();
+  renderRecords();
+}
+function scheduleClearanceReload() {
+  clearanceRecordsPage = 1;
+  if (!isAdminClearanceMode()) {
+    renderRecords();
+    return;
+  }
+  clearTimeout(clearanceReloadTimer);
+  clearanceReloadTimer = setTimeout(function() {
+    reloadClearanceRecords().catch(function(err) {
+      console.error(err);
+      Portal.toast('Could not load clearance records: ' + (err.message || 'Unknown error'), true);
+    });
+  }, 250);
 }
 function renderRecords() {
   var status = document.getElementById('statusFilter').value;
@@ -737,10 +781,10 @@ async function reviewRecord(id, status) {
   await loadData();
 }
 function populateGenerateClassFilter() {
-  var completed = students.filter(studentIsCompleted);
   var classes = {};
-  completed.forEach(function(student) {
-    var name = studentClassName(student);
+  clearanceClassOptions.forEach(function(cls) { if (cls && cls.name) classes[cls.name] = true; });
+  records.forEach(function(row) {
+    var name = rowClassName(row);
     if (name) classes[name] = true;
   });
   var select = document.getElementById('generateClassSelect');
@@ -772,27 +816,39 @@ function closeGenerateClearanceModal() {
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden', 'true');
 }
-function selectedCompletedStudentsForGeneration() {
+async function selectedCompletedStudentsForGeneration() {
   var type = document.getElementById('generateFilterType').value;
-  var completed = students.filter(studentIsCompleted);
-  if (!completed.length) { Portal.toast('No completed students found.', true); return; }
+  var filters = { yearLevel: 'Completed', includeDeleted: true, limit: 5000 };
   if (type === 'class') {
     var className = document.getElementById('generateClassSelect').value;
     if (!className) { Portal.toast('Select a class before generating clearance forms.', true); return null; }
-    completed = completed.filter(function(student) { return studentClassName(student) === className; });
-    if (!completed.length) { Portal.toast('No completed students found for ' + className + '.', true); return null; }
+    var classRow = clearanceClassOptions.find(function(cls) { return cls && cls.name === className; });
+    if (classRow && classRow.id) filters.classId = classRow.id;
+    else filters.search = className;
   }
   if (type === 'student') {
-    var ref = String(document.getElementById('generateStudentRef').value || '').trim().toLowerCase();
+    var ref = String(document.getElementById('generateStudentRef').value || '').trim();
     if (!ref) { Portal.toast('Enter student STD_ID / Ass Ref.ID before generating.', true); return null; }
-    completed = completed.filter(function(student) { return studentAssRef(student).toLowerCase() === ref; });
+    filters.search = ref;
+  }
+  var completed = AxiomDB.listStudents ? await AxiomDB.listStudents(filters) || [] : students.filter(studentIsCompleted);
+  completed = completed.filter(studentIsCompleted);
+  if (type === 'class') {
+    var selectedClass = document.getElementById('generateClassSelect').value;
+    completed = completed.filter(function(student) { return studentClassName(student) === selectedClass; });
+    if (!completed.length) { Portal.toast('No completed students found for ' + selectedClass + '.', true); return null; }
+  }
+  if (type === 'student') {
+    var wantedRef = String(document.getElementById('generateStudentRef').value || '').trim().toLowerCase();
+    completed = completed.filter(function(student) { return studentAssRef(student).toLowerCase() === wantedRef; });
     if (!completed.length) { Portal.toast('No completed student found for that STD_ID.', true); return null; }
   }
+  if (!completed.length) { Portal.toast('No completed students found.', true); return null; }
   return completed;
 }
 async function generateCompleted(selectedStudents) {
   if (!canSetup()) { Portal.toast('Only administrators can generate completed clearance forms.', true); return; }
-  var completed = selectedStudents || selectedCompletedStudentsForGeneration();
+  var completed = selectedStudents || await selectedCompletedStudentsForGeneration();
   if (!completed || !completed.length) return;
   var printWin = window.open('', '_blank');
   if (!printWin) { Portal.toast('Allow popups to print completed clearance forms.', true); return; }
@@ -835,10 +891,11 @@ async function loadData() {
   document.getElementById('recordSearch').style.display = (studentView || adminToolsAllowed) ? 'none' : '';
   document.getElementById('adminClearanceFilters').style.display = adminToolsAllowed ? 'grid' : 'none';
   if (!window.AxiomDB || !AxiomDB.isConfigured()) { Portal.toast('Supabase is not configured.', true); return; }
-  staff = adminToolsAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff() || [] : [];
-  students = adminToolsAllowed && AxiomDB.listStudents ? await AxiomDB.listStudents() || [] : [];
+  staff = adminToolsAllowed && AxiomDB.listStaff ? await AxiomDB.listStaff({ status: 'Active', limit: 500 }) || [] : [];
+  students = [];
   requirements = adminToolsAllowed && AxiomDB.listClearanceRequirements ? await AxiomDB.listClearanceRequirements() || [] : [];
-  records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(isStudentClearanceView() ? { studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id } : {}) || [] : [];
+  clearanceClassOptions = adminToolsAllowed && AxiomDB.listClasses ? await AxiomDB.listClasses() || [] : [];
+  records = AxiomDB.listStudentClearances ? await AxiomDB.listStudentClearances(isStudentClearanceView() ? { studentId: currentUser.id, studentAssRef: currentUser.ass_ref_id } : adminToolsAllowed ? selectedClearanceFilters() : {}) || [] : [];
   records = completedClearanceRows(records);
   populateAdminClearanceFilters();
   renderStaffOptions(); renderRequirements(); renderStudentClearanceSummary(); renderRecords();
@@ -848,16 +905,16 @@ function startClearance() {
   document.getElementById('positionTitle').addEventListener('input', renderStaffOptions);
   document.getElementById('cancelEdit').addEventListener('click', clearForm);
   document.getElementById('refreshBtn').addEventListener('click', loadData);
-  document.getElementById('statusFilter').addEventListener('change', renderRecords);
+  document.getElementById('statusFilter').addEventListener('change', scheduleClearanceReload);
   document.getElementById('recordSearch').addEventListener('input', renderRecords);
-  document.getElementById('completedYearFilter').addEventListener('change', renderRecords);
-  document.getElementById('classFilter').addEventListener('change', renderRecords);
-  document.getElementById('adminRecordSearch').addEventListener('input', renderRecords);
+  document.getElementById('completedYearFilter').addEventListener('change', scheduleClearanceReload);
+  document.getElementById('classFilter').addEventListener('change', scheduleClearanceReload);
+  document.getElementById('adminRecordSearch').addEventListener('input', scheduleClearanceReload);
   document.getElementById('clearAdminFilters').addEventListener('click', function() {
     document.getElementById('completedYearFilter').value = '';
     document.getElementById('classFilter').value = '';
     document.getElementById('adminRecordSearch').value = '';
-    renderRecords();
+    scheduleClearanceReload();
   });
   document.getElementById('viewClearanceFormBtn').addEventListener('click', function() { openClearanceForm().catch(function(err) { console.error(err); Portal.toast('Could not open clearance form: ' + (err.message || 'Unknown error'), true); }); });
   document.getElementById('closeClearanceFormBtn').addEventListener('click', closeClearanceForm);

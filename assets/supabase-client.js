@@ -879,6 +879,7 @@
       .select('*, classes(name, year_level, programmes(name)), houses(name)')
       .eq('school_id', school.id)
       .order('created_at', { ascending: false });
+    if (filters.limit) query = query.range(filters.from, filters.to);
     var classIds = normalizeIdList(filters.classIds || filters.classId);
     if (classIds.length === 1) query = query.eq('class_id', classIds[0]);
     else if (classIds.length > 1) query = query.in('class_id', classIds);
@@ -2111,7 +2112,7 @@
   async function listStudentClearances(filters) {
     var c = db();
     if (!c) return null;
-    filters = filters || {};
+    filters = normalizeListFilters(filters || {});
     var adminMode = filters.admin === true;
     if (!adminMode && (filters.studentAssRef || filters.studentId)) {
       var studentToken = activeStudentSessionToken();
@@ -2142,6 +2143,16 @@
     }
     var school = await currentSchool();
     if (!school) return null;
+    if (adminMode) {
+      var adminFeed = await c.rpc('secure_list_student_clearances', {
+        p_school_id: school.id,
+        p_filters: filters
+      });
+      if (!adminFeed.error) return completedClearanceRows(adminFeed.data || []);
+      if (!/secure_list_student_clearances|schema cache|function/i.test(adminFeed.error.message || '')) {
+        throw adminFeed.error;
+      }
+    }
     var resolvedStudentId = filters.studentId || null;
     if (filters.studentAssRef) {
       var studentLookup = await c
@@ -2159,6 +2170,7 @@
       .select('*, students(id, ass_ref_id, first_name, surname, other_names, status, student_level, passport_url, classes(name, programmes(name))), clearance_requirements(title, is_required), assigned_staff:staff_users!student_clearances_assigned_staff_user_id_fkey(id, full_name, staff_id), reviewer:staff_users!student_clearances_reviewed_by_fkey(id, full_name, staff_id)')
       .eq('school_id', school.id)
       .order('created_at', { ascending: false });
+    if (filters.limit) query = query.range(filters.from, filters.to);
     if (resolvedStudentId) query = query.eq('student_id', resolvedStudentId);
     if (filters.status) query = query.eq('status', filters.status);
     var result = await query;
