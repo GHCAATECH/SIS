@@ -113,14 +113,15 @@
 <input type="file" id="schemeReplacementFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm" hidden>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260722-scheme-filter1"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
 (function () {
   'use strict';
   var user = Portal.currentUser();
-  var profile = null, assignments = [], allClasses = [], allSubjects = [], allRows = [];
+  var profile = null, assignments = [], allClasses = [], allSubjects = [];
+  var mineRows = [], hodReviewRows = [], finalReviewRows = [], hodHistoryRows = [], finalHistoryRows = [];
   var pendingReplacementSchemeId = '';
   var form = document.getElementById('schemeForm');
 
@@ -184,7 +185,7 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
   }
 
   function renderMine() {
-    var rows = allRows.filter(function (row) { return row.teacher_id === profile.id; });
+    var rows = mineRows;
     document.getElementById('countHod').textContent = rows.filter(function (r) { return r.status === 'Pending HOD'; }).length;
     document.getElementById('countFinal').textContent = rows.filter(function (r) { return r.status === 'Pending Head Academic'; }).length;
     document.getElementById('countApproved').textContent = rows.filter(function (r) { return r.status === 'Final Approved'; }).length;
@@ -195,12 +196,8 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
     }).join('') : emptyRow(8, 'No scheme of work has been submitted yet.');
   }
   function renderQueues() {
-    var hodRows = isHod() && profile.department ? allRows.filter(function (r) {
-      return r.teacher_id !== profile.id &&
-        normalizedDepartment(r.department) === normalizedDepartment(profile.department) &&
-        r.status === 'Pending HOD';
-    }) : [];
-    var finalRows = isHeadAcademic() ? allRows.filter(function (r) { return r.status === 'Pending Head Academic'; }) : [];
+    var hodRows = hodReviewRows;
+    var finalRows = finalReviewRows;
     document.getElementById('hodBadge').textContent = hodRows.length ? '('+hodRows.length+')' : '';
     document.getElementById('finalBadge').textContent = finalRows.length ? '('+finalRows.length+')' : '';
     document.getElementById('hodRows').innerHTML = hodRows.length ? hodRows.map(function (row) {
@@ -211,13 +208,13 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
       return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td>'+esc(row.department)+'</td><td>'+hodRoute+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.academic_year)+' | '+esc(row.term)+'</small></td><td>'+esc(row.class_name)+'<br><small>'+esc(row.subject_name)+'</small></td><td>'+documentLink(row)+'</td><td><div class="review-actions"><button class="btn btn--success btn--sm" data-review="head" data-id="'+row.id+'" data-approved="1"><i class="fas fa-check"></i> Final Approve</button><button class="btn btn--danger btn--sm" data-review="head" data-id="'+row.id+'" data-approved="0"><i class="fas fa-xmark"></i> Reject</button></div></td></tr>';
     }).join('') : emptyRow(7, 'No schemes are waiting for final review.');
 
-    var hodHistory = isHod() ? allRows.filter(function (row) { return row.hod_reviewer_id === profile.id; }) : [];
+    var hodHistory = hodHistoryRows;
     document.getElementById('hodHistoryRows').innerHTML = hodHistory.length ? hodHistory.map(function (row) {
       var rejected = !!row.hod_reason;
       return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+decisionPill(rejected ? 'Rejected by HOD' : 'Approved by HOD', !rejected)+'</td><td class="wrap">'+esc(rejected ? row.hod_reason : 'Approved and forwarded to Head Academic')+'</td><td>'+dateText(row.hod_decision_at)+'</td><td>'+statusPill(row.status)+'</td><td>'+documentLink(row)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
     }).join('') : emptyRow(8, 'No HOD review decisions have been recorded yet.');
 
-    var finalHistory = isHeadAcademic() ? allRows.filter(function (row) { return row.head_academic_reviewer_id === profile.id; }) : [];
+    var finalHistory = finalHistoryRows;
     document.getElementById('finalHistoryRows').innerHTML = finalHistory.length ? finalHistory.map(function (row) {
       var rejected = !!row.head_academic_reason;
       return '<tr><td><b>'+esc(row.teacher && row.teacher.full_name)+'</b><br><small>'+esc(row.teacher && row.teacher.staff_id)+'</small></td><td>'+esc(row.department)+'</td><td class="wrap"><b>'+esc(row.title)+'</b><br><small>'+esc(row.class_name)+' | '+esc(row.subject_name)+'</small></td><td>'+statusPill(rejected ? 'Declined by Head Academic' : 'Final Approved')+'</td><td class="wrap">'+esc(rejected ? row.head_academic_reason : 'Final approval granted')+'</td><td>'+dateText(row.head_academic_decision_at)+'</td><td>'+documentLink(row)+'</td><td><button class="btn btn--sm" type="button" data-history="'+row.id+'"><i class="fas fa-clock-rotate-left"></i> View</button></td></tr>';
@@ -226,7 +223,24 @@ Portal.init({ active: 'schemeofwork', title: 'Scheme of Work' });
   function renderAll() { renderMine(); renderQueues(); }
 
   async function loadRows() {
-    try { allRows = await AxiomDB.listSchemeOfWork() || []; renderAll(); }
+    try {
+      mineRows = await AxiomDB.listSchemeOfWork({ teacherId: profile.id, limit: 100 }) || [];
+      if (isHod() && profile.department) {
+        hodReviewRows = await AxiomDB.listSchemeOfWork({ queue: 'hod', department: profile.department, reviewerId: profile.id, limit: 100 }) || [];
+        hodHistoryRows = await AxiomDB.listSchemeOfWork({ history: 'hod', reviewerId: profile.id, limit: 100 }) || [];
+      } else {
+        hodReviewRows = [];
+        hodHistoryRows = [];
+      }
+      if (isHeadAcademic()) {
+        finalReviewRows = await AxiomDB.listSchemeOfWork({ queue: 'head', reviewerId: profile.id, limit: 100 }) || [];
+        finalHistoryRows = await AxiomDB.listSchemeOfWork({ history: 'head', reviewerId: profile.id, limit: 100 }) || [];
+      } else {
+        finalReviewRows = [];
+        finalHistoryRows = [];
+      }
+      renderAll();
+    }
     catch (err) { console.error(err); Portal.toast('Could not load scheme of work: '+err.message, true); }
   }
   async function loadProfile() {

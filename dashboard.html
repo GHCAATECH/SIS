@@ -215,7 +215,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260722-scheme-filter1"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 var dashboardUser = Portal.currentUser();
@@ -388,14 +388,30 @@ $(function () {
     section.style.display = 'block';
     try {
       var reviewer = dashboardIsHod() || dashboardIsHeadAcademic();
-      var rows = await AxiomDB.listSchemeOfWork(reviewer ? {} : { teacherId: currentUser.id }) || [];
-      var mine = rows.filter(function(row) { return row.teacher_id === currentUser.id; });
-      document.getElementById('dashboardSchemeHod').textContent = mine.filter(function(r){ return r.status === 'Pending HOD'; }).length;
-      document.getElementById('dashboardSchemeFinal').textContent = mine.filter(function(r){ return r.status === 'Pending Head Academic'; }).length;
-      document.getElementById('dashboardSchemeApproved').textContent = mine.filter(function(r){ return r.status === 'Final Approved'; }).length;
-      document.getElementById('dashboardSchemeDeclined').textContent = mine.filter(function(r){ return String(r.status).indexOf('Declined') > -1; }).length;
-      var hodQueue = dashboardIsHod() ? rows.filter(function(row) { return row.status === 'Pending HOD' && String(row.department || '').trim().toLowerCase() === String(currentUser.department || '').trim().toLowerCase(); }).length : 0;
-      var finalQueue = dashboardIsHeadAcademic() ? rows.filter(function(row) { return row.status === 'Pending Head Academic'; }).length : 0;
+      var summary = AxiomDB.listSchemeOfWorkSummary ? await AxiomDB.listSchemeOfWorkSummary({
+        staffId: currentUser.id,
+        department: currentUser.department || '',
+        isHod: dashboardIsHod(),
+        isHeadAcademic: dashboardIsHeadAcademic()
+      }) : null;
+      var mine = await AxiomDB.listSchemeOfWork({ teacherId: currentUser.id, limit: 5 }) || [];
+      var hodQueue = 0, finalQueue = 0;
+      if (summary) {
+        document.getElementById('dashboardSchemeHod').textContent = summary.minePendingHod || 0;
+        document.getElementById('dashboardSchemeFinal').textContent = summary.minePendingFinal || 0;
+        document.getElementById('dashboardSchemeApproved').textContent = summary.mineApproved || 0;
+        document.getElementById('dashboardSchemeDeclined').textContent = summary.mineDeclined || 0;
+        hodQueue = summary.hodQueue || 0;
+        finalQueue = summary.finalQueue || 0;
+      } else {
+        var mineForCounts = await AxiomDB.listSchemeOfWork({ teacherId: currentUser.id, limit: 100 }) || [];
+        document.getElementById('dashboardSchemeHod').textContent = mineForCounts.filter(function(r){ return r.status === 'Pending HOD'; }).length;
+        document.getElementById('dashboardSchemeFinal').textContent = mineForCounts.filter(function(r){ return r.status === 'Pending Head Academic'; }).length;
+        document.getElementById('dashboardSchemeApproved').textContent = mineForCounts.filter(function(r){ return r.status === 'Final Approved'; }).length;
+        document.getElementById('dashboardSchemeDeclined').textContent = mineForCounts.filter(function(r){ return String(r.status).indexOf('Declined') > -1; }).length;
+        hodQueue = dashboardIsHod() ? (await AxiomDB.listSchemeOfWork({ queue: 'hod', department: currentUser.department || '', reviewerId: currentUser.id, limit: 100 }) || []).length : 0;
+        finalQueue = dashboardIsHeadAcademic() ? (await AxiomDB.listSchemeOfWork({ queue: 'head', reviewerId: currentUser.id, limit: 100 }) || []).length : 0;
+      }
       var queue = document.getElementById('dashboardSchemeReviewQueue');
       queue.hidden = !reviewer;
       if (reviewer) {

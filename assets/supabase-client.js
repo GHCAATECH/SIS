@@ -1960,18 +1960,52 @@
   async function listSchemeOfWork(filters) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
-    filters = filters || {};
+    filters = normalizeListFilters(filters || {});
+    var rpcResult = await c.rpc('secure_list_scheme_of_work', {
+      p_school_id: school.id,
+      p_filters: filters,
+      p_session_token: activeStaffSessionToken() || null
+    });
+    if (!rpcResult.error) return rpcResult.data || [];
+    if (!/secure_list_scheme_of_work|schema cache|function/i.test(rpcResult.error.message || '')) throw rpcResult.error;
+
     var query = c
       .from('scheme_of_work')
       .select('*, teacher:staff_users!scheme_of_work_teacher_id_fkey(id, full_name, staff_id, department, position_responsibility)')
       .eq('school_id', school.id)
-      .order('submitted_at', { ascending: false });
+      .order('submitted_at', { ascending: false })
+      .range(filters.from, filters.to);
     if (filters.teacherId) query = query.eq('teacher_id', filters.teacherId);
     if (filters.department) query = query.eq('department', filters.department);
     if (filters.status) query = query.eq('status', filters.status);
+    if (filters.queue === 'hod') {
+      query = query.eq('status', 'Pending HOD');
+      if (filters.reviewerId) query = query.neq('teacher_id', filters.reviewerId);
+    }
+    if (filters.queue === 'head' || filters.queue === 'final' || filters.queue === 'head_academic') {
+      query = query.eq('status', 'Pending Head Academic');
+    }
+    if (filters.history === 'hod' && filters.reviewerId) query = query.eq('hod_reviewer_id', filters.reviewerId);
+    if ((filters.history === 'head' || filters.history === 'final' || filters.history === 'head_academic') && filters.reviewerId) query = query.eq('head_academic_reviewer_id', filters.reviewerId);
     var result = await query;
     if (result.error) throw result.error;
     return result.data || [];
+  }
+
+  async function listSchemeOfWorkSummary(filters) {
+    var c = db(), school = await currentSchool();
+    if (!c || !school) return null;
+    filters = filters || {};
+    var result = await c.rpc('secure_scheme_work_summary', {
+      p_school_id: school.id,
+      p_staff_id: filters.staffId || filters.teacherId || null,
+      p_department: filters.department || null,
+      p_is_hod: !!filters.isHod,
+      p_is_head_academic: !!filters.isHeadAcademic
+    });
+    if (!result.error) return result.data || null;
+    if (/secure_scheme_work_summary|schema cache|function/i.test(result.error.message || '')) return null;
+    throw result.error;
   }
 
   async function replaceSchemeOfWorkDocument(schemeId, file) {
@@ -2474,6 +2508,7 @@
     uploadStaffProfilePhoto: uploadStaffProfilePhoto,
       submitSchemeOfWork: submitSchemeOfWork,
       listSchemeOfWork: listSchemeOfWork,
+      listSchemeOfWorkSummary: listSchemeOfWorkSummary,
       replaceSchemeOfWorkDocument: replaceSchemeOfWorkDocument,
       reviewSchemeOfWork: reviewSchemeOfWork,
     listSchemeOfWorkHistory: listSchemeOfWorkHistory,
