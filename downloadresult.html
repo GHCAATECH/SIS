@@ -516,6 +516,25 @@ function populateSubjects() {
   select.value = subjects.some(function(subject) { return subject.name === current; }) ? current : '';
 }
 
+function selectedClassName() {
+  var classId = document.getElementById('classFilter').value;
+  var cls = availableClasses.find(function(item) { return item.id === classId; });
+  return cls ? cls.name : '';
+}
+
+function selectedRecordFilters() {
+  return {
+    yearLevel: document.getElementById('yearFilter').value,
+    semester: document.getElementById('semesterFilter').value,
+    modeName: document.getElementById('modeFilter').value,
+    subjectName: document.getElementById('subjectFilter').value,
+    classId: document.getElementById('classFilter').value,
+    className: selectedClassName(),
+    search: document.getElementById('searchBox').value.trim(),
+    limit: 1000,
+    page: 1
+  };
+}
 function applyFilters() {
   if (!recordsFilterApplied) {
     showRecordsFilterPending();
@@ -621,11 +640,11 @@ async function loadRecordSetup() {
   showRecordsFilterPending('Select filters and click Submit to load assessment records.');
 }
 
-async function loadRecords() {
+async function loadRecords(filters) {
   records = localRecords();
   if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listAssessmentRecords) {
     try {
-      var dbRows = await AxiomDB.listAssessmentRecords();
+      var dbRows = await AxiomDB.listAssessmentRecords(filters || selectedRecordFilters());
       if (dbRows && dbRows.length) records = dbRows.map(mapDbRecord);
     } catch (err) {
       console.error(err);
@@ -641,7 +660,7 @@ document.getElementById('submitFilter').addEventListener('click', function() {
   button.disabled = true;
   renderedRecords = [];
   renderRows('Loading assessment records...');
-  loadRecords().then(function() {
+  loadRecords(selectedRecordFilters()).then(function() {
     submitRecordsSearch();
   }).catch(function(err) {
     console.error(err);
@@ -665,4 +684,3 @@ loadRecordSetup();
 </footer>
 </body>
 </html>
-

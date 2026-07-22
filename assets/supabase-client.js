@@ -1334,6 +1334,14 @@
     }
     var school = await currentSchool();
     if (!school) return null;
+    var rpcResult = await c.rpc('secure_list_assessment_records', {
+      p_school_id: school.id,
+      p_filters: filters || {}
+    });
+    if (!rpcResult.error) return rpcResult.data || [];
+    if (!/secure_list_assessment_records|schema cache|function/i.test(rpcResult.error.message || '')) {
+      throw rpcResult.error;
+    }
     var result = await c
       .from('assessment_scores')
       .select('score, grade, remark, updated_at, students(ass_ref_id, first_name, surname, other_names, ghana_card_number, gender, disability_status, date_of_birth, status, passport_url, student_level, year_admitted, classes(year_level)), assessments(class_id, academic_year, year_level, semester, status, submitted_at, overall_score, inserted_by, subjects(name, code), classes(name, programme_id, programmes(name)), assessment_modes(name, display_order))')
