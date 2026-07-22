@@ -864,7 +864,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-privilege-session1"></script>
+<script src="assets/supabase-client.js?v=20260722-manage-users-filter2"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script src="assets/staff-ranks.js"></script>
 <script>
@@ -1622,7 +1622,7 @@ function renderUsers(data, message) {
     return;
   }
   document.querySelector('#usersTable tbody').innerHTML = data.map(function(user, idx) {
-    var isTeaching = userCategory(user) === 'Teaching Staff';
+    var isTeaching = activeUserCategory === 'Teaching Staff';
     var isSuspended = String((user[6] && user[6].status) || '').toLowerCase() === 'suspended';
     return '<tr>'+
       '<td class="action-cell col-profile"><button class="legacy-action blue" data-act="ViewProfile" data-i="'+idx+'"><i class="fas fa-id-card"></i>View Profile</button></td>'+
@@ -1761,7 +1761,8 @@ async function loadUsersFromSupabase() {
     var staff = await AxiomDB.listStaff(manageUsersFilters());
     users = (staff || []).map(mapStaffUser);
     if (activeUserCategory === 'School Administrator') ensureCurrentAdministratorUser();
-    renderUsers(users, users.length ? '' : 'No users found for this filter.');
+    var visibleUsers = users.filter(function(user) { return userCategory(user) === activeUserCategory; });
+    renderUsers(visibleUsers, visibleUsers.length ? '' : 'No users found for this filter.');
   } catch (err) {
     console.error(err);
     Portal.toast('Could not load users from Supabase: ' + (err.message || 'Unknown error'), true);
