@@ -831,29 +831,72 @@
     return true;
   }
 
-  async function listStudents() {
+  function normalizeListFilters(filters) {
+    filters = filters || {};
+    var limit = Number(filters.limit || filters.pageSize || 1000);
+    if (!Number.isFinite(limit) || limit <= 0) limit = 1000;
+    limit = Math.min(Math.max(Math.floor(limit), 1), 5000);
+    var page = Number(filters.page || 1);
+    if (!Number.isFinite(page) || page <= 0) page = 1;
+    page = Math.floor(page);
+    var from = (page - 1) * limit;
+    return Object.assign({}, filters, { limit: limit, page: page, from: from, to: from + limit - 1 });
+  }
+
+  function normalizeIdList(values) {
+    if (!Array.isArray(values)) values = values ? [values] : [];
+    return values.map(function(value) { return String(value || '').trim(); }).filter(Boolean);
+  }
+
+  async function getDashboardSummary() {
+    var c = db(), school = await currentSchool();
+    if (!c || !school) return null;
+    var result = await c.rpc('dashboard_student_summary', { p_school_id: school.id });
+    if (!result.error) return result.data || null;
+    if (/dashboard_student_summary|schema cache|function/i.test(result.error.message || '')) return null;
+    throw result.error;
+  }
+  async function listStudents(filters) {
     var c = db();
     if (!c) return null;
+    filters = normalizeListFilters(filters);
     var session = await authSession();
     if (!session || !session.user) {
       throw new Error('Please login as school administrator before loading students.');
     }
     var school = await currentSchool();
     if (!school) return null;
-    var rpcResult = await c.rpc('secure_list_students', { p_school_id: school.id });
-    if (!rpcResult.error) return rpcResult.data || [];
-    if (!/secure_list_students|schema cache|function/i.test(rpcResult.error.message || '')) {
-      throw rpcResult.error;
+    var hasFilters = !!(filters.classId || (filters.classIds && filters.classIds.length) || filters.yearLevel || filters.status || filters.search || filters.includeDeleted || filters.page > 1 || filters.limit !== 1000);
+    if (!hasFilters) {
+      var rpcResult = await c.rpc('secure_list_students', { p_school_id: school.id });
+      if (!rpcResult.error) return rpcResult.data || [];
+      if (!/secure_list_students|schema cache|function/i.test(rpcResult.error.message || '')) {
+        throw rpcResult.error;
+      }
     }
-    var result = await c
+    var query = c
       .from('students')
       .select('*, classes(name, year_level, programmes(name)), houses(name)')
       .eq('school_id', school.id)
       .order('created_at', { ascending: false });
+    var classIds = normalizeIdList(filters.classIds || filters.classId);
+    if (classIds.length === 1) query = query.eq('class_id', classIds[0]);
+    else if (classIds.length > 1) query = query.in('class_id', classIds);
+    if (filters.yearLevel) query = query.eq('student_level', filters.yearLevel);
+    if (filters.status) query = query.eq('status', filters.status);
+    if (!filters.includeDeleted) query = query.neq('status', 'Deleted');
+    if (filters.search) {
+      var safeSearch = String(filters.search || '').replace(/[,%]/g, ' ').trim();
+      if (safeSearch) {
+        var patternText = '%' + safeSearch + '%';
+        query = query.or('ass_ref_id.ilike.' + patternText + ',first_name.ilike.' + patternText + ',surname.ilike.' + patternText + ',other_names.ilike.' + patternText + ',phone_number.ilike.' + patternText);
+      }
+    }
+    query = query.range(filters.from, filters.to);
+    var result = await query;
     if (result.error) throw result.error;
-    return result.data;
+    return result.data || [];
   }
-
   async function createStudent(payload) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
@@ -1252,7 +1295,7 @@
   async function listAssessmentRecords(filters) {
     var c = db();
     if (!c) return null;
-    filters = filters || {};
+    filters = normalizeListFilters(filters || {});
     var token = activeStaffSessionToken();
     if (token) {
       var sessionResult = await c.rpc('secure_list_assessment_records_with_session', {
@@ -1270,7 +1313,8 @@
     var result = await c
       .from('assessment_scores')
       .select('score, grade, remark, updated_at, students(ass_ref_id, first_name, surname, other_names, ghana_card_number, gender, disability_status, date_of_birth, status, passport_url, student_level, year_admitted, classes(year_level)), assessments(class_id, academic_year, year_level, semester, status, submitted_at, overall_score, inserted_by, subjects(name, code), classes(name, programme_id, programmes(name)), assessment_modes(name, display_order))')
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .range(filters.from, filters.to);
     if (result.error) throw result.error;
     return (result.data || []).filter(function(row) {
       var assessment = row.assessments || {};
@@ -2236,6 +2280,7 @@
     createHouse: createHouse,
     updateHouse: updateHouse,
     deleteHouse: deleteHouse,
+    getDashboardSummary: getDashboardSummary,
     listStudents: listStudents,
     createStudent: createStudent,
     ensureStudentAccount: ensureStudentAccount,
@@ -2286,10 +2331,3 @@
     deleteDocument: deleteDocument
   };
 })(window);
-
-
-
-
-
-
-

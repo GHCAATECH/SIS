@@ -1177,10 +1177,33 @@ function mapDbStudent(row) {
   ];
 }
 
-async function loadStudentsFromSupabase() {
+function selectedStudentQueryFilters() {
+  var programmeFilter = document.getElementById('learningArea').value;
+  var classFilter = document.getElementById('classFilter').value;
+  var yearFilter = document.getElementById('yearFilter').value;
+  var classIds = [];
+  if (classFilter) {
+    classIds = academicClasses.filter(function(cls) { return cls.name === classFilter && cls.id; }).map(function(cls) { return cls.id; });
+  } else {
+    classIds = academicClasses.filter(function(cls) {
+      if (programmeFilter && cls.programme !== programmeFilter) return false;
+      if (yearFilter && cls.year_level !== yearFilter) return false;
+      return !!cls.id;
+    }).map(function(cls) { return cls.id; });
+  }
+  return {
+    classIds: classIds,
+    yearLevel: classIds.length ? '' : (yearFilter || ''),
+    search: currentStudentSearchQuery(),
+    limit: 1000,
+    page: 1
+  };
+}
+
+async function loadStudentsFromSupabase(filters) {
   if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
   try {
-    var dbStudents = await AxiomDB.listStudents();
+    var dbStudents = await AxiomDB.listStudents(filters || selectedStudentQueryFilters());
     if (dbStudents && dbStudents.length) {
       students = removeDeletedStudents(dbStudents.map(mapDbStudent));
     } else {
@@ -1192,7 +1215,6 @@ async function loadStudentsFromSupabase() {
     Portal.toast('Could not load students from Supabase: ' + (err.message || 'Unknown error'), true);
   }
 }
-
 function escapeHtml(value) {
   return String(value || '').replace(/[&<>"']/g, function(char) {
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char];
@@ -1513,10 +1535,10 @@ document.getElementById('filterBtn').addEventListener('click', function() {
   var button = this;
   async function filterStudents() {
     studentFilterApplied = true;
-    if (window.AxiomDB && AxiomDB.isConfigured() && !studentsLoaded) {
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
       button.disabled = true;
       renderRows([], 'Loading students...');
-      await loadStudentsFromSupabase();
+      await loadStudentsFromSupabase(selectedStudentQueryFilters());
     }
     applySearch();
     Portal.toast('Student list filtered.');
