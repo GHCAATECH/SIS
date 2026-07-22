@@ -6,8 +6,14 @@ create extension if not exists pg_trgm;
 create index if not exists idx_students_school_level_class_status
   on public.students (school_id, student_level, class_id, status);
 
-create index if not exists idx_students_name_trgm
-  on public.students using gin ((concat_ws(' ', first_name, surname, other_names)) gin_trgm_ops);
+create index if not exists idx_students_first_name_trgm
+  on public.students using gin (first_name gin_trgm_ops);
+
+create index if not exists idx_students_surname_trgm
+  on public.students using gin (surname gin_trgm_ops);
+
+create index if not exists idx_students_other_names_trgm
+  on public.students using gin (other_names gin_trgm_ops);
 
 create index if not exists idx_assessment_scores_student_updated
   on public.assessment_scores (student_id, updated_at desc);
