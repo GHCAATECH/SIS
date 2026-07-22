@@ -306,6 +306,45 @@ function renderResidentialStats(students, hasLoadError) {
   rows.push(residentialRow('TOTAL', totals, true));
   body.innerHTML = rows.join('');
 }
+function renderResidentialStatsFromSummary(summary) {
+  var body = document.getElementById('residentialRows');
+  var card = document.getElementById('residentialCard');
+  if (!body) return;
+  if (card) card.setAttribute('aria-busy', 'false');
+  var stats = {
+    'YEAR 1': {
+      boarders: { female: Number(summary.Year1BoardersFemale || 0), male: Number(summary.Year1BoardersMale || 0) },
+      day: { female: Number(summary.Year1DayFemale || 0), male: Number(summary.Year1DayMale || 0) }
+    },
+    'YEAR 2': {
+      boarders: { female: Number(summary.Year2BoardersFemale || 0), male: Number(summary.Year2BoardersMale || 0) },
+      day: { female: Number(summary.Year2DayFemale || 0), male: Number(summary.Year2DayMale || 0) }
+    },
+    'YEAR 3': {
+      boarders: { female: Number(summary.Year3BoardersFemale || 0), male: Number(summary.Year3BoardersMale || 0) },
+      day: { female: Number(summary.Year3DayFemale || 0), male: Number(summary.Year3DayMale || 0) }
+    }
+  };
+  var counted = Object.keys(stats).reduce(function(total, year) {
+    var row = stats[year];
+    return total + row.boarders.female + row.boarders.male + row.day.female + row.day.male;
+  }, 0);
+  if (!counted) {
+    body.innerHTML = '<tr><td colspan="7" class="residential-empty">No residential student data found.</td></tr>';
+    return;
+  }
+  var totals = { boarders: { female: 0, male: 0 }, day: { female: 0, male: 0 } };
+  var rows = ['YEAR 1', 'YEAR 2', 'YEAR 3'].map(function(year) {
+    var row = stats[year];
+    totals.boarders.female += row.boarders.female;
+    totals.boarders.male += row.boarders.male;
+    totals.day.female += row.day.female;
+    totals.day.male += row.day.male;
+    return residentialRow(year, row);
+  });
+  rows.push(residentialRow('TOTAL', totals, true));
+  body.innerHTML = rows.join('');
+}
 function residentialRow(label, row, totalRow) {
   var boardersTotal = row.boarders.female + row.boarders.male;
   var dayTotal = row.day.female + row.day.male;
@@ -342,6 +381,13 @@ function renderAdminCounts(students, staff, classes, subjects, hasLoadError) {
   setAdminCount('adminSubjects', (subjects && subjects.length) || localSubjectsFromClasses(classes));
   renderResidentialStats(students, hasLoadError);
 }
+function renderAdminSummary(summary) {
+  setAdminCount('adminStudents', summary.TotalStudents);
+  setAdminCount('adminUsers', summary.TotalStaff || summary.PortalUsers || 0);
+  setAdminCount('adminClasses', summary.TotalClasses || 0);
+  setAdminCount('adminSubjects', summary.TotalSubjects || 0);
+  renderResidentialStatsFromSummary(summary);
+}
 async function loadAdminCounts() {
   var students = safeList('axiom_registered_students');
   var staff = safeList('axiom_local_staff_users');
@@ -350,6 +396,13 @@ async function loadAdminCounts() {
   var hasLoadError = false;
   if (window.AxiomDB && AxiomDB.isConfigured()) {
     try {
+      if (AxiomDB.getDashboardSummary) {
+        var summary = await AxiomDB.getDashboardSummary();
+        if (summary && Object.prototype.hasOwnProperty.call(summary, 'TotalStaff') && Object.prototype.hasOwnProperty.call(summary, 'TotalClasses')) {
+          renderAdminSummary(summary);
+          return;
+        }
+      }
       var results = await Promise.all([
         AxiomDB.listStudents(),
         AxiomDB.listStaff(),
