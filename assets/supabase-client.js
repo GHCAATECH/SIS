@@ -1735,19 +1735,65 @@
     return result.data;
   }
 
-  async function listDocumentOwners() {
-    var c = db();
-    if (!c) return null;
-    var result = await c.rpc('secure_document_owner_directory', {
-      p_session_token: activeStaffSessionToken() || null
+  async function listDocumentOwners(filters) {
+    filters = normalizeListFilters(filters || {});
+    var c = db(), school = await currentSchool();
+    if (!c || !school) return null;
+    var rpcResult = await c.rpc('secure_list_document_owners', {
+      p_school_id: school.id,
+      p_filters: filters
     });
-    if (result.error) {
-      if (/secure_document_owner_directory|schema cache|function/i.test(result.error.message || '')) {
-        throw new Error('Run the document owner directory SQL in Supabase, then refresh this page.');
-      }
-      throw result.error;
+    if (!rpcResult.error) return rpcResult.data || { classes: [], students: [], staff: [] };
+    if (!/secure_list_document_owners|schema cache|function/i.test(rpcResult.error.message || '')) throw rpcResult.error;
+
+    var directory = { classes: [], students: [], staff: [] };
+    try {
+      directory.classes = await listClasses();
+    } catch (err) {
+      directory.classes = [];
     }
-    return result.data || { classes: [], students: [], staff: [] };
+
+    var type = filters.ownerType || filters.type || '';
+    var search = String(filters.search || '').trim();
+    var limit = Math.min(Math.max(Number(filters.limit) || 50, 1), 100);
+    var from = Math.max(Number(filters.from) || 0, 0);
+    var to = from + limit - 1;
+
+    if (type === 'student') {
+      var studentQuery = c
+        .from('students')
+        .select('id, ass_ref_id, first_name, surname, other_names, class_id, status, classes(name)')
+        .eq('school_id', school.id)
+        .neq('status', 'Deleted')
+        .order('surname', { ascending: true })
+        .range(from, to);
+      if (filters.classId) studentQuery = studentQuery.eq('class_id', filters.classId);
+      if (search) {
+        var like = '%' + search + '%';
+        studentQuery = studentQuery.or('ass_ref_id.ilike.' + like + ',first_name.ilike.' + like + ',surname.ilike.' + like + ',other_names.ilike.' + like);
+      }
+      var studentResult = await studentQuery;
+      if (studentResult.error) throw studentResult.error;
+      directory.students = studentResult.data || [];
+    }
+
+    if (type === 'staff') {
+      var staffQuery = c
+        .from('staff_users')
+        .select('id, staff_id, full_name, staff_name, name, email, status')
+        .eq('school_id', school.id)
+        .order('full_name', { ascending: true })
+        .range(from, to);
+      if (search) {
+        var staffLike = '%' + search + '%';
+        staffQuery = staffQuery.or('staff_id.ilike.' + staffLike + ',full_name.ilike.' + staffLike + ',staff_name.ilike.' + staffLike + ',name.ilike.' + staffLike + ',email.ilike.' + staffLike);
+      }
+      var staffResult = await staffQuery;
+      if (staffResult.error) throw staffResult.error;
+      directory.staff = staffResult.data || [];
+    }
+
+    return directory;
   }
 
   async function uploadStudentPassport(assRefId, file) {
@@ -2198,10 +2244,16 @@
     return result.data;
   }
   async function listDocuments(ownerType, ownerId) {
+    var filters = {};
+    if (ownerType && typeof ownerType === 'object') {
+      filters = normalizeListFilters(ownerType || {});
+    } else {
+      filters = normalizeListFilters({ ownerType: ownerType || '', ownerId: ownerId || '' });
+    }
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
     var studentToken = activeStudentSessionToken();
-    if (ownerType === 'student' && studentToken) {
+    if (filters.ownerType === 'student' && studentToken && filters.ownerId) {
       var studentDocuments = await c.rpc('secure_student_portal_documents', {
         p_session_token: studentToken
       });
@@ -2222,9 +2274,19 @@
       });
       if (prepared.error) throw prepared.error;
     }
+
+    var rpcResult = await c.rpc('secure_list_documents', {
+      p_school_id: school.id,
+      p_filters: filters
+    });
+    if (!rpcResult.error) return rpcResult.data || [];
+    if (!/secure_list_documents|schema cache|function/i.test(rpcResult.error.message || '')) throw rpcResult.error;
+
     var query = c.from('documents').select('*').eq('school_id', school.id).order('uploaded_at', { ascending: false });
-    if (ownerType === 'staff') query = query.eq('owner_type', 'staff').eq('staff_user_id', ownerId);
-    if (ownerType === 'student') query = query.eq('owner_type', 'student').eq('student_id', ownerId);
+    if (filters.ownerType) query = query.eq('owner_type', filters.ownerType);
+    if (filters.ownerType === 'staff' && filters.ownerId) query = query.eq('staff_user_id', filters.ownerId);
+    if (filters.ownerType === 'student' && filters.ownerId) query = query.eq('student_id', filters.ownerId);
+    if (filters.limit) query = query.range(filters.from, filters.to);
     var result = await query;
     if (result.error) throw result.error;
     return result.data;

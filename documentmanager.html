@@ -73,7 +73,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260719-document-view"></script>
+<script src="assets/supabase-client.js?v=20260722-docmanager-filter1"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'documentmanager' });
@@ -84,50 +84,23 @@ var ownerClasses = [];
 var STORAGE_KEY = 'axiom_documents';
 var documents = loadDocuments();
 
-async function loadOwnersFromSupabase() {
+async function loadOwnerClassesFromSupabase() {
   if (!window.AxiomDB || !AxiomDB.isConfigured()) return;
   try {
-    var directory = AxiomDB.listDocumentOwners ? await AxiomDB.listDocumentOwners() : null;
-    var dbStudents;
-    var dbStaff;
-    if (directory) {
-      dbStudents = directory.students || [];
-      dbStaff = directory.staff || [];
-      ownerClasses = (directory.classes || []).map(function(row) {
-        return { id: row.id, name: row.name || 'Unnamed Class' };
-      });
-    } else {
-      dbStudents = await AxiomDB.listStudents();
-      dbStaff = await AxiomDB.listStaff();
+    var rows = [];
+    if (AxiomDB.listClasses) {
+      rows = await AxiomDB.listClasses();
+    } else if (AxiomDB.listDocumentOwners) {
+      var directory = await AxiomDB.listDocumentOwners({ limit: 1 });
+      rows = (directory && directory.classes) || [];
     }
-    if (dbStudents && dbStudents.length) {
-      students = dbStudents.map(function(row) {
-        return {
-          id: row.id,
-          code: row.student_id || row.ass_ref_id || '',
-          name: row.name || [row.first_name, row.surname, row.other_names].filter(Boolean).join(' '),
-          classId: row.class_id || '',
-          className: row.class_name || (row.classes && row.classes.name) || 'Unassigned Class'
-        };
-      });
-    }
-    if (dbStaff && dbStaff.length) {
-      staff = dbStaff.map(function(row) {
-        return { id: row.id, code: row.staff_id || '', name: row.name || row.full_name || row.staff_name || '' };
-      });
-    }
-    if (!ownerClasses.length) {
-      var classMap = {};
-      students.forEach(function(student) {
-        if (student.classId && !classMap[student.classId]) classMap[student.classId] = { id: student.classId, name: student.className };
-      });
-      ownerClasses = Object.keys(classMap).map(function(key) { return classMap[key]; });
-    }
+    ownerClasses = (rows || []).map(function(row) {
+      return { id: row.id, name: row.name || 'Unnamed Class' };
+    });
     populateOwnerClasses();
-    resetOwnerResults('Owner directory loaded. Enter a name or ID, then click Search.');
   } catch (err) {
     console.error(err);
-    Portal.toast('Could not load owners from Supabase: ' + (err.message || 'Unknown error'), true);
+    Portal.toast('Could not load class list: ' + (err.message || 'Unknown error'), true);
   }
 }
 
@@ -162,10 +135,25 @@ function ownerById(type, id) {
   return ownerList(type).find(function(owner) { return owner.id === id; });
 }
 
+function documentFilters() {
+  return {
+    ownerType: document.getElementById('filterType').value,
+    search: document.getElementById('search').value.trim(),
+    page: 1,
+    limit: 100
+  };
+}
+
 async function loadDocumentsFromSupabase() {
-  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listDocuments) return;
+  if (!window.AxiomDB || !AxiomDB.isConfigured() || !AxiomDB.listDocuments) {
+    renderDocuments();
+    return;
+  }
   try {
-    var rows = await AxiomDB.listDocuments();
+    var tbody = document.querySelector('#docTable tbody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;font-weight:700;padding:26px">Loading documents...</td></tr>';
+    document.getElementById('docEmpty').style.display = 'none';
+    var rows = await AxiomDB.listDocuments(documentFilters());
     documents = (rows || []).map(function(row) {
       var type = row.owner_type;
       var ownerId = type === 'student' ? row.student_id : row.staff_user_id;
@@ -174,7 +162,7 @@ async function loadDocumentsFromSupabase() {
         id: row.id,
         ownerType: type,
         ownerId: ownerId,
-        ownerName: owner ? owner.name : 'Unknown owner',
+        ownerName: row.owner_name || (owner ? owner.name : 'Unknown owner'),
         title: row.title || 'Untitled Document',
         fileName: row.file_name || 'Document',
         fileType: row.file_type || fileType(row.file_name || ''),
@@ -183,11 +171,22 @@ async function loadDocumentsFromSupabase() {
       };
     });
     saveDocuments();
-    renderDocuments();
+    renderDocuments(true);
   } catch (err) {
     console.error(err);
     Portal.toast('Could not load uploaded documents: ' + (err.message || 'Unknown error'), true);
+    renderDocuments();
   }
+}
+
+var documentReloadTimer = null;
+function scheduleDocumentLoad() {
+  if (!(window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listDocuments)) {
+    renderDocuments();
+    return;
+  }
+  clearTimeout(documentReloadTimer);
+  documentReloadTimer = setTimeout(loadDocumentsFromSupabase, 250);
 }
 
 function ownerList(type) {
@@ -232,38 +231,72 @@ function updateOwnerSearchMode() {
   resetOwnerResults(type ? 'Enter a name or ID, then click Search.' : 'Select an owner type first.');
 }
 
-function searchOwners() {
+async function searchOwners() {
   var type = document.getElementById('ownerType').value;
   if (!type) {
     Portal.toast('Select Student or Staff first.', true);
     return;
   }
-  var query = document.getElementById('ownerSearch').value.trim().toLowerCase();
+  var query = document.getElementById('ownerSearch').value.trim();
   var classId = type === 'student' ? document.getElementById('ownerClass').value : '';
-  var owners = ownerList(type).filter(function(owner) {
-    var matchesClass = !classId || owner.classId === classId;
-    var searchable = (owner.name + ' ' + (owner.code || '')).toLowerCase();
-    return matchesClass && (!query || searchable.indexOf(query) > -1);
-  }).sort(function(a, b) { return a.name.localeCompare(b.name); });
-  var ownerSelect = document.getElementById('ownerId');
-  ownerSelect.innerHTML = '<option value="">'+(owners.length ? 'Select from '+owners.length+' result'+(owners.length === 1 ? '' : 's')+'...' : 'No matching owner found')+'</option>';
-  owners.forEach(function(owner) {
-    var option = document.createElement('option');
-    option.value = owner.id;
-    option.textContent = owner.name + (owner.code ? ' - ' + owner.code : '') + (type === 'student' && owner.className ? ' - ' + owner.className : '');
-    option.dataset.name = owner.name;
-    ownerSelect.appendChild(option);
-  });
-  ownerSelect.disabled = !owners.length;
   var status = document.getElementById('ownerSearchStatus');
-  status.classList.toggle('is-empty', !owners.length);
-  status.textContent = owners.length ? owners.length + ' matching ' + ownerTypeLabel(type).toLowerCase() + (owners.length === 1 ? '' : 's') + ' found.' : 'No matching ' + ownerTypeLabel(type).toLowerCase() + ' found.';
+  var owners = [];
+  status.classList.remove('is-empty');
+  status.textContent = 'Searching...';
+
+  try {
+    if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listDocumentOwners) {
+      var directory = await AxiomDB.listDocumentOwners({ ownerType: type, search: query, classId: classId, limit: 50 });
+      if (type === 'student') {
+        students = ((directory && directory.students) || []).map(function(row) {
+          return {
+            id: row.id,
+            code: row.student_id || row.ass_ref_id || '',
+            name: row.name || [row.first_name, row.surname, row.other_names].filter(Boolean).join(' '),
+            classId: row.class_id || '',
+            className: row.class_name || (row.classes && row.classes.name) || 'Unassigned Class'
+          };
+        });
+        owners = students;
+      } else {
+        staff = ((directory && directory.staff) || []).map(function(row) {
+          return { id: row.id, code: row.staff_id || '', name: row.name || row.full_name || row.staff_name || '' };
+        });
+        owners = staff;
+      }
+    } else {
+      var loweredQuery = query.toLowerCase();
+      owners = ownerList(type).filter(function(owner) {
+        var matchesClass = !classId || owner.classId === classId;
+        var searchable = (owner.name + ' ' + (owner.code || '')).toLowerCase();
+        return matchesClass && (!loweredQuery || searchable.indexOf(loweredQuery) > -1);
+      }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+    }
+
+    var ownerSelect = document.getElementById('ownerId');
+    ownerSelect.innerHTML = '<option value="">'+(owners.length ? 'Select from '+owners.length+' result'+(owners.length === 1 ? '' : 's')+'...' : 'No matching owner found')+'</option>';
+    owners.forEach(function(owner) {
+      var option = document.createElement('option');
+      option.value = owner.id;
+      option.textContent = owner.name + (owner.code ? ' - ' + owner.code : '') + (type === 'student' && owner.className ? ' - ' + owner.className : '');
+      option.dataset.name = owner.name;
+      ownerSelect.appendChild(option);
+    });
+    ownerSelect.disabled = !owners.length;
+    status.classList.toggle('is-empty', !owners.length);
+    status.textContent = owners.length ? owners.length + ' matching ' + ownerTypeLabel(type).toLowerCase() + (owners.length === 1 ? '' : 's') + ' found.' : 'No matching ' + ownerTypeLabel(type).toLowerCase() + ' found.';
+  } catch (err) {
+    console.error(err);
+    status.classList.add('is-empty');
+    status.textContent = 'Could not search owners.';
+    Portal.toast('Could not search owners: ' + (err.message || 'Unknown error'), true);
+  }
 }
 
-function renderDocuments() {
+function renderDocuments(serverFiltered) {
   var filterType = document.getElementById('filterType').value;
   var query = document.getElementById('search').value.toLowerCase();
-  var filtered = documents.filter(function(doc) {
+  var filtered = serverFiltered ? documents : documents.filter(function(doc) {
     var matchesType = !filterType || doc.ownerType === filterType;
     var matchesQuery = !query || (doc.title + ' ' + doc.ownerName + ' ' + doc.fileName).toLowerCase().indexOf(query) > -1;
     return matchesType && matchesQuery;
@@ -286,8 +319,8 @@ document.getElementById('ownerSearch').addEventListener('keydown', function(e) {
     searchOwners();
   }
 });
-document.getElementById('filterType').addEventListener('change', renderDocuments);
-document.getElementById('search').addEventListener('input', renderDocuments);
+document.getElementById('filterType').addEventListener('change', scheduleDocumentLoad);
+document.getElementById('search').addEventListener('input', scheduleDocumentLoad);
 
 document.getElementById('docForm').addEventListener('submit', function(e) {
   e.preventDefault();
@@ -338,7 +371,11 @@ document.getElementById('docForm').addEventListener('submit', function(e) {
       }
       form.reset();
       updateOwnerSearchMode();
-      renderDocuments();
+      if (window.AxiomDB && AxiomDB.isConfigured()) {
+        await loadDocumentsFromSupabase();
+      } else {
+        renderDocuments();
+      }
       Portal.toast('Document uploaded successfully.');
     } finally {
       uploadButton.disabled = false;
@@ -385,7 +422,11 @@ document.getElementById('docTable').addEventListener('click', function(e) {
     }
     documents = documents.filter(function(doc) { return doc.id !== b.dataset.id; });
     saveDocuments();
-    renderDocuments();
+    if (window.AxiomDB && AxiomDB.isConfigured()) {
+      await loadDocumentsFromSupabase();
+    } else {
+      renderDocuments();
+    }
     Portal.toast('Document deleted.');
   }
   if (!confirm('Delete this document?')) return;
@@ -398,7 +439,7 @@ document.getElementById('docTable').addEventListener('click', function(e) {
 populateOwnerClasses();
 updateOwnerSearchMode();
 renderDocuments();
-loadOwnersFromSupabase().then(loadDocumentsFromSupabase);
+loadOwnerClassesFromSupabase().then(loadDocumentsFromSupabase);
 </script>
 <footer class="axiom-standard-footer" style="padding:16px 18px;text-align:center;color:#64748b;font-weight:800;font-size:13px;border-top:1px solid rgba(226,232,240,.9);background:#fff;line-height:1.6;">
   <span>&copy; 2026 AXIOMBYTE SMS. All rights reserved.</span><span style="display:inline-block;margin-left:56px;">Built for secure school operations.</span>
