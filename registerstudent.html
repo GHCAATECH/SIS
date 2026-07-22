@@ -683,7 +683,24 @@ function payloadFromExcelRow(row, lookup, rowNumber) {
   };
 }
 
-async function importStudentsFromWorkbook(file) {
+function processInBatches(items, batchSize, worker, onProgress) {
+  var index = 0;
+  var completed = 0;
+  function nextBatch() {
+    var batch = items.slice(index, index + batchSize);
+    index += batchSize;
+    if (!batch.length) return Promise.resolve(completed);
+    return Promise.all(batch.map(function(item) {
+      return worker(item).then(function() {
+        completed += 1;
+        if (onProgress) onProgress(completed, items.length);
+      });
+    })).then(nextBatch);
+  }
+  return nextBatch();
+}
+
+async function importStudentsFromWorkbook(file, onProgress) {
   if (!window.XLSX) throw new Error('Excel reader could not load. Check your internet connection and reload.');
   var workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
   var worksheet = workbook.Sheets['Student Import'] || workbook.Sheets[workbook.SheetNames[0]];
@@ -697,22 +714,20 @@ async function importStudentsFromWorkbook(file) {
     return payloadFromExcelRow(row, lookup, headerRowIndex + index + 3);
   }).filter(Boolean);
   if (!payloads.length) throw new Error('No student rows were found in the Excel file.');
-  var savedCount = 0;
-  for (var i = 0; i < payloads.length; i++) {
-    var payload = payloads[i];
-    var saved = null;
-    if (window.AxiomDB && AxiomDB.isConfigured()) {
-      saved = await AxiomDB.createStudent(payload);
-      if (AxiomDB.ensureStudentAccount) {
-        await AxiomDB.ensureStudentAccount((saved && saved.ass_ref_id) || payload.ass_ref_id, studentDefaultPassword(payload.date_of_birth));
-      }
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) {
+    payloads.forEach(function(payload) { saveLocalRegisteredStudent(payload); });
+    if (onProgress) onProgress(payloads.length, payloads.length);
+    return payloads.length;
+  }
+  await processInBatches(payloads, 8, async function(payload) {
+    var saved = await AxiomDB.createStudent(payload);
+    if (AxiomDB.ensureStudentAccount) {
+      await AxiomDB.ensureStudentAccount((saved && saved.ass_ref_id) || payload.ass_ref_id, studentDefaultPassword(payload.date_of_birth));
     }
     saveLocalRegisteredStudent(Object.assign({}, payload, saved || {}));
-    savedCount++;
-  }
-  return savedCount;
+  }, onProgress);
+  return payloads.length;
 }
-
 function renderSubjects() {
   var subjectBox = document.getElementById('subjects');
   var hint = document.getElementById('subjectHint');
@@ -928,7 +943,9 @@ document.getElementById('uploadTemplate').addEventListener('click', function() {
     button.disabled = true;
     button.textContent = 'Uploading...';
     await loadRegistrationDataFromSupabase();
-    var savedCount = await importStudentsFromWorkbook(file);
+    var savedCount = await importStudentsFromWorkbook(file, function(done, total) {
+      button.textContent = 'Uploading ' + done + '/' + total + '...';
+    });
     Portal.toast(savedCount + ' student(s) uploaded successfully.');
     document.getElementById('bulkFile').value = '';
     closeBulkUploadModal();

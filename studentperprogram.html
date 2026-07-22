@@ -289,9 +289,43 @@
   .print-btn { background: #0f766e; }
   .repeat-btn { background: #7c3aed; }
   .delete-btn { background: #dc2626; }
+  .select-column {
+    width: 54px;
+    min-width: 54px;
+    max-width: 54px;
+    text-align: center;
+  }
+  .student-select,
+  #selectAllStudents {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    accent-color: #002B4C;
+  }
+  .bulk-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .bulk-action {
+    height: 30px;
+    border: 0;
+    border-radius: 4px;
+    background: #002B4C;
+    color: #C0EBFF;
+    padding: 0 11px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .bulk-action.delete { background: #dc2626; color: #fff; }
+  .bulk-action:disabled { opacity: .5; cursor: not-allowed; }
   .student-footer-actions {
-    display: grid; grid-template-columns: 1fr 145px 160px 1fr;
-    gap: 18px; align-items: center;
+    display: grid; grid-template-columns: 1fr auto 145px 160px 1fr;
+    gap: 12px; align-items: center;
     padding: 20px 90px 36px; border-top: 1px solid #e8e8e8; background: #fff;
   }
   .student-total {
@@ -644,6 +678,7 @@
         <table class="student-table" id="studentTable">
           <thead>
             <tr>
+              <th class="select-column"><input type="checkbox" id="selectAllStudents" aria-label="Select all visible students"></th>
               <th>PPT PIC</th>
               <th>Student ID</th>
               <th>Candidate Name</th>
@@ -661,6 +696,7 @@
 
       <div class="student-footer-actions">
         <div class="student-total">Total Number of Students <span id="studentTotal"></span></div>
+        <div class="bulk-actions"><button class="bulk-action" id="bulkRepeat" type="button" disabled>Repeat Selected</button><button class="bulk-action delete" id="bulkDelete" type="button" disabled>Delete Selected</button></div>
         <button class="footer-action progress" id="progressAll" type="button">Progress All</button>
         <button class="footer-action download" id="downloadStdData" type="button">Download Std Data</button>
         <div></div>
@@ -1168,9 +1204,15 @@ function initials(name) {
 }
 
 function renderRows(data, message) {
+  var visibleRefs = {};
+  (data || []).forEach(function(row) { visibleRefs[row[0]] = true; });
+  Object.keys(selectedStudentRefs).forEach(function(ref) {
+    if (!visibleRefs[ref]) delete selectedStudentRefs[ref];
+  });
   if (!data.length) {
-    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
+    document.querySelector('#studentTable tbody').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:28px;font-weight:800;color:#6b7280">'+(message || 'No students found.')+'</td></tr>';
     document.getElementById('studentTotal').textContent = 0;
+    updateBulkSelectionUI();
     return;
   }
   document.querySelector('#studentTable tbody').innerHTML = data.map(function(r) {
@@ -1179,6 +1221,7 @@ function renderRows(data, message) {
     var detail = studentDetails[r[0]] || {};
     var guardianPhone = detail.phone || '';
     return '<tr data-ass-ref="'+String(r[0]).replace(/"/g, '&quot;')+'" data-name="'+String(r[1]).replace(/"/g, '&quot;')+'">'+
+      '<td class="select-column"><input type="checkbox" class="student-select" data-id="'+String(r[0]).replace(/"/g, '&quot;')+'" '+(selectedStudentRefs[r[0]] ? 'checked' : '')+' aria-label="Select '+escapeHtml(r[1])+'"></td>'+
       '<td><div class="student-photo'+genderClass+'">'+passport+'<span>'+initials(r[1])+'</span></div></td>'+
       '<td class="nowrap">'+r[0]+'</td>'+
       '<td class="wrap-text">'+r[1]+'</td>'+
@@ -1195,6 +1238,7 @@ function renderRows(data, message) {
     '</tr>';
   }).join('');
   document.getElementById('studentTotal').textContent = data.length;
+  updateBulkSelectionUI();
 }
 
 function showStudentFilterPending(message) {
@@ -1203,6 +1247,7 @@ function showStudentFilterPending(message) {
 }
 
 var editingStudentId = '';
+var selectedStudentRefs = {};
 
 function findStudent(id) {
   return students.find(function(student) { return student[0] === id; });
@@ -1742,6 +1787,133 @@ window.addEventListener('message', function(event) {
   if (frame) frame.remove();
 });
 
+function selectedStudentIds() {
+  return Object.keys(selectedStudentRefs).filter(function(ref) { return selectedStudentRefs[ref]; });
+}
+function updateBulkSelectionUI() {
+  var selected = selectedStudentIds();
+  var bulkRepeat = document.getElementById('bulkRepeat');
+  var bulkDelete = document.getElementById('bulkDelete');
+  var selectAll = document.getElementById('selectAllStudents');
+  if (bulkRepeat) bulkRepeat.disabled = !selected.length;
+  if (bulkDelete) bulkDelete.disabled = !selected.length;
+  if (selectAll) {
+    var boxes = Array.prototype.slice.call(document.querySelectorAll('#studentTable tbody .student-select'));
+    var checked = boxes.filter(function(box) { return box.checked; }).length;
+    selectAll.checked = boxes.length > 0 && checked === boxes.length;
+    selectAll.indeterminate = checked > 0 && checked < boxes.length;
+  }
+}
+function processStudentRefsInBatches(refs, size, worker) {
+  refs = refs || [];
+  var index = 0;
+  function nextBatch() {
+    var batch = refs.slice(index, index + size);
+    index += size;
+    if (!batch.length) return Promise.resolve();
+    return Promise.all(batch.map(worker)).then(nextBatch);
+  }
+  return nextBatch();
+}
+function removeLocalRegisteredStudents(refs) {
+  var refSet = {};
+  refs.forEach(function(ref) { refSet[ref] = true; });
+  var registered = [];
+  try { registered = JSON.parse(localStorage.getItem('axiom_registered_students') || '[]'); } catch (err) {}
+  if (Array.isArray(registered)) {
+    registered = registered.filter(function(record) {
+      return !refSet[String(record.ass_ref_id || record.assRef || record.ass_ref || '')];
+    });
+    localStorage.setItem('axiom_registered_students', JSON.stringify(registered));
+  }
+}
+function markLocalRegisteredRepeated(refs) {
+  var refSet = {};
+  refs.forEach(function(ref) { refSet[ref] = true; });
+  var registered = [];
+  try { registered = JSON.parse(localStorage.getItem('axiom_registered_students') || '[]'); } catch (err) {}
+  if (Array.isArray(registered)) {
+    registered.forEach(function(record) {
+      if (refSet[String(record.ass_ref_id || record.assRef || record.ass_ref || '')]) record.status = 'Repeated';
+    });
+    localStorage.setItem('axiom_registered_students', JSON.stringify(registered));
+  }
+}
+async function deleteStudentRefs(refs) {
+  refs = (refs || []).filter(Boolean);
+  if (!refs.length) return;
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteStudentByAssRef) {
+    await processStudentRefsInBatches(refs, 8, function(ref) { return AxiomDB.deleteStudentByAssRef(ref); });
+  }
+  refs.forEach(function(ref) {
+    rememberDeletedStudent(ref);
+    delete selectedStudentRefs[ref];
+    delete studentDetails[ref];
+  });
+  var refSet = {};
+  refs.forEach(function(ref) { refSet[ref] = true; });
+  students = students.filter(function(student) { return !refSet[student[0]]; });
+  removeLocalRegisteredStudents(refs);
+  applySearch();
+}
+async function repeatStudentRefs(refs) {
+  refs = (refs || []).filter(Boolean);
+  if (!refs.length) return;
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.updateStudentByAssRef) {
+    await processStudentRefsInBatches(refs, 8, function(ref) { return AxiomDB.updateStudentByAssRef(ref, { status: 'Repeated' }); });
+  }
+  var refSet = {};
+  refs.forEach(function(ref) { refSet[ref] = true; delete selectedStudentRefs[ref]; });
+  students.forEach(function(student) { if (refSet[student[0]]) student[8] = 'Repeated'; });
+  markLocalRegisteredRepeated(refs);
+  applySearch();
+}
+
+document.getElementById('selectAllStudents').addEventListener('change', function() {
+  var checked = this.checked;
+  document.querySelectorAll('#studentTable tbody .student-select').forEach(function(box) {
+    box.checked = checked;
+    if (checked) selectedStudentRefs[box.dataset.id] = true;
+    else delete selectedStudentRefs[box.dataset.id];
+  });
+  updateBulkSelectionUI();
+});
+
+document.getElementById('studentTable').addEventListener('change', function(e) {
+  var checkbox = e.target.closest('.student-select');
+  if (!checkbox) return;
+  if (checkbox.checked) selectedStudentRefs[checkbox.dataset.id] = true;
+  else delete selectedStudentRefs[checkbox.dataset.id];
+  updateBulkSelectionUI();
+});
+
+document.getElementById('bulkDelete').addEventListener('click', function() {
+  var refs = selectedStudentIds();
+  if (!refs.length) return;
+  if (!confirm('Delete ' + refs.length + ' selected student(s)?')) return;
+  var button = this;
+  button.disabled = true;
+  deleteStudentRefs(refs).then(function() {
+    Portal.toast(refs.length + ' student(s) deleted.');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not delete selected students: ' + (err.message || 'Unknown error'), true);
+  }).finally(updateBulkSelectionUI);
+});
+
+document.getElementById('bulkRepeat').addEventListener('click', function() {
+  var refs = selectedStudentIds();
+  if (!refs.length) return;
+  if (!confirm('Mark ' + refs.length + ' selected student(s) as repeated?')) return;
+  var button = this;
+  button.disabled = true;
+  repeatStudentRefs(refs).then(function() {
+    Portal.toast(refs.length + ' student(s) marked as repeated.');
+  }).catch(function(err) {
+    console.error(err);
+    Portal.toast('Could not repeat selected students: ' + (err.message || 'Unknown error'), true);
+  }).finally(updateBulkSelectionUI);
+});
 document.getElementById('studentTable').addEventListener('click', function(e) {
   var btn = e.target.closest('button[data-act]');
   if (!btn) return;
@@ -1759,21 +1931,7 @@ document.getElementById('studentTable').addEventListener('click', function(e) {
   if (btn.dataset.act === 'Delete') {
     if (!confirm('Delete '+name+'?')) return;
     async function deleteStudent() {
-      if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.deleteStudentByAssRef) {
-        await AxiomDB.deleteStudentByAssRef(assRef);
-      }
-      rememberDeletedStudent(assRef);
-      students = students.filter(function(student) { return student[0] !== assRef; });
-      var registered = [];
-      try { registered = JSON.parse(localStorage.getItem('axiom_registered_students') || '[]'); } catch (err) {}
-      if (Array.isArray(registered)) {
-        registered = registered.filter(function(record) {
-          return String(record.ass_ref_id || record.assRef || record.ass_ref || '') !== assRef;
-        });
-        localStorage.setItem('axiom_registered_students', JSON.stringify(registered));
-      }
-      delete studentDetails[assRef];
-      applySearch();
+      await deleteStudentRefs([assRef]);
       Portal.toast('Student deleted.');
     }
     deleteStudent().catch(function(err) {
@@ -1786,11 +1944,7 @@ document.getElementById('studentTable').addEventListener('click', function(e) {
     var student = findStudent(assRef);
     if (!student) return;
     async function repeatStudent() {
-      student[8] = 'Repeated';
-      if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.updateStudentByAssRef) {
-        await AxiomDB.updateStudentByAssRef(assRef, { status: 'Repeated' });
-      }
-      applySearch();
+      await repeatStudentRefs([assRef]);
       Portal.toast(name + ' marked as repeated.');
     }
     repeatStudent().catch(function(err) {
