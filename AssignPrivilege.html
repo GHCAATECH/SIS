@@ -895,7 +895,6 @@ var privilegeGroups = [
       ['qualitativeaccessment', 'Qualitative Assessment'],
       ['transcript', 'Transcript'],
       ['assessmentmonitor', 'School Monitor'],
-      ['mydocuments', 'My Documents']
     ]
   },
   {
@@ -920,6 +919,9 @@ var activeEditUser = null;
 var activeSubjectClassUser = null;
 var displayedUsers = users;
 var activeUserCategory = 'Teaching Staff';
+var manageUsersPage = 1;
+var manageUsersLimit = 100;
+var manageUsersSearchTimer = null;
 var assignmentClasses = [];
 
 var roleOptionsByCategory = {
@@ -1726,33 +1728,17 @@ async function saveEditUser(e) {
   }
 }
 
-async function loadUsersFromSupabase() {
-  if (!window.AxiomDB || !AxiomDB.isConfigured()) {
-    users = loadLocalUsers();
-    if (!users.length) users = demoUsers.slice();
-    ensureCurrentAdministratorUser();
-    filterUsers();
-    return;
-  }
-  try {
-    var staff = await AxiomDB.listStaff();
-    if (staff && staff.length) {
-      users = staff.map(mapStaffUser);
-    } else {
-      users = [];
-    }
-    ensureCurrentAdministratorUser();
-    filterUsers();
-  } catch (err) {
-    console.error(err);
-    Portal.toast('Could not load users from Supabase: ' + (err.message || 'Unknown error'), true);
-    users = loadLocalUsers();
-    ensureCurrentAdministratorUser();
-    filterUsers();
-  }
+function manageUsersFilters() {
+  var searchInput = document.getElementById('search');
+  return {
+    category: activeUserCategory,
+    search: searchInput ? searchInput.value.trim() : '',
+    page: manageUsersPage,
+    limit: manageUsersLimit
+  };
 }
 
-function filterUsers() {
+function renderLocalFilteredUsers() {
   var q = document.getElementById('search').value.toLowerCase();
   var filtered = users.filter(function(user) {
     var matchesCategory = userCategory(user) === activeUserCategory;
@@ -1762,15 +1748,49 @@ function filterUsers() {
   renderUsers(filtered);
 }
 
+async function loadUsersFromSupabase() {
+  renderUsers([], 'Loading users...');
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) {
+    users = loadLocalUsers();
+    if (!users.length) users = demoUsers.slice();
+    ensureCurrentAdministratorUser();
+    renderLocalFilteredUsers();
+    return;
+  }
+  try {
+    var staff = await AxiomDB.listStaff(manageUsersFilters());
+    users = (staff || []).map(mapStaffUser);
+    if (activeUserCategory === 'School Administrator') ensureCurrentAdministratorUser();
+    renderUsers(users, users.length ? '' : 'No users found for this filter.');
+  } catch (err) {
+    console.error(err);
+    Portal.toast('Could not load users from Supabase: ' + (err.message || 'Unknown error'), true);
+    users = loadLocalUsers();
+    ensureCurrentAdministratorUser();
+    renderLocalFilteredUsers();
+  }
+}
+
+function filterUsers() {
+  manageUsersPage = 1;
+  if (!window.AxiomDB || !AxiomDB.isConfigured()) {
+    renderLocalFilteredUsers();
+    return;
+  }
+  clearTimeout(manageUsersSearchTimer);
+  manageUsersSearchTimer = setTimeout(loadUsersFromSupabase, 250);
+}
+
 function setUserCategory(category) {
   activeUserCategory = category;
+  manageUsersPage = 1;
   document.querySelectorAll('#userTypeTabs button').forEach(function(button) {
     button.classList.toggle('active', button.dataset.category === category);
   });
-  filterUsers();
+  loadUsersFromSupabase();
 }
 
-renderUsers([], 'Loading users...');
+renderUsers([], 'Select a staff category or search to load users...');
 loadManagedDepartments();
 loadUsersFromSupabase();
 

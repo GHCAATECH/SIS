@@ -995,10 +995,29 @@
     if (result.error) throw result.error;
     return true;
   }
-  async function listStaff() {
+  async function listStaff(filters) {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;
-    var result = await c.from('staff_users').select('*').eq('school_id', school.id).order('full_name');
+    filters = normalizeListFilters(filters || {});
+    var hasFilters = !!(filters.search || filters.category || filters.role || filters.status || filters.page > 1 || filters.limit !== 1000);
+    if (hasFilters) {
+      var rpc = await c.rpc('secure_list_staff_users', {
+        p_school_id: school.id,
+        p_filters: filters
+      });
+      if (!rpc.error) return rpc.data || [];
+      if (!/secure_list_staff_users|schema cache|function/i.test(rpc.error.message || '')) throw rpc.error;
+    }
+    var query = c.from('staff_users').select('*').eq('school_id', school.id).order('full_name');
+    if (filters.category) query = query.eq('category', filters.category);
+    if (filters.role) query = query.eq('role', filters.role);
+    if (filters.status) query = query.eq('status', filters.status);
+    if (filters.search) {
+      var term = String(filters.search || '').replace(/[%_]/g, '\\$&');
+      query = query.or('full_name.ilike.%'+term+'%,staff_name.ilike.%'+term+'%,staff_id.ilike.%'+term+'%,email.ilike.%'+term+'%,phone.ilike.%'+term+'%,username.ilike.%'+term+'%');
+    }
+    if (hasFilters) query = query.range(filters.from, filters.to);
+    var result = await query;
     if (result.error) throw result.error;
     return result.data;
   }
