@@ -935,15 +935,23 @@
   async function deleteStudentByAssRef(assRefId) {
     var c = db(), school = await currentSchool();
     if (!c || !school || !assRefId) return null;
+    try {
+      await updateStudentByAssRef(assRefId, { status: 'Deleted' });
+      return true;
+    } catch (softDeleteError) {
+      if (!/secure_update_student_by_ass_ref|status|row-level security|permission/i.test(softDeleteError.message || '')) {
+        throw softDeleteError;
+      }
+    }
     var result = await c
       .from('students')
       .delete()
       .eq('school_id', school.id)
-      .eq('ass_ref_id', assRefId);
+      .eq('ass_ref_id', assRefId)
+      .select('id');
     if (result.error) throw result.error;
     return true;
   }
-
   async function listStaff() {
     var c = db(), school = await currentSchool();
     if (!c || !school) return null;

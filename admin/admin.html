@@ -20,6 +20,23 @@
   .admin-stats .card { padding: 10px; }
   .admin-stats .stat i { font-size: 18px; margin-bottom: 4px; }
   .admin-stats .stat .num { font-size: 20px; }
+  .admin-stats .stat .num.is-loading {
+    color: var(--text-faint);
+    letter-spacing: 2px;
+  }
+  .admin-stats .stat .num.is-loading::after {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    border: 2px solid rgba(0, 43, 76, .22);
+    border-top-color: #002B4C;
+    border-radius: 50%;
+    vertical-align: -3px;
+    animation: statSpin .75s linear infinite;
+  }
+  @keyframes statSpin { to { transform: rotate(360deg); } }
   .admin-content .section-title { margin: 12px 0 8px; font-size: 13px; }
   .admin-tiles { gap: 10px; }
   .tile { display:flex; align-items:center; gap:14px; color:var(--text); transition:transform .18s ease, box-shadow .18s ease; }
@@ -123,10 +140,10 @@
     </div>
 
     <div class="grid cols-4 admin-stats">
-      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-users"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminStudents">0</div><div class="cap">Active Students</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
-      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-user-gear"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminUsers">0</div><div class="cap">Portal Users</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
-      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-layer-group"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminClasses">0</div><div class="cap">Active Classes</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
-      <div class="card stat"><div class="stat-top"><span class="stat-icon"><i class="fas fa-book"></i></span><span class="stat-trend">Live</span></div><div class="num" id="adminSubjects">0</div><div class="cap">Available Subjects</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+      <div class="card stat" aria-busy="true"><div class="stat-top"><span class="stat-icon"><i class="fas fa-users"></i></span><span class="stat-trend">Live</span></div><div class="num is-loading" id="adminStudents">...</div><div class="cap">Active Students</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+      <div class="card stat" aria-busy="true"><div class="stat-top"><span class="stat-icon"><i class="fas fa-user-gear"></i></span><span class="stat-trend">Live</span></div><div class="num is-loading" id="adminUsers">...</div><div class="cap">Portal Users</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+      <div class="card stat" aria-busy="true"><div class="stat-top"><span class="stat-icon"><i class="fas fa-layer-group"></i></span><span class="stat-trend">Live</span></div><div class="num is-loading" id="adminClasses">...</div><div class="cap">Active Classes</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
+      <div class="card stat" aria-busy="true"><div class="stat-top"><span class="stat-icon"><i class="fas fa-book"></i></span><span class="stat-trend">Live</span></div><div class="num is-loading" id="adminSubjects">...</div><div class="cap">Available Subjects</div><span class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span></div>
     </div>
 
     <div class="section-title"><i class="fas fa-bolt"></i> Quick Actions <span class="rule"></span></div>
@@ -184,7 +201,31 @@ function safeList(key) {
 }
 function setAdminCount(id, value) {
   var el = document.getElementById(id);
-  if (el) el.textContent = (Number(value) || 0).toLocaleString();
+  if (!el) return;
+  el.textContent = (Number(value) || 0).toLocaleString();
+  el.classList.remove('is-loading');
+  var stat = el.closest('.stat');
+  if (stat) stat.setAttribute('aria-busy', 'false');
+}
+function locallyDeletedStudentRefs() {
+  try {
+    var refs = JSON.parse(localStorage.getItem('axiom_deleted_student_refs') || '[]');
+    return Array.isArray(refs) ? refs.map(function(ref) { return String(ref); }) : [];
+  } catch (e) {
+    return [];
+  }
+}
+function isActiveStudent(row, deletedRefs) {
+  var status = String(row && row.status || 'Active').trim().toLowerCase();
+  var inactive = ['deleted', 'transferred', 'dropped', 'completed', 'archived'];
+  var assRef = String((row && (row.ass_ref_id || row.assRefId || row[0])) || '');
+  return inactive.indexOf(status) === -1 && deletedRefs.indexOf(assRef) === -1;
+}
+function isActiveClass(row) {
+  return String(row && row.status || 'Active').trim().toLowerCase() !== 'deleted';
+}
+function isActiveSubject(row) {
+  return String(row && row.status || 'Active').trim().toLowerCase() !== 'deleted';
 }
 function localSubjectsFromClasses(classes) {
   var seen = {};
@@ -196,15 +237,16 @@ function localSubjectsFromClasses(classes) {
   return Object.keys(seen).length;
 }
 function renderAdminCounts(students, staff, classes, subjects) {
-  students = (students || []).filter(function(row) {
-    return String(row.status || 'Active').toLowerCase() !== 'deleted';
-  });
+  var deletedRefs = locallyDeletedStudentRefs();
+  students = (students || []).filter(function(row) { return isActiveStudent(row, deletedRefs); });
   staff = (staff || []).filter(function(row) {
     return String(row.status || 'Active').toLowerCase() !== 'suspended';
   });
+  classes = (classes || []).filter(isActiveClass);
+  subjects = (subjects || []).filter(isActiveSubject);
   setAdminCount('adminStudents', students.length);
   setAdminCount('adminUsers', staff.length);
-  setAdminCount('adminClasses', (classes || []).length);
+  setAdminCount('adminClasses', classes.length);
   setAdminCount('adminSubjects', (subjects && subjects.length) || localSubjectsFromClasses(classes));
 }
 async function loadAdminCounts() {
@@ -214,10 +256,16 @@ async function loadAdminCounts() {
   var subjects = safeList('axiom_subjects');
   if (window.AxiomDB && AxiomDB.isConfigured()) {
     try {
-      var dbStudents = await AxiomDB.listStudents();
-      var dbStaff = await AxiomDB.listStaff();
-      var dbClasses = await AxiomDB.listClasses();
-      var dbSubjects = await AxiomDB.listSubjects();
+      var results = await Promise.all([
+        AxiomDB.listStudents(),
+        AxiomDB.listStaff(),
+        AxiomDB.listClasses(),
+        AxiomDB.listSubjects()
+      ]);
+      var dbStudents = results[0];
+      var dbStaff = results[1];
+      var dbClasses = results[2];
+      var dbSubjects = results[3];
       students = dbStudents || students;
       staff = dbStaff || staff;
       classes = dbClasses || classes;

@@ -794,7 +794,10 @@ function rememberDeletedStudent(assRef) {
 
 function removeDeletedStudents(rows) {
   var refs = deletedStudentRefs();
-  return rows.filter(function(row) { return refs.indexOf(row[0]) === -1; });
+  return rows.filter(function(row) {
+    var status = String(row[8] || 'Active').trim().toLowerCase();
+    return refs.indexOf(row[0]) === -1 && status !== 'deleted';
+  });
 }
 
 var defaultSubjectOptions = ['Social Studies','Additional Mathematics','Mathematics','English Language','French','Biology','Chemistry','Physics','Physical Education & Health','Computing','Economics','Geography'];
@@ -1761,6 +1764,14 @@ document.getElementById('studentTable').addEventListener('click', function(e) {
       }
       rememberDeletedStudent(assRef);
       students = students.filter(function(student) { return student[0] !== assRef; });
+      var registered = [];
+      try { registered = JSON.parse(localStorage.getItem('axiom_registered_students') || '[]'); } catch (err) {}
+      if (Array.isArray(registered)) {
+        registered = registered.filter(function(record) {
+          return String(record.ass_ref_id || record.assRef || record.ass_ref || '') !== assRef;
+        });
+        localStorage.setItem('axiom_registered_students', JSON.stringify(registered));
+      }
       delete studentDetails[assRef];
       applySearch();
       Portal.toast('Student deleted.');
