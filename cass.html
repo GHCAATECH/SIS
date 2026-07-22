@@ -446,18 +446,7 @@ async function loadAssessmentSetupFromSupabase() {
           window.liveClasses = [];
           saveClassesCache([]);
         }
-        if (setup.students && setup.students.length) {
-          students = setup.students.map(function(row) {
-            return [
-              row.ass_ref_id,
-              [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ').toUpperCase(),
-              row.classes && row.classes.name ? row.classes.name : '',
-              row.student_level || (row.year_admitted ? getStudentLevel(row.year_admitted, new Date().getFullYear()) : '')
-            ];
-          });
-        } else {
-          students = [];
-        }
+        students = [];
         if (setup.assessment_modes && setup.assessment_modes.length) {
           document.getElementById('modeSelect').innerHTML = setup.assessment_modes.map(function(mode) {
             return '<option>'+mode.display_order+'. '+mode.name+'</option>';
@@ -492,21 +481,11 @@ async function loadAssessmentSetupFromSupabase() {
   try {
     var dbClasses = await AxiomDB.listClasses();
     var dbModes = await AxiomDB.listAssessmentModes();
-    var dbStudents = await AxiomDB.listStudents();
     if (dbClasses && dbClasses.length) {
       window.liveClasses = dbClasses;
       saveClassesCache(dbClasses);
     }
-    if (dbStudents && dbStudents.length) {
-      students = dbStudents.map(function(row) {
-        return [
-          row.ass_ref_id,
-          [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ').toUpperCase(),
-          row.classes && row.classes.name ? row.classes.name : '',
-          row.student_level || (row.year_admitted ? getStudentLevel(row.year_admitted, new Date().getFullYear()) : '')
-        ];
-      });
-    }
+    students = [];
     if (dbModes && dbModes.length) {
       document.getElementById('modeSelect').innerHTML = dbModes.map(function(mode) {
         return '<option>'+mode.display_order+'. '+mode.name+'</option>';
@@ -568,6 +547,49 @@ function selectedFilters() {
   };
 }
 
+function selectedClassRecord(filters) {
+  filters = filters || selectedFilters();
+  return loadClasses().find(function(cls) { return normalizeAssessmentText(cls.name) === normalizeAssessmentText(filters.className); }) || null;
+}
+
+function selectedSubjectRecord(filters) {
+  filters = filters || selectedFilters();
+  var cls = selectedClassRecord(filters);
+  var links = cls && cls.subjectLinks ? cls.subjectLinks : [];
+  return links.find(function(subject) { return normalizeAssessmentText(subject.name) === normalizeAssessmentText(filters.subjectName); }) || null;
+}
+
+function mapCaptureStudent(row, filters) {
+  row = row || {};
+  var fullName = [row.first_name, row.surname, row.other_names].filter(Boolean).join(' ').toUpperCase();
+  var cls = row.classes || {};
+  return [
+    row.ass_ref_id || row.std_id || '',
+    fullName || String(row.student_name || row.full_name || '').toUpperCase(),
+    cls.name || row.class_name || filters.className || '',
+    row.student_level || cls.year_level || filters.yearLevel || ''
+  ];
+}
+
+async function loadStudentsForFilter(filters) {
+  filters = filters || selectedFilters();
+  var cls = selectedClassRecord(filters);
+  var subject = selectedSubjectRecord(filters);
+  if (window.AxiomDB && AxiomDB.isConfigured() && AxiomDB.listCaptureAssessmentStudents) {
+    var dbRows = await AxiomDB.listCaptureAssessmentStudents({
+      classId: cls && cls.id ? cls.id : '',
+      className: filters.className,
+      subjectId: subject && subject.id ? subject.id : '',
+      subjectName: filters.subjectName,
+      yearLevel: filters.yearLevel,
+      limit: 1000,
+      page: 1
+    });
+    students = (dbRows || []).map(function(row) { return mapCaptureStudent(row, filters); }).filter(function(row) { return row[0]; });
+    return studentRowsForFilter(filters);
+  }
+  return studentRowsForFilter(filters);
+}
 function assessmentKey(filters) {
   return [filters.academicYear, filters.yearLevel, filters.semester, filters.modeName, filters.className, filters.subjectName].join('|');
 }
@@ -670,7 +692,7 @@ async function applyAssessmentFilter() {
   document.getElementById('submittedRecordsPanel').classList.remove('show');
   clearCaptureRows('Checking submitted scores...');
   setCaptureStatus('Checking the selected assessment mode...');
-  var currentRows = studentRowsForFilter(filters);
+  var currentRows = await loadStudentsForFilter(filters);
   var submitted = await loadSubmittedAssessment(filters);
   if (submitted) {
     if (submitted.overallScore) document.getElementById('overallScore').value = submitted.overallScore;

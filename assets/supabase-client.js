@@ -1261,6 +1261,30 @@
     return inserted.data;
   }
 
+  async function listCaptureAssessmentStudents(filters) {
+    var c = db();
+    if (!c) return null;
+    filters = normalizeListFilters(filters || {});
+    var token = activeStaffSessionToken();
+    if (token) {
+      var sessionResult = await c.rpc('secure_list_capture_assessment_students', {
+        p_session_token: token,
+        p_filters: filters
+      });
+      if (!sessionResult.error) return sessionResult.data || [];
+      if (!/secure_list_capture_assessment_students|schema cache|function/i.test(sessionResult.error.message || '')) {
+        throw sessionResult.error;
+      }
+    }
+    return listStudents({
+      classId: filters.classId || '',
+      classIds: filters.classIds || [],
+      yearLevel: filters.yearLevel || '',
+      search: filters.search || '',
+      limit: filters.limit || 1000,
+      page: filters.page || 1
+    });
+  }
   async function listAssessmentModes() {
     var c = db();
     if (!c) return null;
@@ -2299,6 +2323,7 @@
     listStaffSubjectClasses: listStaffSubjectClasses,
     saveStaffSubjectClasses: saveStaffSubjectClasses,
     listAssessmentModes: listAssessmentModes,
+    listCaptureAssessmentStudents: listCaptureAssessmentStudents,
     captureAssessmentSetup: captureAssessmentSetup,
     saveAssessmentScores: saveAssessmentScores,
     listAssessmentRecords: listAssessmentRecords,
