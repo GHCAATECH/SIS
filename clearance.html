@@ -388,12 +388,12 @@ function completedClearanceRows(sourceRows) {
 }
 function studentClassName(student) {
   var cls = student && student.classes ? student.classes : {};
-  return cls.name || student.class_name || student.className || '';
+  return cls.name || (student && (student.class_name || student.className)) || '';
 }
 function rowClassName(row) {
-  var student = row && row.students ? row.students : {};
+  var student = rowStudent(row);
   var archiveStudent = archiveStudentForRow(row);
-  return studentClassName(archiveStudent) || studentClassName(student);
+  return studentClassName(archiveStudent) || studentClassName(student) || (row && (row.class_name || row.className)) || '';
 }
 function rowCompletedYear(row) {
   var archiveStudent = archiveStudentForRow(row) || {};
@@ -408,7 +408,8 @@ function rowCompletedYear(row) {
 function firstRecordStudent(sourceRecords) {
   sourceRecords = sourceRecords || records;
   for (var i = 0; i < sourceRecords.length; i++) {
-    if (sourceRecords[i] && sourceRecords[i].students) return sourceRecords[i].students;
+    var student = rowStudent(sourceRecords[i]);
+    if (student && (student.ass_ref_id || student.std_id || student.student_name || student.full_name || student.first_name || student.surname)) return student;
   }
   return currentUser || {};
 }
@@ -541,7 +542,7 @@ function renderRecords() {
   ).trim().toLowerCase();
   if (search) {
     searchedRows = searchedRows.filter(function(row) {
-      var student = row.students || {};
+      var student = rowStudent(row);
       var archiveStudent = archiveStudentForRow(row) || {};
       var haystack = [
         student.ass_ref_id,
@@ -605,7 +606,7 @@ function studentRecordsByAssRef(assRef, sourceRecords) {
 function renderClearanceForm(sourceRecords) {
   sourceRecords = sourceRecords || activeFormRecords || records;
   var student = firstRecordStudent(sourceRecords);
-  var classInfo = student.classes || {};
+  var classInfo = student && student.classes ? student.classes : {};
   var name = studentName(student) || currentUser.full_name || '';
   var assRef = student.ass_ref_id || currentUser.ass_ref_id || '';
   var className = classInfo.name || currentUser.class_name || '';
@@ -637,7 +638,7 @@ function renderPrintableClearanceForm(sourceRecords) {
   sourceRecords = sourceRecords || [];
   if (!sourceRecords.length) return '';
   var student = firstRecordStudent(sourceRecords);
-  var classInfo = student.classes || {};
+  var classInfo = student && student.classes ? student.classes : {};
   var name = studentName(student) || '-';
   var assRef = student.ass_ref_id || student.std_id || '-';
   var className = classInfo.name || '-';
