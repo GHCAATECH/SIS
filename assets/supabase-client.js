@@ -868,37 +868,15 @@
     }
     var school = await currentSchool();
     if (!school) return null;
-    var hasFilters = !!(filters.classId || (filters.classIds && filters.classIds.length) || filters.yearLevel || filters.status || filters.search || filters.includeDeleted || filters.page > 1 || filters.limit !== 1000);
-    if (!hasFilters) {
-      var rpcResult = await c.rpc('secure_list_students', { p_school_id: school.id });
-      if (!rpcResult.error) return rpcResult.data || [];
-      if (!/secure_list_students|schema cache|function/i.test(rpcResult.error.message || '')) {
-        throw rpcResult.error;
-      }
+    var rpcResult = await c.rpc('secure_list_students', {
+      p_school_id: school.id,
+      p_filters: filters
+    });
+    if (!rpcResult.error) return rpcResult.data || [];
+    if (/secure_list_students|schema cache|function/i.test(rpcResult.error.message || '')) {
+      throw new Error('Run the Student filter-first SQL in Supabase, then refresh this page.');
     }
-    var query = c
-      .from('students')
-      .select('*, classes(name, year_level, programmes(name)), houses(name)')
-      .eq('school_id', school.id)
-      .order('created_at', { ascending: false });
-    if (filters.limit) query = query.range(filters.from, filters.to);
-    var classIds = normalizeIdList(filters.classIds || filters.classId);
-    if (classIds.length === 1) query = query.eq('class_id', classIds[0]);
-    else if (classIds.length > 1) query = query.in('class_id', classIds);
-    if (filters.yearLevel) query = query.eq('student_level', filters.yearLevel);
-    if (filters.status) query = query.eq('status', filters.status);
-    if (!filters.includeDeleted) query = query.neq('status', 'Deleted');
-    if (filters.search) {
-      var safeSearch = String(filters.search || '').replace(/[,%]/g, ' ').trim();
-      if (safeSearch) {
-        var patternText = '%' + safeSearch + '%';
-        query = query.or('ass_ref_id.ilike.' + patternText + ',first_name.ilike.' + patternText + ',surname.ilike.' + patternText + ',other_names.ilike.' + patternText + ',phone_number.ilike.' + patternText);
-      }
-    }
-    query = query.range(filters.from, filters.to);
-    var result = await query;
-    if (result.error) throw result.error;
-    return result.data || [];
+    throw rpcResult.error;
   }
   async function createStudent(payload) {
     var c = db(), school = await currentSchool();
@@ -946,34 +924,7 @@
     if (result.error) {
       var missingFunction = result.error.code === 'PGRST202' || /could not find the function/i.test(result.error.message || '');
       if (!missingFunction) throw result.error;
-
-      var allStudents = await listStudents();
-      var wanted = {};
-      assRefIds.forEach(function(ref) { wanted[ref] = true; });
-      var currentYear = new Date().getFullYear();
-      var targets = (allStudents || []).filter(function(student) {
-        var status = String(student.status || 'Active').toLowerCase();
-        return wanted[student.ass_ref_id] && status !== 'transferred' && status !== 'dropped' && status !== 'completed';
-      });
-      try {
-        return await Promise.all(targets.map(function(student) {
-          var level = student.student_level || (student.classes && student.classes.year_level) || '';
-          if (!level && student.year_admitted) {
-            var difference = currentYear - Number(student.year_admitted);
-            level = difference <= 0 ? 'Year 1' : difference === 1 ? 'Year 2' : difference === 2 ? 'Year 3' : 'Completed';
-          }
-          var nextLevel = level === 'Year 1' ? 'Year 2' : level === 'Year 2' ? 'Year 3' : 'Completed';
-          return updateStudentByAssRef(student.ass_ref_id, {
-            student_level: nextLevel,
-            status: nextLevel === 'Completed' ? 'Completed' : 'Active'
-          });
-        }));
-      } catch (fallbackError) {
-        if (/student_level|schema cache|status.*check/i.test(fallbackError.message || '')) {
-          throw new Error('Run the student progression SQL migration in Supabase, then refresh this page.');
-        }
-        throw fallbackError;
-      }
+      throw new Error('Run the student progression SQL migration in Supabase, then refresh this page.');
     }
     return result.data || [];
   }
@@ -985,18 +936,8 @@
       await updateStudentByAssRef(assRefId, { status: 'Deleted' });
       return true;
     } catch (softDeleteError) {
-      if (!/secure_update_student_by_ass_ref|status|row-level security|permission/i.test(softDeleteError.message || '')) {
-        throw softDeleteError;
-      }
+      throw softDeleteError;
     }
-    var result = await c
-      .from('students')
-      .delete()
-      .eq('school_id', school.id)
-      .eq('ass_ref_id', assRefId)
-      .select('id');
-    if (result.error) throw result.error;
-    return true;
   }
   async function listStaff(filters) {
     var c = db(), school = await currentSchool();
