@@ -73,7 +73,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/supabase-client.js?v=20260722-docmanager-filter1"></script>
+<script src="assets/supabase-client.js?v=20260725-docmanager-filter2"></script>
 <script src="assets/shell.js?v=20260719-privilege-access1"></script>
 <script>
 Portal.init({ active: 'documentmanager' });
@@ -174,8 +174,9 @@ async function loadDocumentsFromSupabase() {
     renderDocuments(true);
   } catch (err) {
     console.error(err);
+    documents = [];
     Portal.toast('Could not load uploaded documents: ' + (err.message || 'Unknown error'), true);
-    renderDocuments();
+    renderDocuments(true);
   }
 }
 
