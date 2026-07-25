@@ -1008,6 +1008,7 @@
       });
       if (!rpc.error) return rpc.data || [];
       if (!/secure_list_staff_users|schema cache|function/i.test(rpc.error.message || '')) throw rpc.error;
+      throw new Error('Run the latest Manage Users filter-first SQL in Supabase, then refresh this page.');
     }
     var query = c.from('staff_users').select('*').eq('school_id', school.id).order('full_name');
     if (filters.category) query = query.eq('category', filters.category);
