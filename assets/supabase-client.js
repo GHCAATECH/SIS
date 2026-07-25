@@ -305,7 +305,9 @@
       p_session_token: token
     });
     if (result.error) {
-      if (/secure_capture_assessment_setup|schema cache|function/i.test(result.error.message || '')) return null;
+      if (/secure_capture_assessment_setup|schema cache|function/i.test(result.error.message || '')) {
+        throw new Error('Run the staff capture assessment SQL in Supabase, then refresh this page.');
+      }
       throw result.error;
     }
     return result.data || null;
@@ -1287,24 +1289,18 @@
     if (!c) return null;
     filters = normalizeListFilters(filters || {});
     var token = activeStaffSessionToken();
-    if (token) {
-      var sessionResult = await c.rpc('secure_list_capture_assessment_students', {
-        p_session_token: token,
-        p_filters: filters
-      });
-      if (!sessionResult.error) return sessionResult.data || [];
-      if (!/secure_list_capture_assessment_students|schema cache|function/i.test(sessionResult.error.message || '')) {
-        throw sessionResult.error;
-      }
+    if (!token) {
+      throw new Error('Staff session expired. Please logout and login again before loading capture assessment students.');
     }
-    return listStudents({
-      classId: filters.classId || '',
-      classIds: filters.classIds || [],
-      yearLevel: filters.yearLevel || '',
-      search: filters.search || '',
-      limit: filters.limit || 1000,
-      page: filters.page || 1
+    var sessionResult = await c.rpc('secure_list_capture_assessment_students', {
+      p_session_token: token,
+      p_filters: filters
     });
+    if (!sessionResult.error) return sessionResult.data || [];
+    if (/secure_list_capture_assessment_students|schema cache|function/i.test(sessionResult.error.message || '')) {
+      throw new Error('Run the Capture Assessment filter-first SQL in Supabase, then refresh this page.');
+    }
+    throw sessionResult.error;
   }
   async function listAssessmentModes() {
     var c = db();
