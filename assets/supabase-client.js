@@ -2099,6 +2099,7 @@
       if (!/secure_list_student_clearances|schema cache|function/i.test(adminFeed.error.message || '')) {
         throw adminFeed.error;
       }
+      throw new Error('Run the latest clearance filter-first SQL in Supabase, then refresh this page.');
     }
     var resolvedStudentId = filters.studentId || null;
     if (filters.studentAssRef) {
