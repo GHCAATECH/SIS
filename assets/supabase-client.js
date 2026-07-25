@@ -1359,28 +1359,7 @@
     if (!/secure_list_assessment_records|schema cache|function/i.test(rpcResult.error.message || '')) {
       throw rpcResult.error;
     }
-    var result = await c
-      .from('assessment_scores')
-      .select('score, grade, remark, updated_at, students(ass_ref_id, first_name, surname, other_names, ghana_card_number, gender, disability_status, date_of_birth, status, passport_url, student_level, year_admitted, classes(year_level)), assessments(class_id, academic_year, year_level, semester, status, submitted_at, overall_score, inserted_by, subjects(name, code), classes(name, programme_id, programmes(name)), assessment_modes(name, display_order))')
-      .order('updated_at', { ascending: false })
-      .range(filters.from, filters.to);
-    if (result.error) throw result.error;
-    return (result.data || []).filter(function(row) {
-      var assessment = row.assessments || {};
-      if (!assessment || assessment.status !== 'Submitted') return false;
-      if (filters.academicYear && assessment.academic_year !== filters.academicYear) return false;
-      if (filters.yearLevel && assessment.year_level !== filters.yearLevel) return false;
-      if (filters.semester && assessment.semester !== filters.semester) return false;
-      if (filters.modeName) {
-        var modeName = assessment.assessment_modes && assessment.assessment_modes.name;
-        var displayOrder = assessment.assessment_modes && assessment.assessment_modes.display_order;
-        var label = displayOrder ? displayOrder + '. ' + modeName : modeName;
-        if (modeName !== filters.modeName && label !== filters.modeName) return false;
-      }
-      if (filters.className && assessment.classes && assessment.classes.name !== filters.className) return false;
-      if (filters.subjectName && assessment.subjects && assessment.subjects.name !== filters.subjectName) return false;
-      return true;
-    });
+    throw new Error('Run the Assessment Records filter-first SQL in Supabase, then refresh this page.');
   }
 
   async function listSchoolAssessmentMonitor(filters) {
